@@ -9,4 +9,5 @@ Plataforma web desarrollada para optimizar la administración y asignación de a
 * **Interfaz Intuitiva:** Dashboard visual y responsivo para los coordinadores académicos.
 
 ## 👥 Equipo de Desarrollo (Syntax DA)
-* **Alex Rangel** * **Diego Guerra**---
+* **Alex Rangel**
+* **Diego Guerra**
