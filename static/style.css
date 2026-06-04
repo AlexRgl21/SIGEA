@@ -1,0 +1,244 @@
+/* 1. VARIABLES DE COLOR Y RESET */
+:root {
+    /* Paleta Principal */
+    --azul-oscuro: #2d59d3;   /* Para la barra lateral y textos fuertes */
+    --verde-acua: #2AB7CA;    /* Verde acua de tu logo Syntax */
+    --rojo-salir: #E53E3E;    /* Botón de salir */
+    --blanco-fondo: #FFFFFF;  
+    --gris-fondo: #F4F7F6;    /* Fondo del área de trabajo */
+    
+    /* Textos y Bordes */
+    --texto-gris: #4A5568;
+    --texto-claro: #A0AEC0;   
+    --gris-bordes: #EDF2F7;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--blanco-fondo);
+    color: var(--texto-gris);
+    display: flex;
+    min-height: 100vh;
+}
+
+/* 2. BARRA LATERAL (SIDEBAR) */
+.sidebar {
+    width: 260px;
+    background-color: var(--azul-oscuro);
+    display: flex;
+    flex-direction: column;
+}
+
+.logo-container {
+    padding: 30px 20px;
+    text-align: center;
+}
+
+.logo-container img {
+    max-width: 160px;
+}
+
+.menu ul {
+    list-style: none;
+    padding: 0 15px;
+}
+
+.menu li {
+    margin-bottom: 8px;
+}
+
+.menu a {
+    text-decoration: none;
+    color: var(--texto-claro);
+    display: block;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.menu a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--blanco-fondo);
+}
+
+.menu li.active a {
+    background-color: var(--verde-acua);
+    color: var(--blanco-fondo);
+}
+
+/* 3. CONTENIDO PRINCIPAL Y BARRA SUPERIOR */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--gris-fondo);
+}
+
+.top-bar {
+    height: 70px;
+    background-color: var(--blanco-fondo);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 30px;
+    border-bottom: 1px solid var(--gris-bordes);
+}
+
+.top-bar h1 {
+    font-size: 18px;
+    color: var(--azul-oscuro);
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+}
+
+.user-name {
+    font-weight: 500;
+    margin-right: 15px;
+}
+
+/* 4. ÁREA DE TRABAJO Y TARJETA */
+.workspace {
+    padding: 30px;
+}
+
+.card {
+    background-color: var(--blanco-fondo);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.workspace-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.workspace-header h2 {
+    font-size: 18px;
+    color: var(--azul-oscuro);
+}
+
+/* 5. BOTONES GLOBALES */
+.btn-primary {
+    background-color: var(--verde-acua);
+    color: var(--blanco-fondo);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+.btn-danger {
+    background-color: var(--rojo-salir);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-outline {
+    background-color: var(--blanco-fondo);
+    border: 1px solid #CBD5E0;
+    color: var(--texto-gris);
+    padding: 6px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-outline:hover {
+    border-color: var(--verde-acua);
+    color: var(--verde-acua);
+}
+
+/* 6. TABLA DE HORARIOS (CSS GRID)*/
+.schedule-table {
+    margin-top: 25px;
+    width: 100%;
+}
+
+.table-header, .table-row {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1.5fr 1fr 1fr 0.8fr;
+    align-items: center;
+    padding: 16px 10px;
+}
+
+.table-header {
+    border-bottom: 2px solid var(--gris-bordes);
+    color: var(--texto-claro);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.table-row {
+    border-bottom: 1px solid var(--gris-bordes);
+    font-size: 14px;
+    color: var(--texto-gris);
+    background-color: var(--blanco-fondo);
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.schedule-table .table-row:last-child {
+    border-bottom: none;
+}
+
+.table-row:hover {
+    background-color: #F7FAFC;
+    transform: translateX(2px);
+}
+
+/* --- Utilidades de texto para la tabla --- */
+.fw-bold {
+    font-weight: 700;
+    color: var(--azul-oscuro);
+}
+
+.text-muted {
+    color: var(--texto-claro);
+}
+
+/* 7. ETIQUETAS DE ESTATUS (BADGES) */
+.badge {
+    padding: 5px 14px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+    text-align: center;
+}
+
+.badge-ocupado {
+    background-color: #FEFCBF;
+    color: #B7791F;
+}
+
+.badge-proximo {
+    background-color: #EBF8FF;
+    color: #2B6CB0;
+}
+
+.badge-disponible {
+    background-color: #F0FFF4;
+    color: #2F855A;
+}

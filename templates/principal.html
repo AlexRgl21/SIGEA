@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- Configuración de caracteres para admitir acentos y caracteres especiales -->
+    <meta charset="UTF-8">
+
+    <!-- Hace que la página sea adaptable a dispositivos móviles -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Título que aparece en la pestaña del navegador -->
+    <title>SIGEA | Panel Administrativo</title>
+
+    <!-- Vinculación del archivo CSS ubicado en la carpeta static/css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='static/style.css') }}">
+</head>
+<body>
+
+    <!-- Barra lateral de navegación -->
+    <aside class="sidebar">
+
+        <!-- Contenedor del logotipo del sistema -->
+        <div class="logo-container">
+            <!-- Imagen del logo obtenida desde la carpeta static/img -->
+            <img src="{{ url_for('static', filename='img/logo_sigea.png') }}" alt="Logo SIGEA" class="logo">
+        </div>
+
+        <!-- Menú principal de navegación -->
+        <nav class="menu">
+            <ul>
+                <!-- Opción actualmente seleccionada -->
+                <li class="active"><a href="#">Panel Principal</a></li>
+
+                <!-- Opciones del menú -->
+                <li><a href="#">Gestión de Aulas</a></li>
+                <li><a href="#">Reservas Especiales</a></li>
+                <li><a href="#">Usuarios</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Contenido principal de la página -->
+    <main class="main-content">
+        
+        <!-- Barra superior -->
+        <header class="top-bar">
+
+            <!-- Título principal de la sección -->
+            <div class="page-title">
+                <h1>Disponibilidad de Espacios Académicos</h1>
+            </div>
+
+            <!-- Información del usuario y botón de salida -->
+            <div class="user-profile">
+                <span class="user-name">Coordinación Académica</span>
+                <button class="btn-danger">Salir</button>
+            </div>
+        </header>
+
+        <!-- Área de trabajo principal -->
+        <section class="workspace">
+
+            <!-- Tarjeta que contiene la tabla de horarios -->
+            <div class="card">
+
+                <!-- Encabezado de la tarjeta -->
+                <div class="workspace-header">
+
+                    <!-- Título del periodo activo -->
+                    <h2>Horarios Activos (Mayo - Agosto 2026)</h2>
+
+                    <!-- Botón para crear una nueva asignación -->
+                    <button class="btn-primary">+ Nueva Asignación</button>
+                </div>
+
+                <!-- Contenedor de la tabla de horarios -->
+                <div class="schedule-table">
+                    
+                    <!-- Encabezados de las columnas -->
+                    <div class="table-header">
+                        <div>Edificio</div>
+                        <div>Espacio</div>
+                        <div>Grupo Asignado</div>
+                        <div>Horario</div>
+                        <div>Estatus</div>
+                        <div>Acciones</div>
+                    </div>
+
+                    <!-- Bucle de Jinja2:
+                         Recorre cada elemento de la lista_horarios enviada desde Flask -->
+                    {% for clase in lista_horarios %}
+
+                    <!-- Fila de datos de una clase o espacio -->
+                    <div class="table-row">
+
+                        <!-- Muestra el edificio -->
+                        <div>{{ clase.edificio }}</div>
+
+                        <!-- Muestra el espacio o aula -->
+                        <div>{{ clase.espacio }}</div>
+                        
+                        <!-- Verifica si existe un grupo asignado -->
+                        {% if clase.grupo == '-- Ninguno --' %}
+
+                            <!-- Si no hay grupo asignado, se muestra con estilo atenuado -->
+                            <div class="text-muted">{{ clase.grupo }}</div>
+
+                        {% else %}
+
+                            <!-- Si existe grupo, se muestra resaltado -->
+                            <div class="fw-bold">{{ clase.grupo }}</div>
+
+                        {% endif %}
+                        
+                        <!-- Muestra el horario correspondiente -->
+                        <div>{{ clase.horario }}</div>
+                        
+                        <!-- Columna de estatus -->
+                        <div>
+
+                            <!-- Si el espacio está ocupado -->
+                            {% if clase.estatus == 'Ocupado' %}
+                                <span class="badge badge-ocupado">Ocupado</span>
+
+                            <!-- Si está próximo a ocuparse -->
+                            {% elif clase.estatus == 'Próximo' %}
+                                <span class="badge badge-proximo">Próximo</span>
+
+                            <!-- Si está disponible -->
+                            {% else %}
+                                <span class="badge badge-disponible">Disponible</span>
+                            {% endif %}
+
+                        </div>
+                        
+                        <!-- Botón de acción para consultar detalles -->
+                        <div><button class="btn-outline">Ver</button></div>
+                    </div>
+
+                    <!-- Fin del ciclo for -->
+                    {% endfor %}
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+</body>
+</html>
