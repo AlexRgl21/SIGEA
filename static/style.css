@@ -1,6 +1,4 @@
-/* ==========================================
-   1. VARIABLES DE COLOR Y RESET
-   ========================================== */
+/* 1. VARIABLES DE COLOR Y RESET*/
 :root {
     /* Paleta Principal */
     --azul-oscuro: #acafb4;   /* Para la barra lateral y textos fuertes */
@@ -29,9 +27,7 @@ body {
     min-height: 100vh;
 }
 
-/* ==========================================
-   2. BARRA LATERAL (SIDEBAR)
-   ========================================== */
+/* 2. BARRA LATERAL (SIDEBAR)*/
 .sidebar {
     width: 260px;
     background-color: var(--azul-oscuro);
@@ -77,9 +73,7 @@ body {
     color: var(--blanco-fondo);
 }
 
-/* ==========================================
-   3. CONTENIDO PRINCIPAL Y BARRA SUPERIOR
-   ========================================== */
+/* 3. CONTENIDO PRINCIPAL Y BARRA SUPERIOR */
 .main-content {
     flex: 1;
     display: flex;
@@ -112,9 +106,7 @@ body {
     margin-right: 15px;
 }
 
-/* ==========================================
-   4. ÁREA DE TRABAJO Y TARJETA
-   ========================================== */
+/* 4. ÁREA DE TRABAJO Y TARJETA*/
 .workspace {
     padding: 30px;
 }
@@ -137,9 +129,7 @@ body {
     color: var(--azul-oscuro);
 }
 
-/* ==========================================
-   5. BOTONES GLOBALES
-   ========================================== */
+/* 5. BOTONES GLOBALES */
 .btn-primary {
     background-color: var(--verde-acua);
     color: var(--blanco-fondo);
@@ -181,9 +171,7 @@ body {
     color: var(--verde-acua);
 }
 
-/* ==========================================
-   6. TABLA DE HORARIOS (CSS GRID)
-   ========================================== */
+/* 6. TABLA DE HORARIOS (CSS GRID) */
 .schedule-table {
     margin-top: 25px;
     width: 100%;
@@ -230,9 +218,7 @@ body {
     color: var(--texto-claro);
 }
 
-/* ==========================================
-   7. ETIQUETAS DE ESTATUS (BADGES)
-   ========================================== */
+/* 7. ETIQUETAS DE ESTATUS (BADGES)*/
 .badge {
     padding: 5px 14px;
     border-radius: 50px;
@@ -256,9 +242,7 @@ body {
     background-color: #F0FFF4;
     color: #2F855A;
 }
-/* ==========================================
-   8. BARRA DE BÚSQUEDA
-   ========================================== */
+/* 8. BARRA DE BÚSQUEDA */
 .table-controls {
     margin-top: 20px;
 }
