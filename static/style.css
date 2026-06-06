@@ -3,7 +3,7 @@
    ========================================== */
 :root {
     /* Paleta Principal */
-    --azul-oscuro: #2D3748;   /* Para la barra lateral y textos fuertes */
+    --azul-oscuro: #acafb4;   /* Para la barra lateral y textos fuertes */
     --verde-acua: #2AB7CA;    /* Verde acua de tu logo Syntax */
     --rojo-salir: #E53E3E;    /* Botón de salir */
     --blanco-fondo: #FFFFFF;  
@@ -11,7 +11,7 @@
     
     /* Textos y Bordes */
     --texto-gris: #4A5568;
-    --texto-claro: #A0AEC0;   
+    --texto-claro: #000000;   
     --gris-bordes: #EDF2F7;
 }
 
@@ -40,12 +40,12 @@ body {
 }
 
 .logo-container {
-    padding: 30px 20px;
+    padding: 40px 20px;
     text-align: center;
 }
 
 .logo-container img {
-    max-width: 160px;
+    max-width: 220px;
 }
 
 .menu ul {
