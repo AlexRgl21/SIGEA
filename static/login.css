@@ -1,0 +1,115 @@
+/* VARIABLES */
+
+:root {
+    --azul-oscuro: #acafb4;
+    --verde-acua: #2AB7CA;
+    --blanco: #FFFFFF;
+    --gris-fondo: #F4F7F6;
+    --texto-gris: #4A5568;
+    --gris-bordes: #E2E8F0;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI', sans-serif;
+}
+
+body{
+    background-color: var(--gris-fondo);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+}
+
+/* CONTENEDOR */
+
+.login-container{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.login-card{
+    background:white;
+    width:100%;
+    max-width:420px;
+    padding:40px;
+    border-radius:16px;
+    box-shadow:0 10px 25px rgba(0,0,0,.08);
+}
+
+/*LOGO*/
+
+.logo-container{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+.logo-container img{
+    width:180px;
+}
+
+h1{
+    text-align:center;
+    color:var(--texto-gris);
+    margin-bottom:10px;
+}
+
+.subtitle{
+    text-align:center;
+    color:#718096;
+    font-size:14px;
+    margin-bottom:30px;
+}
+
+/* INPUTS */
+
+.input-group{
+    margin-bottom:20px;
+}
+
+.input-group label{
+    display:block;
+    margin-bottom:8px;
+    color:var(--texto-gris);
+    font-weight:500;
+}
+
+.input-group input{
+    width:100%;
+    padding:12px;
+    border:1px solid var(--gris-bordes);
+    border-radius:8px;
+    outline:none;
+    transition:.3s;
+    font-size:14px;
+}
+
+.input-group input:focus{
+    border-color:var(--verde-acua);
+    box-shadow:0 0 0 3px rgba(42,183,202,.15);
+}
+
+/* BOTON */
+
+.btn-login{
+    width:100%;
+    background:var(--verde-acua);
+    color:white;
+    border:none;
+    padding:14px;
+    border-radius:8px;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.btn-login:hover{
+    opacity:.9;
+}
