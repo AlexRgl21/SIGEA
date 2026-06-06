@@ -1,7 +1,9 @@
-/* 1. VARIABLES DE COLOR Y RESET */
+/* ==========================================
+   1. VARIABLES DE COLOR Y RESET
+   ========================================== */
 :root {
     /* Paleta Principal */
-    --azul-oscuro: #2d59d3;   /* Para la barra lateral y textos fuertes */
+    --azul-oscuro: #2D3748;   /* Para la barra lateral y textos fuertes */
     --verde-acua: #2AB7CA;    /* Verde acua de tu logo Syntax */
     --rojo-salir: #E53E3E;    /* Botón de salir */
     --blanco-fondo: #FFFFFF;  
@@ -27,7 +29,9 @@ body {
     min-height: 100vh;
 }
 
-/* 2. BARRA LATERAL (SIDEBAR) */
+/* ==========================================
+   2. BARRA LATERAL (SIDEBAR)
+   ========================================== */
 .sidebar {
     width: 260px;
     background-color: var(--azul-oscuro);
@@ -73,7 +77,9 @@ body {
     color: var(--blanco-fondo);
 }
 
-/* 3. CONTENIDO PRINCIPAL Y BARRA SUPERIOR */
+/* ==========================================
+   3. CONTENIDO PRINCIPAL Y BARRA SUPERIOR
+   ========================================== */
 .main-content {
     flex: 1;
     display: flex;
@@ -106,7 +112,9 @@ body {
     margin-right: 15px;
 }
 
-/* 4. ÁREA DE TRABAJO Y TARJETA */
+/* ==========================================
+   4. ÁREA DE TRABAJO Y TARJETA
+   ========================================== */
 .workspace {
     padding: 30px;
 }
@@ -129,7 +137,9 @@ body {
     color: var(--azul-oscuro);
 }
 
-/* 5. BOTONES GLOBALES */
+/* ==========================================
+   5. BOTONES GLOBALES
+   ========================================== */
 .btn-primary {
     background-color: var(--verde-acua);
     color: var(--blanco-fondo);
@@ -171,7 +181,9 @@ body {
     color: var(--verde-acua);
 }
 
-/* 6. TABLA DE HORARIOS (CSS GRID)*/
+/* ==========================================
+   6. TABLA DE HORARIOS (CSS GRID)
+   ========================================== */
 .schedule-table {
     margin-top: 25px;
     width: 100%;
@@ -218,7 +230,9 @@ body {
     color: var(--texto-claro);
 }
 
-/* 7. ETIQUETAS DE ESTATUS (BADGES) */
+/* ==========================================
+   7. ETIQUETAS DE ESTATUS (BADGES)
+   ========================================== */
 .badge {
     padding: 5px 14px;
     border-radius: 50px;
@@ -241,4 +255,27 @@ body {
 .badge-disponible {
     background-color: #F0FFF4;
     color: #2F855A;
+}
+/* ==========================================
+   8. BARRA DE BÚSQUEDA
+   ========================================== */
+.table-controls {
+    margin-top: 20px;
+}
+
+.search-bar {
+    width: 100%;
+    max-width: 350px; /* Para que no ocupe toda la pantalla */
+    padding: 10px 15px;
+    border: 1px solid var(--gris-bordes);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--texto-gris);
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.search-bar:focus {
+    border-color: var(--verde-acua);
+    box-shadow: 0 0 0 3px rgba(42, 183, 202, 0.15); /* Resplandor suave */
 }
