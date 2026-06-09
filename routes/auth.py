@@ -25,3 +25,8 @@ def login():
             return render_template('login.html', error="Error al conectar con la base de datos")
         
     return render_template('login.html')
+
+#regresar el login
+@auth_bp.route('/logout')
+def logout():
+    return redirect(url_for('auth.login'))

@@ -1,4 +1,4 @@
-/* 1. VARIABLES DE COLOR Y RESET*/
+/* 1. VARIABLES DE COLOR Y RESET */
 :root {
     /* Paleta Principal */
     --azul-oscuro: #acafb4;   /* Para la barra lateral y textos fuertes */
@@ -27,7 +27,7 @@ body {
     min-height: 100vh;
 }
 
-/* 2. BARRA LATERAL (SIDEBAR)*/
+/* 2. BARRA LATERAL (SIDEBAR) */
 .sidebar {
     width: 260px;
     background-color: var(--azul-oscuro);
@@ -44,36 +44,33 @@ body {
     max-width: 220px;
 }
 
-.menu ul {
-    list-style: none;
-    padding: 0 15px;
-}
-
-.menu li {
-    margin-bottom: 8px;
-}
-
 .menu a {
     text-decoration: none;
     color: var(--texto-claro);
     display: block;
     padding: 12px 20px;
     border-radius: 8px;
-    font-weight: 500;
+    font-weight: 600; /* Un poco más de grosor para que destaque */
     transition: all 0.3s ease;
 }
 
+/* EFECTO HOVER: Cuando pasas el mouse por encima */
 .menu a:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--blanco-fondo);
+    background-color: var(--blanco-fondo); /* Fondo blanco */
+    color: var(--verde-acua); /* Texto en verde acua */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Sombra muy suave */
+    transform: translateX(6px); /* Pequeño salto hacia la derecha */
 }
 
+/* EFECTO ACTIVE: La sección donde te encuentras actualmente */
 .menu li.active a {
     background-color: var(--verde-acua);
     color: var(--blanco-fondo);
+    box-shadow: 0 4px 10px rgba(42, 183, 202, 0.3); /* Resplandor del color acua */
+    transform: translateX(0); /* Lo mantiene firme en su lugar */
 }
 
-/* 3. CONTENIDO PRINCIPAL Y BARRA SUPERIOR */
+/* 3. CONTENIDO PRINCIPAL Y BARRA SUPERIOR*/
 .main-content {
     flex: 1;
     display: flex;
@@ -106,7 +103,7 @@ body {
     margin-right: 15px;
 }
 
-/* 4. ÁREA DE TRABAJO Y TARJETA*/
+/* 4. ÁREA DE TRABAJO Y TARJETA */
 .workspace {
     padding: 30px;
 }
@@ -179,7 +176,8 @@ body {
 
 .table-header, .table-row {
     display: grid;
-    grid-template-columns: 1fr 1.5fr 1.5fr 1fr 1fr 0.8fr;
+    /* Ajustado a 5 columnas para coincidir con tu HTML */
+    grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr;
     align-items: center;
     padding: 16px 10px;
 }
@@ -208,7 +206,6 @@ body {
     transform: translateX(2px);
 }
 
-/* --- Utilidades de texto para la tabla --- */
 .fw-bold {
     font-weight: 700;
     color: var(--azul-oscuro);
@@ -217,8 +214,18 @@ body {
 .text-muted {
     color: var(--texto-claro);
 }
+/* Estilo para la etiqueta de la hora */
+.reserva-hora {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--azul-oscuro);
+    background-color: var(--gris-bordes);
+    padding: 4px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+}
 
-/* 7. ETIQUETAS DE ESTATUS (BADGES)*/
+/* 7. ETIQUETAS DE ESTATUS (BADGES) */
 .badge {
     padding: 5px 14px;
     border-radius: 50px;
@@ -242,6 +249,7 @@ body {
     background-color: #F0FFF4;
     color: #2F855A;
 }
+
 /* 8. BARRA DE BÚSQUEDA */
 .table-controls {
     margin-top: 20px;
@@ -249,7 +257,7 @@ body {
 
 .search-bar {
     width: 100%;
-    max-width: 350px; /* Para que no ocupe toda la pantalla */
+    max-width: 350px;
     padding: 10px 15px;
     border: 1px solid var(--gris-bordes);
     border-radius: 8px;
@@ -261,5 +269,150 @@ body {
 
 .search-bar:focus {
     border-color: var(--verde-acua);
-    box-shadow: 0 0 0 3px rgba(42, 183, 202, 0.15); /* Resplandor suave */
+    box-shadow: 0 0 0 3px rgba(42, 183, 202, 0.15);
+}
+
+/* 9. DASHBOARD LAYOUT (PANEL PRINCIPAL) */
+.dashboard-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* KPIs (Tarjetas Superiores) */
+.kpi-container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.kpi-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-top: 4px solid var(--verde-acua); 
+    padding: 20px 10px;
+}
+
+.kpi-title {
+    font-size: 14px;
+    color: var(--texto-gris);
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.kpi-value {
+    font-size: 36px;
+    font-weight: bold;
+    color: var(--azul-oscuro);
+}
+
+/* Widgets (Fila Central) */
+.widgets-container {
+    display: flex;
+    gap: 20px;
+}
+
+.widget-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+}
+
+.widget-title {
+    font-size: 16px;
+    color: var(--azul-oscuro);
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--gris-bordes);
+}
+
+/* Lista del Widget "Reservas de Hoy" */
+.reservas-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.reservas-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--gris-bordes);
+}
+
+.reservas-list li:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Gráfico Simulado de Barras */
+.chart-placeholder {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    height: 160px; /* Aumentamos la altura para hacer espacio al texto */
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.bar-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    width: 20%;
+}
+
+.bar-percent {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--azul-oscuro);
+    margin-bottom: 6px;
+}
+
+.bar {
+    width: 100%; /* La barra ahora toma el ancho de su columna */
+    background-color: var(--verde-acua);
+    border-radius: 4px 4px 0 0;
+    opacity: 0.8;
+    transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+.bar:hover {
+    opacity: 1;
+    transform: scaleY(1.02); /* Pequeño efecto de crecimiento al pasar el mouse */
+    cursor: pointer;
+}
+
+.bar-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--texto-gris);
+    margin-top: 8px;
+}
+
+/* Ajustes adicionales para la cabecera de la tabla */
+.full-width-card .workspace-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Encabezado de la lista de reservas */
+.reservas-header {
+    font-size: 11px !important;
+    font-weight: 700;
+    color: var(--azul-oscuro);
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--gris-bordes) !important; /* Línea sólida en lugar de punteada */
+    padding-bottom: 6px !important;
+    margin-bottom: 4px;
 }

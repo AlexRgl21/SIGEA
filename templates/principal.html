@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIGEA | Panel Administrativo</title>
-   <link rel="stylesheet" href="../static/style.css">
+    <link rel="stylesheet" href="../static/style.css">
 </head>
 <body>
 
     <aside class="sidebar">
         <div class="logo-container">
-           <img src="../static/img/logo_sigea.png" alt="Logo SIGEA" class="logo">
+            <img src="../static/img/logo_sigea.png" alt="Logo SIGEA" class="logo">
         </div>
 
         <nav class="menu">
@@ -21,6 +21,7 @@
                 <li><a href="#">Usuarios</a></li>
             </ul>
         </nav>
+
     </aside>
 
     <main class="main-content">
@@ -29,82 +30,163 @@
                 <h1>Disponibilidad de Espacios Académicos</h1>
             </div>
             <div class="user-profile">
-                <span class="user-name">Coordinación Académica</span>
-                <button class="btn-danger">Salir</button>
+                <span class="user-name">Coordinacion Académica</span>
+                <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center;">Salir</a>
             </div>
         </header>
 
         <section class="workspace">
-            <div class="card">
-                <div class="table-controls">
-                    <input type="text" id="buscador" class="search-bar" placeholder="Buscar por Grupo (Ej. ITIID)...">
+            <div class="dashboard-grid">
+
+                <div class="kpi-container">
+                    <div class="card kpi-card">
+                        <span class="kpi-title">Espacios</span>
+                        <span class="kpi-value">45</span>
+                    </div>
+                    <div class="card kpi-card">
+                        <span class="kpi-title">Ocupados</span>
+                        <span class="kpi-value">32</span>
+                    </div>
+                    <div class="card kpi-card">
+                        <span class="kpi-title">Libres</span>
+                        <span class="kpi-value">12</span>
+                    </div>
+                    <div class="card kpi-card">
+                        <span class="kpi-title">Bloqueados</span>
+                        <span class="kpi-value">2</span>
+                    </div>
                 </div>
 
-                <div class="schedule-table">
-                    
-                    <div class="table-header">
-                        <div>Edificio</div>
-                        <div>Espacio</div>
-                        <div>Grupo Asignado</div>
-                        <div>Horario</div>
-                        <div>Estatus</div>
+                <div class="widgets-container">
+                    <div class="card widget-card">
+                        <h3 class="widget-title">Reservas de Hoy</h3>
+                        <ul class="reservas-list">
+                            <li class="reservas-header">
+                                <span>Espacio Académico</span>
+                                <span>Hora de uso</span>
+                            </li>
+                            
+                            <li>
+                                <span>Edificio 2 - Laboratorio de Computo</span>
+                                <span class="reserva-hora">08:00 - 10:00</span>
+                            </li>
+                            <li>
+                                <span>Edificio 1 - Sala Audio-Visual</span>
+                                <span class="reserva-hora">11:00 - 13:00</span>
+                            </li>
+                            <li>
+                                <span>Edificio 3 - Laboratorio de Computo</span>
+                                <span class="reserva-hora">14:00 - 16:00</span>
+                            </li>
+                            <li>
+                                <span>Edificio 3 - Sala de Conferencias</span>
+                                <span class="reserva-hora">16:00 - 18:00</span>
+                            </li>
+                        </ul>
                     </div>
-                    <div class="table-row">
-                        <div>Edificio 2</div>
-                        <div>Salón 3</div>
-                        <div class="fw-bold">ITIID SM - 01</div>
-                        <div>07:00 - 11:00</div>
-                        <div><span class="badge badge-ocupado">Ocupado</span></div>
+
+                    <div class="card widget-card">
+                        <h3 class="widget-title">Ocupación Edificios</h3>
+                        <div class="chart-placeholder">
+                            <div class="bar-column">
+                                <span class="bar-percent">100%</span>
+                                <div class="bar" style="height: 100%;"></div>
+                                <span class="bar-label">Edificio 1</span>
+                            </div>
+                            
+                            <div class="bar-column">
+                                <span class="bar-percent">60%</span>
+                                <div class="bar" style="height: 60%;"></div>
+                                <span class="bar-label">Edificio 2</span>
+                            </div>
+                            
+                            <div class="bar-column">
+                                <span class="bar-percent">80%</span>
+                                <div class="bar" style="height: 80%;"></div>
+                                <span class="bar-label">Edificio 3</span>
+                            </div>
+                        </div>
                     </div>
-                     <div class="table-row">
-                        <div>Edificio 1</div>
-                        <div>Salón 1</div>
-                        <div class="fw-bold">ITIID CD - 01</div>
-                        <div>07:00 - 3:00</div>
-                        <div><span class="badge badge-libre">libre</span></div>
+                </div>
+
+                <div class="card full-width-card">
+                    <div class="workspace-header">
+                        <h3 class="widget-title" style="border: none; padding: 0; margin: 0;">Disponibilidad de Espacios</h3>
+                        <div class="table-controls" style="margin-top: 0;">
+                            <input type="text" id="buscador" class="search-bar" placeholder="Buscar por grupo (Ej. ISA)...">
+                        </div>
                     </div>
-                     <div class="table-row">
-                        <div>Edificio 1</div>
-                        <div>Salón 5</div>
-                        <div class="fw-bold">IRC - 01</div>
-                        <div>2:00 - 3:00</div>
-                        <div><span class="badge badge-proximo">Próximo</span></div>
+
+                    <div class="schedule-table">
+                        <div class="table-header">
+                            <div>Edificios</div>
+                            <div>Espacio</div>
+                            <div>Grupo Asignado</div>
+                            <div>Horario</div>
+                            <div>Estatus</div>
+                        </div>
+                        <div class="table-row">
+                            <div>Edificios 2</div>
+                            <div>Salón 2</div>
+                            <div class="fw-bold">ITIID SM - 01</div>
+                            <div>14:00 - 18:00</div>
+                            <div><span class="badge badge-ocupado">Ocupado</span></div>
+                        </div>
+                        <div class="table-row">
+                            <div>Edificios 2</div>
+                            <div>Salón 3</div>
+                            <div class="fw-bold">ITIID IA - 02</div>
+                            <div>7:00 - 14:00</div>
+                            <div><span class="badge badge-disponible">Libre</span></div>
+                        </div>
+                        <div class="table-row">
+                            <div>Edificios 2</div>
+                            <div>Salón 10</div>
+                            <div class="fw-bold">ISA - 43</div>
+                            <div>13:00 - 18:00</div>
+                            <div><span class="badge badge-ocupado">Ocupado</span></div>
+                        </div>
+                        <div class="table-row">
+                            <div>Edificios 1</div>
+                            <div>Salón 8</div>
+                            <div class="fw-bold">LTF 06</div>
+                            <div>7:00 - 18:00</div>
+                            <div><span class="badge badge-ocupado">Ocupado</span></div>
+                        </div>
+                        <div class="table-row">
+                            <div>Edificio 1</div>
+                            <div>Salón 5</div>
+                            <div class="fw-bold">IRC - 01</div>
+                            <div>14:00 - 20:00</div>
+                            <div><span class="badge badge-proximo">Próximo</span></div>
+                        </div>
                     </div>
-                    <div class="table-row">
-                        <div>Edificio 7</div>
-                        <div>Salón 8</div>
-                        <div class="fw-bold">ISA - 42</div>
-                        <div>07:00 - 10:00</div>
-                        <div><span class="badge badge-ocupado">Ocupado</span></div>
-                    </div>
-                    <div class="table-row">
-                        <div>Edificio 3</div>
-                        <div>Salón 9</div>
-                        <div class="fw-bold">LTF - 42</div>
-                        <div>07:00 - 8:00</div>
-                        <div><span class="badge badge-ocupado">Ocupado</span></div>
-                    </div>
-                    <script>
+                </div>
+
+            </div>
+        </section>
+    </main>
+    
+    <script>
         const buscador = document.getElementById('buscador');
         const filas = document.querySelectorAll('.schedule-table .table-row');
 
-        buscador.addEventListener('keyup', function(evento) {
+        buscador.addEventListener('keyup', function(evento){
             let textoBuscado = evento.target.value.toLowerCase();
 
-            filas.forEach(function(fila) {
-                // Seleccionamos específicamente la 3ra columna (Grupo Asignado) que es el índice [2]
-                let columnaGrupo = fila.children[2]; 
+            filas.forEach(function(fila){
+                let columnaGrupo = fila.children[2];
                 let textoGrupo = columnaGrupo.textContent.toLowerCase();
 
-                // Filtramos solo usando el texto de esa columna
-                if (textoGrupo.includes(textoBuscado)) {
-                    fila.style.display = 'grid'; 
-                } else {
-                    fila.style.display = 'none'; 
+                if (textoGrupo.includes(textoBuscado)){
+                    fila.style.display = 'grid';
+                } 
+                else {
+                    fila.style.display = 'none';
                 }
             });
         });
+        
     </script>
 </body>
 </html>
-          
