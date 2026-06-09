@@ -1,0 +1,7 @@
+/* MODULO DE USUARIOS (TABLA Y CONTROLES) */
+.users-container-card {
+    padding: 24px;
+    background-color: var(--blanco-fondo);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
