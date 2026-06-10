@@ -3,9 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>SIGEA | Gestión de Usuarios</title>
+    <link rel="stylesheet" href="../static/usuarios.css">
+    <link rel="stylesheet" href="../static/style.css">
 </head>
 <body>
+
+    <aside class="sidebar">
+        <div class="logo-container">
+            <img src="../static/img/logo_sigea.png">
+        </div>
+
+        <nav class="menu">
+            <ul>
+                <li><a href="{{ url_for('panel.inicio') }}">Panel Principal</a></li>
+                <li><a href="#">Gestión de Aulas</a></li>
+                <li><a href="#">Asignación de Horarios</a></li>
+                <li><a href="#">Reservas Especiales</a></li>
+                <li class="active"><a href="{{ url_for('usuarios.lista_usuarios') }}">Usuarios</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="page-title">
+                <h1>Gestión de Usuarios del Sistema</h1>
+            </div>
+            <div class="user-profile">
+                <span class="user-name">Coordinación Académica</span>
+                <a href="#" class="btn-danger" style="text-decoration: none; text-align: center;">Salir</a>
+            </div>
+        </header>
+
+        <section class="workspace">
+            <div class="search-box-container">
+                <input type="text" class="search-input" placeholder="Buscar por nombre o correo...">
+            </div> 
+            <div class="filters-container">
+                <select class="filter-select">
+                    <option value="admin">Administrador</option>
+                    <option value="coord">Coordinador de Carrera</option>
+                    <option value="docente">Docente</option>
+                </select>
+                <select class="filter-select">
+                    <option value="">Estado (todos)</option>
+                    <option value="activo">Activos</option>
+                    <option value="inactivo">Inactivo</option>
+                </select>
+                <button class="btn-primary">+ Nuevo Usuario</button>
+            </div>  
+            
+            <div class="table-responsive">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre Completo</th>
+                            <th>Correo Electronico</th>
+                            <th>Rol asignado</th>
+                            <th>Estado</th>
+                            <th style="text-align: center;">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td class="user-name-cell">
+                                <span class="main-name">Juan Manuel Hernández Rivera</span>
+                                <span class="sub-label">Coordinador</span>
+                            </td>
+                            <td>admin@upsrj.edu.mx</td>
+                            <td><span class="role-badge badge admin">Administrador</span></td>
+                            <td><span class="status-indicator status-active">Activo</span></td>
+                            <td class="actions-cell">
+                                <button class="btn-action-edit" title="Editar"><i class="icon-edit">✏️</i></button>
+                                <button class="btn-action-config" title="Configurar permisos"><i class="icon-gear">⚙️</i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+
+                    <tbody>
+                        <tr>
+                            <td class="user-name-cell">
+                                <span class="main-name">Brayan Alexander Rangel Trejo</span>
+                                <span class="sub-label">Rector</span>
+                            </td>
+                            <td>024000180@upsrj.edu.mx</td>
+                            <td><span class="role-badge badge admin">Administrador</span></td>
+                            <td><span class="status-indicator status-inactive">Inactivo</span></td>
+                            <td class="actions-cell">
+                                <button class="btn-action-edit" title="Editar"><i class="icon-edit">✏️</i></button>
+                                <button class="btn-action-config" title="Configurar permisos"><i class="icon-gear">⚙️</i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+
+                    <tbody>
+                        <tr>
+                            <td class="user-name-cell">
+                                <span class="main-name">Diego Angel Romero Guerra</span>
+                                <span class="sub-label">Docente</span>
+                            </td>
+                            <td>024000122@upsrj.edu.mx</td>
+                            <td><span class="role-badge badge admin">Docente</span></td>
+                            <td><span class="status-indicator status-active">Activo</span></td>
+                            <td class="actions-cell">
+                                <button class="btn-action-edit" title="Editar"><i class="icon-edit">✏️</i></button>
+                                <button class="btn-action-config" title="Configurar permisos"><i class="icon-gear">⚙️</i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
     
 </body>
 </html>
