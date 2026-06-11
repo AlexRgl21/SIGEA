@@ -67,52 +67,40 @@
                     </thead>
 
                     <tbody>
+                        {% for usuario in usuarios %}
                         <tr>
                             <td class="user-name-cell">
-                                <span class="main-name">Juan Manuel Hernández Rivera</span>
-                                <span class="sub-label">Coordinador</span>
+                                <span class="main-name">{{ usuario.nombre_completo }}</span>
                             </td>
-                            <td>admin@upsrj.edu.mx</td>
-                            <td><span class="role-badge badge admin">Administrador</span></td>
-                            <td><span class="status-indicator status-active">Activo</span></td>
+                            
+                            <td>{{ usuario.correo }}</td>
+                            
+                            <td>
+                                {% if usuario.rol_nombre == 'Administrador' %}
+                                    <span class="role-badge badge-admin">Administrador</span>
+                                {% elif usuario.rol_nombre == 'Coordinador de Carrera' %}
+                                    <span class="role-badge badge-coord">Coordinador de Carrera</span>
+                                {% else %}
+                                    <span class="role-badge badge-docente">{{ usuario.rol_nombre }}</span>
+                                {% endif %}
+                            </td>
+                            
+                            <td>
+                                {% if usuario.estado == 'Activo' %}
+                                    <span class="status-indicator status-active">Activo</span>
+                                {% else %}
+                                    <span class="status-indicator status-inactive">Inactivo</span>
+                                {% endif %}
+                            </td>
+        
                             <td class="actions-cell">
                                 <button class="btn-action-edit" title="Editar"><i class="icon-edit">✏️</i></button>
                                 <button class="btn-action-config" title="Configurar permisos"><i class="icon-gear">⚙️</i></button>
                             </td>
                         </tr>
+                        {% endfor %}
                     </tbody>
 
-                    <tbody>
-                        <tr>
-                            <td class="user-name-cell">
-                                <span class="main-name">Brayan Alexander Rangel Trejo</span>
-                                <span class="sub-label">Rector</span>
-                            </td>
-                            <td>024000180@upsrj.edu.mx</td>
-                            <td><span class="role-badge badge admin">Administrador</span></td>
-                            <td><span class="status-indicator status-inactive">Inactivo</span></td>
-                            <td class="actions-cell">
-                                <button class="btn-action-edit" title="Editar"><i class="icon-edit">✏️</i></button>
-                                <button class="btn-action-config" title="Configurar permisos"><i class="icon-gear">⚙️</i></button>
-                            </td>
-                        </tr>
-                    </tbody>
-
-                    <tbody>
-                        <tr>
-                            <td class="user-name-cell">
-                                <span class="main-name">Diego Angel Romero Guerra</span>
-                                <span class="sub-label">Docente</span>
-                            </td>
-                            <td>024000122@upsrj.edu.mx</td>
-                            <td><span class="role-badge badge admin">Docente</span></td>
-                            <td><span class="status-indicator status-active">Activo</span></td>
-                            <td class="actions-cell">
-                                <button class="btn-action-edit" title="Editar"><i class="icon-edit">✏️</i></button>
-                                <button class="btn-action-config" title="Configurar permisos"><i class="icon-gear">⚙️</i></button>
-                            </td>
-                        </tr>
-                    </tbody>
                 </table>
             </div>
         </section>
