@@ -13,16 +13,22 @@ def login():
         if conn :
             cursor = conn.cursor()
 
-            cursor.execute("SELECT id_usuario, nombre FROM Usuarios WHERE correo = ? AND contrasena = ?",(correo,contrasena))
+            cursor.execute("SELECT id_usuario, nombre, estado FROM Usuarios WHERE correo = ? AND contrasena = ?",(correo,contrasena))
             usuario = cursor.fetchone()
             conn.close()
 
-            if usuario:
-                return redirect(url_for('panel.inicio'))
+            if usuario: 
+                estado_usuario =usuario[2]
+
+                if estado_usuario == 'Inactivo':
+                    return render_template('login.html', error = "Tu cuenta ha sido desactivada. Por favor, contacta a la Coordinación Académica.")
+                else: 
+                    return redirect(url_for('panel.inicio'))
             else:
-                return render_template('login.html', error="Correo o contraseña incorrectos")
+                return render_template('login.html', error = "Correo o contraseña incorrectos")
         else:
             return render_template('login.html', error="Error al conectar con la base de datos")
+                    
         
     return render_template('login.html')
 

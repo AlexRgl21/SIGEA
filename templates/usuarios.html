@@ -223,24 +223,27 @@
                             }
                         }
 
+                        // Función para filtrar la tabla en tiempo real
                         function filtrarTabla() {
-
                             let textoBusqueda = document.getElementById("buscador").value.toLowerCase();
                             let valorRol = document.getElementById("filtroRol").value.toLowerCase();
                             let valorEstado = document.getElementById("filtroEstado").value.toLowerCase();
- 
+
                             let filas = document.getElementById("cuerpoTabla").getElementsByTagName("tr");
 
                             for (let i = 0; i < filas.length; i++) {
                                 let celdas = filas[i].getElementsByTagName("td");
+                                
                                 if (celdas.length > 0) {
                                     let nombre = celdas[0].innerText.toLowerCase();
                                     let correo = celdas[1].innerText.toLowerCase();
-                                    let rol = celdas[2].innerText.toLowerCase();
-                                    let estado = celdas[3].innerText.toLowerCase();
+                                    let rol = celdas[2].innerText.toLowerCase().trim();
+                                    let estado = celdas[3].innerText.toLowerCase().trim();
+
                                     let coincideBusqueda = nombre.includes(textoBusqueda) || correo.includes(textoBusqueda);
-                                    let coincideRol = (valorRol === "") || rol.includes(valorRol);
-                                    let coincideEstado = (valorEstado === "") || estado.includes(valorEstado);
+                                    
+                                    let coincideRol = (valorRol === "") || (rol === valorRol);
+                                    let coincideEstado = (valorEstado === "") || (estado === valorEstado);
 
                                     if (coincideBusqueda && coincideRol && coincideEstado) {
                                         filas[i].style.display = "";
