@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGEA | Gestión de Aulas</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="../static/style.css">
+    <link rel="stylesheet" href="../static/gestion.css">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo-container">
+            <img src="../static/img/logo_sigea.png" alt="LOGO SIGEA">
+        </div>
+        <nav class="menu">
+            <ul>
+                <li><a href="{{ url_for('panel.inicio') }}">Panel Principal</a></li>
+                <li class="active"><a href="#">Gestión de Aulas</a></li>
+                <li><a href="#">Asignación de Horarios</a></li>
+                <li><a href="#">Reservas Especiales</a></li>
+                <li><a href="{{ url_for('usuarios.lista_usuarios') }}">Usuarios</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="top-bar">
+            <div class="page-title">
+                <h1>Gestión de Aulas y Espacios</h1>
+            </div>
+            <div class="user-profile" style="display: flex; align-items: center; gap: 15px;">
+                <input type="text" class="search-input" placeholder="Buscar espacio..." style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                <span class="user-name">Coordinación Académica</span>
+                <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center;">Salir</a>
+            </div>
+        </header>
+
+        <section class="workspace">
+            
+            <div class="section-header">
+                <h2>Aulas y Espacios Registrados</h2>
+                <button class="btn-add">
+                    <i class="fas fa-plus"></i> Añadir Espacio
+                </button>
+            </div>
+
+            <div class="cards-grid">
+                
+                <div class="card activo">
+                    <div class="card-header">
+                        <i class="fas fa-chalkboard card-icon"></i>
+                        <span class="badge activo">Activo</span>
+                    </div>
+                    <div class="card-title">Edificio 1 - Salón 101</div>
+                    <div class="card-details">
+                        <p><i class="fas fa-users"></i> Capacidad: 30 Alumnos</p>
+                        <p><i class="fas fa-book-open"></i> Tipo: Aula Clásica</p>
+                    </div>
+                    <div class="card-actions">
+                        <button class="action-btn btn-edit"><i class="fas fa-pencil-alt"></i> Editar</button>
+                        <button class="action-btn btn-delete"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+
+                <div class="card activo">
+                    <div class="card-header">
+                        <i class="fas fa-desktop card-icon"></i>
+                        <span class="badge activo">Activo</span>
+                    </div>
+                    <div class="card-title">Edificio 2 - Lab. Redes</div>
+                    <div class="card-details">
+                        <p><i class="fas fa-users"></i> Capacidad: 25 Alumnos</p>
+                        <p><i class="fas fa-laptop-code"></i> Tipo: Laboratorio</p>
+                    </div>
+                    <div class="card-actions">
+                        <button class="action-btn btn-edit"><i class="fas fa-pencil-alt"></i> Editar</button>
+                        <button class="action-btn btn-delete"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+
+                <div class="card mantenimiento">
+                    <div class="card-header">
+                        <i class="fas fa-tools card-icon"></i>
+                        <span class="badge mantenimiento">Mantenimiento</span>
+                    </div>
+                    <div class="card-title">Edificio 3 - Audiovisual</div>
+                    <div class="card-details">
+                        <p><i class="fas fa-users"></i> Capacidad: 80 Alumnos</p>
+                        <p><i class="fas fa-video"></i> Tipo: Auditorio</p>
+                    </div>
+                    <div class="card-actions">
+                        <button class="action-btn btn-edit"><i class="fas fa-pencil-alt"></i> Editar</button>
+                        <button class="action-btn btn-delete"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+</body>
+</html>

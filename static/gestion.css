@@ -1,0 +1,141 @@
+/* CABECERA DEL ESPACIO DE TRABAJO */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #17a2b8; /* Turquesa SIGEA */
+    padding-bottom: 10px;
+}
+
+.section-header h2 {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+}
+
+.btn-add {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #17a2b8; /* Turquesa SIGEA */
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-add:hover {
+    background-color: #138496;
+}
+
+/* GRID DE TARJETAS (AULAS) */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    border-left: 4px solid #ccc; /* Borde lateral por defecto */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+}
+
+/* Colores del borde izquierdo según el estado del salón */
+.card.activo { border-left-color: #28a745; }
+.card.mantenimiento { border-left-color: #ffc107; }
+.card.inactivo { border-left-color: #dc3545; opacity: 0.85; }
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.card-icon {
+    font-size: 1.5rem;
+    color: #004a98; /* Azul Oscuro Institucional */
+}
+
+/* Etiquetas (Badges) */
+.badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.badge.activo { background-color: #e8f5e9; color: #28a745; }
+.badge.mantenimiento { background-color: #fff3cd; color: #856404; }
+.badge.inactivo { background-color: #f8d7da; color: #dc3545; }
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.card-details p {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #666;
+    margin: 5px 0;
+}
+
+/* Botones de acción dentro de la tarjeta */
+.card-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.action-btn {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    background: white;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-edit {
+    border: 1px solid #17a2b8;
+    color: #17a2b8;
+}
+.btn-edit:hover { background: #17a2b8; color: white; }
+
+.btn-delete {
+    border: 1px solid #dc3545;
+    color: #dc3545;
+    flex: 0.3; /* Hace que el botón de borrar sea un cuadrito más pequeño */
+}
+.btn-delete:hover { background: #dc3545; color: white; }
