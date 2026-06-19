@@ -1,0 +1,133 @@
+.workspace-split {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    align-items: flex-start;
+}
+
+.calendar-container {
+    flex: 2.5;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.form-container {
+    flex: 1;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+    color: #333;
+    border-bottom: 2px solid #17a2b8;
+    padding-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.checkbox-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.btn-submit {
+    width: 100%;
+    background: #17a2b8;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.bnt-submit:hover {
+    background: #138496;
+}
+
+/* FullCalendar */
+
+.fc-theme-standard th {
+    background: #f8f9fa;
+    padding: 5px 0;
+    color: #004a98
+}
+
+.fc-timegrid-slot.label {
+    font-weight: bold;
+    color: #555;
+}
+
+
+.fc-timegrid-axis-cushion {
+    display: none;
+}
+
+/* CONTROLES DEL CALENDARIO (FILTROS Y BOTÓN) */
+.calendar-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.filters-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.filters-group label {
+    font-weight: bold;
+    color: #555;
+    font-size: 14px;
+}
+
+.filters-group select {
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    outline: none;
+}
+
+.btn-toggle-form {
+    background: #17a2b8; /* Turquesa SIGEA */
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-toggle-form:hover {
+    background: #138496;
+}
