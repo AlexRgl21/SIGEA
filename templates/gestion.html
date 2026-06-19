@@ -19,8 +19,8 @@
         <nav class="menu">
             <ul>
                 <li><a href="{{ url_for('panel.inicio') }}">Panel Principal</a></li>
-                <li class="active"><a href="#">Gestión de Aulas</a></li>
-                <li><a href="#">Asignación de Horarios</a></li>
+                <li class="active" ><a href="{{ url_for('gestion.vista_gestion') }}">Gestión de Aulas</a></li>
+                <li><a href="{{ url_for('asignaciones.vista_asignaciones') }}">Asignación de Horarios</a></li>
                 <li><a href="#">Reservas Especiales</a></li>
                 <li><a href="{{ url_for('usuarios.lista_usuarios') }}">Usuarios</a></li>
             </ul>
