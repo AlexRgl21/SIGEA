@@ -34,7 +34,6 @@
                 <h1>Gestión de Aulas y Espacios</h1>
             </div>
             <div class="user-profile" style="display: flex; align-items: center; gap: 15px;">
-                <input type="text" class="search-input" placeholder="Buscar espacio..." style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
                 <span class="user-name">Coordinación Académica</span>
                 <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center;">Salir</a>
             </div>
@@ -44,9 +43,58 @@
             
             <div class="section-header">
                 <h2>Aulas y Espacios Registrados</h2>
-                <button class="btn-add">
-                    <i class="fas fa-plus"></i> Añadir Espacio
-                </button>
+
+                <div class="header-actions">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Buscar espacio...">
+                    </div>
+                    <button class="btn-add" id="btn-toggle-form">
+                        <i class="fas fa-plus"></i> Añadir Espacio
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-container" id="panel-nuevo-espacio" style="display: none;">
+                <h3>Registrar Nuevo Espacio</h3>
+                <form id="form-espacio" onsubmit="event.preventDefault(); alert('¡Espacio Guardado con Exito!')">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Edificios</label>
+                            <select required>
+                                <option value="">Selecione...</option>
+                                <option value="Edificio 1">Edificio 1</option>
+                                <option value="Edificio 2">Edificio 2</option>
+                                <option value="Edificio 3">Edificio 3</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Salón / Nombre</label>
+                            <input type="text" placeholder="Ej. Salon 10" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Capacidad de Alumnos</label>
+                            <input type="text" placeholder="Ej. 30" required min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Espacio</label>
+                            <select required>
+                                <option value="">Seleccione...</option>
+                                <option value="Aula Normal">Aula Normal</option>
+                                <option value="Laboratorio">Laboratorio</option>
+                                <option value="Sala de Conferencias">Sala de Conferencias</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" id="btn-cancelar">Cancelar</button>
+                        <button type="submit" class="btn-save"><i class="fas fa-save"></i> Guardar Espacio</button>
+                    </div>
+                </form>
             </div>
 
             <div class="cards-grid">
@@ -59,7 +107,7 @@
                     <div class="card-title">Edificio 1 - Salón 101</div>
                     <div class="card-details">
                         <p><i class="fas fa-users"></i> Capacidad: 30 Alumnos</p>
-                        <p><i class="fas fa-book-open"></i> Tipo: Aula Clásica</p>
+                        <p><i class="fas fa-book-open"></i> Tipo: Aula Normal</p>
                     </div>
                     <div class="card-actions">
                         <button class="action-btn btn-edit"><i class="fas fa-pencil-alt"></i> Editar</button>
@@ -91,7 +139,7 @@
                     <div class="card-title">Edificio 3 - Audiovisual</div>
                     <div class="card-details">
                         <p><i class="fas fa-users"></i> Capacidad: 80 Alumnos</p>
-                        <p><i class="fas fa-video"></i> Tipo: Auditorio</p>
+                        <p><i class="fas fa-video"></i> Tipo: Sala de Conferencias</p>
                     </div>
                     <div class="card-actions">
                         <button class="action-btn btn-edit"><i class="fas fa-pencil-alt"></i> Editar</button>
@@ -102,5 +150,34 @@
             </div>
         </section>
     </main>
+
+    <script>
+        const btnToggle = document.getElementById('btn-toggle-form');
+        const panelForm = document.getElementById('panel-nuevo-espacio');
+        const btnCancel = document.getElementById('btn-cancelar');
+        const formEspacio = document.getElementById('form-espacio')
+
+        btnToggle.addEventListener('click', () => {
+            if (panelForm.style.display === 'none') {
+                panelForm.style.display = 'block';
+            } else {
+                panelForm.style.display = 'none';
+                formEspacio.reset();
+            }
+        });
+
+        btnCancel.addEventListener('click' , () => {
+            panelForm.style.display = 'none';
+            formEspacio.reset();
+        }); 
+
+        formEspacio.addEventListener('submit', (evento) => {
+        evento.preventDefault(); 
+        alert('¡Espacio guardado con éxito! (Modo Demo)');
+        
+        panelForm.style.display = 'none';
+        formEspacio.reset();
+        });
+    </script>
 </body>
 </html>
