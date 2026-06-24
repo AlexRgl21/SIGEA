@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGEA | Reservas Especiales</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../static/style.css">
+    <link rel="stylesheet" href="../static/gestion.css">
+    <link rel="stylesheet" href="../static/reservas.css">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo-container">
+            <img src="../static/img/logo_sigea.png" alt="Logo SIGEA">
+        </div>
+        <nav class="menu">
+            <ul>
+                <li><a href="{{ url_for('panel.inicio') }}">Panel Principal</a></li>
+                <li><a href="{{ url_for('gestion.vista_gestion') }}">Gestión de Aulas</a></li>
+                <li><a href="{{ url_for('asignaciones.vista_asignaciones') }}">Asignación de Horarios</a></li>
+                <li class="active"><a href="{{ url_for('reservas.vista_reserva') }}">Reservas Especiales</a></li>
+                <li><a href="{{ url_for('usuarios.lista_usuarios') }}">Usuarios</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="page-title">
+                <h1>Autorización de Eventos y Reservas</h1>
+            </div>
+            <div class="user-profile" style="display: flex; align-items: center; gap: 15px;">
+                <span class="user-name">Coordinación Académica</span>
+                <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center;">Salir</a>
+            </div>
+        </header>
+
+        <section class="workspace">
+
+            <div class="section-header">
+                <h2>Tablero de Solicitudes</h2>
+                <div class="header-actions">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Buscar folio o solicitante...">
+                    </div>
+                    <button class="btn-add" id="btn-toggle-reserva">
+                        <i class="fas fa-plus"></i> Nueva Reserva
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-container" id="panel-nueva-reserva" style="display: none;">
+                <h3>Registrar Solicitud Extraordinaria</h3>
+                <form id="form-reserva">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Solicitante</label>
+                            <input type="text" placeholder="Ej. Ing. Juan Manuel" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Espacio Requerido</label>
+                            <select required>
+                                <option value="">Seleccione...</option>
+                                <option value="Audiovisual">Edificio 1 - Sala Audiovisual</option>
+                                <option value="LabRedes">Edificio 2 - Lab. Redes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fecha del Evento</label>
+                            <input type="date" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Horario</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="time" required style="flex: 1;">
+                                <span style="align-self: center;">a</span>
+                                <input type="time" required style="flex: 1;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Motivo / Nombre del Evento</label>
+                            <input type="text" placeholder="Ej. Conferencia de Inteligencia Artificial" required>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" id="btn-cancelar-reserva">Cancelar</button>
+                        <button type="submit" class="btn-save"><i class="fas fa-paper-plane"></i> Enviar Solicitud</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="kanban-board">
+                
+                <div class="kanban-column">
+                    <div class="column-header pendiente">
+                        <h3><i class="fas fa-clock"></i> Pendientes de Revisión</h3>
+                        <span class="count-badge">2</span>
+                    </div>
+                    <div class="kanban-cards">
+                        
+                        <div class="card mantenimiento"> <div class="card-header">
+                                <span style="font-weight: bold; color: #555;">🎫 REQ-042</span>
+                                <span class="badge mantenimiento">Pendiente</span>
+                            </div>
+                            <div class="card-title" style="font-size: 14px; margin-top: 5px;">Conferencia de IA</div>
+                            <div class="card-details">
+                                <p><i class="fas fa-user"></i> Dr. Hernández</p>
+                                <p><i class="fas fa-map-marker-alt"></i> Edificio 3 - Audiovisual</p>
+                                <p><i class="fas fa-calendar-alt"></i> Jueves 25/Jun • 10:00 - 14:00</p>
+                            </div>
+                            <div class="card-actions" style="gap: 10px;">
+                                <button class="action-btn" style="border: 1px solid #28a745; color: #28a745;" onclick="alert('Reserva Aprobada')"><i class="fas fa-check"></i> Aprobar</button>
+                                <button class="action-btn" style="border: 1px solid #dc3545; color: #dc3545;" onclick="alert('Reserva Rechazada')"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="kanban-column">
+                    <div class="column-header aprobada">
+                        <h3><i class="fas fa-check-circle"></i> Aprobadas Recientemente</h3>
+                        <span class="count-badge">1</span>
+                    </div>
+                    <div class="kanban-cards">
+                        
+                        <div class="card activo"> <div class="card-header">
+                                <span style="font-weight: bold; color: #555;">🎫 REQ-039</span>
+                                <span class="badge activo">Aprobada</span>
+                            </div>
+                            <div class="card-title" style="font-size: 14px; margin-top: 5px;">Taller de Kotlin</div>
+                            <div class="card-details">
+                                <p><i class="fas fa-user"></i> Ing. Martínez</p>
+                                <p><i class="fas fa-map-marker-alt"></i> Edificio 2 - Lab. Redes</p>
+                                <p><i class="fas fa-calendar-alt"></i> Lunes 22/Jun • 16:00 - 18:00</p>
+                            </div>
+                            <div class="card-actions">
+                                <button class="action-btn btn-edit"><i class="fas fa-eye"></i> Ver Detalles</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Lógica para mostrar/ocultar el formulario
+        const btnToggleReserva = document.getElementById('btn-toggle-reserva');
+        const panelReserva = document.getElementById('panel-nueva-reserva');
+        const formReserva = document.getElementById('form-reserva');
+        const btnCancelReserva = document.getElementById('btn-cancelar-reserva');
+
+        btnToggleReserva.addEventListener('click', () => {
+            panelReserva.style.display = panelReserva.style.display === 'none' ? 'block' : 'none';
+            formReserva.reset();
+        });
+
+        btnCancelReserva.addEventListener('click', () => {
+            panelReserva.style.display = 'none';
+            formReserva.reset();
+        });
+
+        formReserva.addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('¡Solicitud enviada a revisión! (Demo)');
+            panelReserva.style.display = 'none';
+            formReserva.reset();
+        });
+    </script>
+</body>
+</html>

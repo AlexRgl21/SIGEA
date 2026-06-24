@@ -1,0 +1,68 @@
+/* TABLERO KANBAN */
+.kanban-board {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    margin-top: 20px;
+    overflow-x: auto;
+    padding-bottom: 20px;
+}
+
+.kanban-column {
+    flex: 1;
+    min-width: 320px;
+    background-color: #f8f9fc;
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid #e3e6f0;
+}
+
+.column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #ccc;
+}
+
+.column-header h3 {
+    font-size: 15px;
+    margin: 0;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.column-header.pendiente h3 i { color: #f6c23e; }
+.column-header.aprobada h3 i { color: #1cc88a; }
+
+.column-header.pendiente { border-bottom-color: #f6c23e; }
+.column-header.aprobada { border-bottom-color: #1cc88a; }
+
+.count-badge {
+    background-color: #eaecf4;
+    color: #5a5c69;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+/* Contenedor interno de tarjetas */
+.kanban-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Pequeño ajuste para que las tarjetas no crezcan de más en el Kanban */
+.kanban-cards .card {
+    margin: 0;
+    padding: 16px;
+}
+
+.kanban-cards .card-details p {
+    font-size: 12px;
+}
