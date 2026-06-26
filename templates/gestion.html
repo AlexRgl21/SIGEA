@@ -3,181 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIGEA | Gestión de Aulas</title>
+    <title>SIGEA | Gestión de Espacios</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <link rel="stylesheet" href="../static/style.css">
-    <link rel="stylesheet" href="../static/gestion.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='gestion.css') }}">
 </head>
 <body>
 
     <aside class="sidebar">
         <div class="logo-container">
-            <img src="../static/img/logo_sigea.png" alt="LOGO SIGEA">
+            <img src="{{ url_for('static', filename='img/logo_sigea.png') }}" alt="Logo SIGEA">
         </div>
         <nav class="menu">
             <ul>
                 <li><a href="{{ url_for('panel.inicio') }}">Panel Principal</a></li>
-                <li class="active" ><a href="{{ url_for('gestion.vista_gestion') }}">Gestión de Aulas</a></li>
+                <li class="active"><a href="#">Gestión de Aulas</a></li>
                 <li><a href="{{ url_for('asignaciones.vista_asignaciones') }}">Asignación de Horarios</a></li>
-                <li><a href="{{ url_for('reservas.vista_reserva')}}">Reservas Especiales</a></li>
-                <li><a href="{{ url_for('usuarios.lista_usuarios') }}">Usuarios</a></li>
+                <li><a href="{{ url_for('reservas.vista_reserva') }}">Reservas Especiales</a></li>
+                <li><a href="#">Usuarios</a></li>
             </ul>
         </nav>
     </aside>
 
     <main class="main-content">
-        
         <header class="top-bar">
             <div class="page-title">
-                <h1>Gestión de Aulas y Espacios</h1>
+                <h1>Gestión de Infraestructura</h1>
             </div>
             <div class="user-profile" style="display: flex; align-items: center; gap: 15px;">
                 <span class="user-name">Coordinación Académica</span>
-                <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center;">Salir</a>
+                <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center; padding: 5px 10px; border-radius: 5px; background: #dc3545; color: white;">Salir</a>
             </div>
         </header>
 
         <section class="workspace">
             
-            <div class="section-header">
-                <h2>Aulas y Espacios Registrados</h2>
-
-                <div class="header-actions">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Buscar espacio...">
-                    </div>
-                    <button class="btn-add" id="btn-toggle-form">
-                        <i class="fas fa-plus"></i> Añadir Espacio
-                    </button>
-                </div>
+            <div class="tabs-container">
+                <button class="tab-btn active" data-target="vista-aulas"><i class="fas fa-chalkboard"></i> Aulas y Espacios</button>
+                <button class="tab-btn" data-target="vista-edificios"><i class="fas fa-building"></i> Edificios</button>
             </div>
 
-            <div class="form-container" id="panel-nuevo-espacio" style="display: none;">
-                <h3>Registrar Nuevo Espacio</h3>
-                <form id="form-espacio" onsubmit="event.preventDefault(); alert('¡Espacio Guardado con Exito!')">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Edificios</label>
-                            <select required>
-                                <option value="">Selecione...</option>
-                                <option value="Edificio 1">Edificio 1</option>
-                                <option value="Edificio 2">Edificio 2</option>
-                                <option value="Edificio 3">Edificio 3</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Salón / Nombre</label>
-                            <input type="text" placeholder="Ej. Salon 10" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Capacidad de Alumnos</label>
-                            <input type="text" placeholder="Ej. 30" required min="1">
-                        </div>
-                        <div class="form-group">
-                            <label>Tipo de Espacio</label>
-                            <select required>
-                                <option value="">Seleccione...</option>
-                                <option value="Aula Normal">Aula Normal</option>
-                                <option value="Laboratorio">Laboratorio</option>
-                                <option value="Sala de Conferencias">Sala de Conferencias</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn-cancel" id="btn-cancelar">Cancelar</button>
-                        <button type="submit" class="btn-save"><i class="fas fa-save"></i> Guardar Espacio</button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="cards-grid">
+            <div id="vista-aulas" class="tab-content active">
                 
-                <div class="card activo">
-                    <div class="card-header">
-                        <i class="fas fa-chalkboard card-icon"></i>
-                        <span class="badge activo">Activo</span>
-                    </div>
-                    <div class="card-title">Edificio 1 - Salón 101</div>
-                    <div class="card-details">
-                        <p><i class="fas fa-users"></i> Capacidad: 30 Alumnos</p>
-                        <p><i class="fas fa-book-open"></i> Tipo: Aula Normal</p>
-                    </div>
-                    <div class="card-actions">
-                        <button class="action-btn btn-edit"><i class="fas fa-pencil-alt"></i> Editar</button>
-                        <button class="action-btn btn-delete"><i class="fas fa-trash-alt"></i></button>
+                <div class="section-header">
+                    <h2>Aulas Registradas</h2>
+                    <div class="header-actions">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Buscar aula...">
+                        </div>
+                        <button class="btn-add" id="btn-toggle-form">
+                            <i class="fas fa-plus"></i> Añadir Espacio
+                        </button>
                     </div>
                 </div>
 
-                <div class="card activo">
-                    <div class="card-header">
-                        <i class="fas fa-desktop card-icon"></i>
-                        <span class="badge activo">Activo</span>
-                    </div>
-                    <div class="card-title">Edificio 2 - Lab. Redes</div>
-                    <div class="card-details">
-                        <p><i class="fas fa-users"></i> Capacidad: 25 Alumnos</p>
-                        <p><i class="fas fa-laptop-code"></i> Tipo: Laboratorio</p>
-                    </div>
-                    <div class="card-actions">
-                        <button class="action-btn btn-edit"><i class="fas fa-pencil-alt"></i> Editar</button>
-                        <button class="action-btn btn-delete"><i class="fas fa-trash-alt"></i></button>
-                    </div>
+                <div class="form-container" id="panel-nuevo-espacio" style="display: none;">
+                    <h3>Registrar Nuevo Espacio</h3>
+                    <form id="form-espacio" action="{{ url_for('gestion.agregar_espacio') }}" method="POST">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Edificio</label>
+                                <select name="id_edificio" required>
+                                    <option value="">Seleccione...</option>
+                                    {% for edificio in edificios %}
+                                        <option value="{{ edificio[0] }}">{{ edificio[1] }} ({{ edificio[2] }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Salón / Nombre</label>
+                                <input type="text" name="nombre" placeholder="Ej. Salón 101" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Capacidad</label>
+                                <input type="number" name="capacidad" placeholder="Ej. 30" required min="1">
+                            </div>
+                            <div class="form-group">
+                                <label>Tipo</label>
+                                <select name="tipo" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="Aula">Aula Clásica</option>
+                                    <option value="Laboratorio">Laboratorio</option>
+                                    <option value="Sala de Conferencia">Sala de Conferencia</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-cancel" id="btn-cancelar">Cancelar</button>
+                            <button type="submit" class="btn-save"><i class="fas fa-save"></i> Guardar</button>
+                        </div>
+                    </form>
                 </div>
 
-                <div class="card mantenimiento">
-                    <div class="card-header">
-                        <i class="fas fa-tools card-icon"></i>
-                        <span class="badge mantenimiento">Mantenimiento</span>
+                <div class="cards-grid">
+                    {% for aula in aulas %}
+                    <div class="card activo">
+                        <div class="card-header">
+                            <i class="fas fa-chalkboard card-icon"></i>
+                            <span class="badge activo">{{ aula[4] }}</span>
+                        </div>
+                        <div class="card-title">{{ aula[1] }}</div>
+                        <div class="card-details">
+                            <p><i class="fas fa-map-marker-alt"></i> Edificio: {{ aula[5] }}</p>
+                            <p><i class="fas fa-users"></i> Capacidad: {{ aula[2] }} alumnos</p>
+                            <p><i class="fas fa-tag"></i> Tipo: {{ aula[3] }}</p>
+                        </div>
+                        <div class="card-actions">
+                            <button class="action-btn btn-edit"><i class="fas fa-pencil-alt"></i></button>
+                            <button class="action-btn btn-delete"><i class="fas fa-trash-alt"></i></button>
+                        </div>
                     </div>
-                    <div class="card-title">Edificio 3 - Audiovisual</div>
-                    <div class="card-details">
-                        <p><i class="fas fa-users"></i> Capacidad: 80 Alumnos</p>
-                        <p><i class="fas fa-video"></i> Tipo: Sala de Conferencias</p>
-                    </div>
-                    <div class="card-actions">
-                        <button class="action-btn btn-edit"><i class="fas fa-pencil-alt"></i> Editar</button>
-                        <button class="action-btn btn-delete"><i class="fas fa-trash-alt"></i></button>
-                    </div>
+                    {% else %}
+                    <p style="color: #888; grid-column: 1 / -1; text-align: center; padding: 20px;">No hay aulas registradas en el sistema.</p>
+                    {% endfor %}
                 </div>
-
             </div>
+
+            <div id="vista-edificios" class="tab-content">
+                
+                <div class="section-header">
+                    <h2>Edificios Registrados</h2>
+                </div>
+
+                <div class="cards-grid">
+                    {% for edificio in edificios %}
+                    <div class="card activo">
+                        <div class="card-header">
+                            <i class="fas fa-building card-icon"></i>
+                            <span class="badge activo">Activo</span>
+                        </div>
+                        <div class="card-title">{{ edificio[1] }}</div>
+                        <div class="card-details">
+                            <p><i class="fas fa-hashtag"></i> Código: {{ edificio[2] }}</p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p style="color: #888; grid-column: 1 / -1; text-align: center; padding: 20px;">No hay edificios registrados en el sistema.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
         </section>
     </main>
 
     <script>
-        const btnToggle = document.getElementById('btn-toggle-form');
-        const panelForm = document.getElementById('panel-nuevo-espacio');
-        const btnCancel = document.getElementById('btn-cancelar');
-        const formEspacio = document.getElementById('form-espacio')
+        //  LÓGICA DE LAS PESTAÑAS (TABS)
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
 
-        btnToggle.addEventListener('click', () => {
-            if (panelForm.style.display === 'none') {
-                panelForm.style.display = 'block';
-            } else {
-                panelForm.style.display = 'none';
-                formEspacio.reset();
-            }
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+
+                btn.classList.add('active');
+                const targetId = btn.getAttribute('data-target');
+                document.getElementById(targetId).classList.add('active');
+            });
         });
 
-        btnCancel.addEventListener('click' , () => {
-            panelForm.style.display = 'none';
-            formEspacio.reset();
+        // MANEJO VISUAL DEL FORMULARIO DE AULAS
+        const btnToggleAulas = document.getElementById('btn-toggle-form');
+        const panelAulas = document.getElementById('panel-nuevo-espacio');
+        const btnCancelAulas = document.getElementById('btn-cancelar');
+        
+        btnToggleAulas.addEventListener('click', () => {
+            panelAulas.style.display = panelAulas.style.display === 'none' ? 'block' : 'none';
+        });
+
+        btnCancelAulas.addEventListener('click', () => {
+            panelAulas.style.display = 'none';
+            document.getElementById('form-espacio').reset();
         }); 
 
-        formEspacio.addEventListener('submit', (evento) => {
-        evento.preventDefault(); 
-        alert('¡Espacio guardado con éxito! (Modo Demo)');
-        
-        panelForm.style.display = 'none';
-        formEspacio.reset();
-        });
     </script>
 </body>
 </html>

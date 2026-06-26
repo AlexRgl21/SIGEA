@@ -31,7 +31,7 @@ def vista_gestion():
 @gestion_bp.route('/gestion/agregar_espacio', methods=['POST'])
 def agregar_espacio():
     if request.method == 'POST':
-        id_edificio = request.forn['id_edificio']
+        id_edificio = request.form['id_edificio']
         nombre = request.form['nombre']
         capacidad = request.form['capacidad']
         tipo = request.form['tipo']
@@ -41,8 +41,8 @@ def agregar_espacio():
 
         cursor.execute
         ("""
-            INSERT INTO Espacios (nombre, capacidad, tipo, estatus, id_edificio)
-            VALUES (?, ?, ?, 'Activo', ?)
+            INSERT INTO Espacios (nombre, capacidad, tipo, id_edificio)
+            VALUES (?, ?, ?, ?)
         """, (nombre, capacidad, tipo, id_edificio))
 
         return redirect(url_for('gestion.vista_gestion'))
