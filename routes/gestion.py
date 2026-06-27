@@ -50,7 +50,7 @@ def agregar_espacio():
     
 # EDITAR EDIFICIO
 
-@gestion_bp.route('/gestion/editar_edificio', methods=['´PST'])
+@gestion_bp.route('/gestion/editar_edificio', methods=['POST'])
 def editar_edificio():
     if request.method == 'POST':
         id_edificio = request.form['id_edificio']
@@ -81,14 +81,15 @@ def editar_espacio():
         nombre = request.form['nombre']
         capacidad = request.form['capacidad']
         tipo = request.form['tipo']
+        estatus = request.form['estatus']
 
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
-                       UPDATE Espacios
-                       SET nombre = ?, capacidad = ?, tipo = ?, id_edificio = ?
-                       WHERE id_espacio = ?
-                       """, (nombre, capacidad, tipo, id_edificio, id_espacio))
+            UPDATE Espacios
+            SET nombre = ?, capacidad = ?, tipo = ?, estatus = ?, id_edificio = ?
+            WHERE id_espacio = ?
+            """, (nombre, capacidad, tipo, estatus, id_edificio, id_espacio))
         
         conn.commit()
         conn.close()

@@ -51,7 +51,7 @@
                             <option value="Mantenimiento">Mantenimiento</option>
                         </select>
                     </div>
-                    <div style="text-align: right; margin-top: 15px;">
+                    <div class="form-actions" style="margin-top: 20px; justify-content: flex-end;">
                         <button type="button" class="btn-cancel" onclick="document.getElementById('modal-editar-edificio').style.display='none'">Cancelar</button>
                         <button type="submit" class="btn-save">Guardar Cambios</button>
                     </div>
@@ -82,7 +82,14 @@
                             <option value="Sala de Conferencia">Sala de Conferencia</option>
                         </select>
                     </div>
-                    <div style="text-align: right; margin-top: 15px;">
+                    <div class="form-group">
+                            <label>Estatus</label>
+                            <select name="estatus" id="edit-aula-estatus" required>
+                                <option value="Activo">Activo</option>
+                                <option value="Mantenimiento">Mantenimiento</option>
+                            </select>
+                        </div>
+                    <div class="form-actions" style="margin-top: 20px; justify-content: flex-end;">
                         <button type="button" class="btn-cancel" onclick="document.getElementById('modal-editar-aula').style.display='none'">Cancelar</button>
                         <button type="submit" class="btn-save">Guardar Cambios</button>
                     </div>
@@ -153,10 +160,14 @@
 
                 <div class="cards-grid">
                     {% for aula in aulas %}
-                    <div class="card activo">
+                    <div class="card activo" {% if aula[4] != 'Activo' %}style="border-left-color: #f39c12;"{% endif %}>
                         <div class="card-header">
                             <i class="fas fa-chalkboard card-icon"></i>
-                            <span class="badge activo">{{ aula[4] }}</span>
+                            {% if aula[4] == 'Activo' %}
+                                <span class="badge activo">{{ aula[4] }}</span>
+                            {% else %}
+                                <span class="badge" style="background-color: #f39c12; color: white;">{{ aula[4] }}</span>
+                            {% endif %}
                         </div>
                         <div class="card-title">{{ aula[1] }}</div>
                         <div class="card-details">
@@ -170,6 +181,7 @@
                                     data-nombre="{{ aula[1] }}" 
                                     data-capacidad="{{ aula[2] }}" 
                                     data-tipo="{{ aula[3] }}" 
+                                    data-estatus="{{ aula[4] }}"
                                     data-idedificio="{{ aula[5] }}"> <i class="fas fa-pencil-alt"></i>
                             </button>
                             <form action="{{ url_for('gestion.eliminar_espacio', id=aula[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta aula?');">
@@ -190,10 +202,14 @@
 
                 <div class="cards-grid">
                     {% for edificio in edificios %}
-                    <div class="card activo">
+                    <div class="card activo" {% if edificio[3] != 'Activo' %}style="border-left-color: #f39c12;"{% endif %}>
                         <div class="card-header">
                             <i class="fas fa-building card-icon"></i>
-                            <span class="badge activo">Activo</span>
+                            {% if edificio[3] == 'Activo' %}
+                                <span class="badge activo">Activo</span>
+                            {% else %}
+                                <span class="badge" style="background-color: #f39c12; color: white;">Mantenimiento</span>
+                            {% endif %}
                         </div>
                         <div class="card-title">{{ edificio[1] }}</div>
                         
@@ -222,17 +238,34 @@
 
     <script>
         // LÓGICA DE LAS PESTAÑAS (TABS)
+
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
 
+        const tabGuardada = localStorage.getItem('tabActiva_Sigea') || 'vista-edificios';
+
+        function activarTab(targetId) {
+            // Apagamos todo
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+
+            const btn = document.querySelector(`.tab-btn[data-target="${targetId}"]`);
+            const content = document.getElementById(targetId);
+            
+            if (btn && content) {
+                btn.classList.add('active');
+                content.classList.add('active');
+                
+                localStorage.setItem('tabActiva_Sigea', targetId);
+            }
+        }
+
+        activarTab(tabGuardada);
+
+        // Cuando el usuario da clic, ejecutamos la función
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                tabBtns.forEach(b => b.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-
-                btn.classList.add('active');
-                const targetId = btn.getAttribute('data-target');
-                document.getElementById(targetId).classList.add('active');
+                activarTab(btn.getAttribute('data-target'));
             });
         });
 
@@ -269,6 +302,7 @@
                 document.getElementById('edit-aula-nombre').value = this.getAttribute('data-nombre');
                 document.getElementById('edit-aula-capacidad').value = this.getAttribute('data-capacidad');
                 document.getElementById('edit-aula-tipo').value = this.getAttribute('data-tipo');
+                document.getElementById('edit-aula-estatus').value = this.getAttribute('data-estatus') || 'Activo';
                 
                 document.getElementById('modal-editar-aula').style.display = 'block';
             });
