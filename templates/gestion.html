@@ -18,7 +18,7 @@
         <nav class="menu">
             <ul>
                 <li><a href="{{ url_for('panel.inicio') }}">Panel Principal</a></li>
-                <li class="active"><a href="#">Gestión de Aulas</a></li>
+                <li class="active"><a href="#">Gestión de Infraestructura</a></li>
                 <li><a href="{{ url_for('asignaciones.vista_asignaciones') }}">Asignación de Horarios</a></li>
                 <li><a href="{{ url_for('reservas.vista_reserva') }}">Reservas Especiales</a></li>
                 <li><a href="#">Usuarios</a></li>
@@ -40,12 +40,11 @@
         <section class="workspace">
             
             <div class="tabs-container">
-                <button class="tab-btn active" data-target="vista-aulas"><i class="fas fa-chalkboard"></i> Aulas y Espacios</button>
-                <button class="tab-btn" data-target="vista-edificios"><i class="fas fa-building"></i> Edificios</button>
+                <button class="tab-btn active" data-target="vista-edificios"><i class="fas fa-building"></i> Edificios</button>
+                <button class="tab-btn" data-target="vista-aulas"><i class="fas fa-chalkboard"></i> Aulas y Espacios</button>
             </div>
 
-            <div id="vista-aulas" class="tab-content active">
-                
+            <div id="vista-aulas" class="tab-content">
                 <div class="section-header">
                     <h2>Aulas Registradas</h2>
                     <div class="header-actions">
@@ -86,7 +85,7 @@
                                 <label>Tipo</label>
                                 <select name="tipo" required>
                                     <option value="">Seleccione...</option>
-                                    <option value="Aula">Aula Clásica</option>
+                                    <option value="Aula Clásica">Aula Clásica</option>
                                     <option value="Laboratorio">Laboratorio</option>
                                     <option value="Sala de Conferencia">Sala de Conferencia</option>
                                 </select>
@@ -123,8 +122,7 @@
                 </div>
             </div>
 
-            <div id="vista-edificios" class="tab-content">
-                
+            <div id="vista-edificios" class="tab-content active">
                 <div class="section-header">
                     <h2>Edificios Registrados</h2>
                 </div>
@@ -151,7 +149,7 @@
     </main>
 
     <script>
-        //  LÓGICA DE LAS PESTAÑAS (TABS)
+        // LÓGICA DE LAS PESTAÑAS (TABS)
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
 
@@ -179,7 +177,6 @@
             panelAulas.style.display = 'none';
             document.getElementById('form-espacio').reset();
         }); 
-
     </script>
 </body>
 </html>

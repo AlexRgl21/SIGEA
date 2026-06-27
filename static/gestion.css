@@ -258,3 +258,48 @@
 }
 
 .btn-save:hover { background: #138496; }
+
+
+/* NAVEGACIÓN POR PESTAÑAS (TABS) */
+.tabs-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #eee;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 5px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    color: #17a2b8;
+}
+
+.tab-btn.active {
+    color: #004a98; /* Azul oscuro SIGEA */
+    border-bottom-color: #17a2b8; /* Acento Turquesa */
+}
+
+/* Ocultar contenido inactivo */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -14,8 +14,7 @@ def vista_gestion():
     cursor.execute("SELECT id_edificio, nombre, codigo FROM Edificios")
     edificios = cursor.fetchall()
 
-    cursor.execute
-    ( """
+    cursor.execute( """
         SELECT e.id_espacio, e.nombre, e.capacidad, e.tipo, e.estatus, ed.codigo
         FROM Espacios e
         INNER JOIN Edificios ed ON e.id_edificio = ed.id_edificio
@@ -39,10 +38,12 @@ def agregar_espacio():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute
-        ("""
+        cursor.execute("""
             INSERT INTO Espacios (nombre, capacidad, tipo, id_edificio)
             VALUES (?, ?, ?, ?)
         """, (nombre, capacidad, tipo, id_edificio))
+
+        conn.commit()
+        conn.close()
 
         return redirect(url_for('gestion.vista_gestion'))
