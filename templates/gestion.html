@@ -37,6 +37,59 @@
             </div>
         </header>
 
+        <div id="modal-editar-edificio" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+            <div style="background:white; padding:20px; border-radius:8px; width:400px; margin: 10% auto;">
+                <h3>Editar Edificio</h3>
+                <form action="{{ url_for('gestion.editar_edificio') }}" method="POST">
+                    <input type="hidden" name="id_edificio" id="edit-edificio-id">
+                    <div class="form-group"><label>Nombre</label><input type="text" name="nombre" id="edit-edificio-nombre" required></div>
+                    <div class="form-group"><label>Código</label><input type="text" name="codigo" id="edit-edificio-codigo" required></div>
+                    <div class="form-group">
+                        <label>Estatus</label>
+                        <select name="estatus" id="edit-edificio-estatus" required>
+                            <option value="Activo">Activo</option>
+                            <option value="Mantenimiento">Mantenimiento</option>
+                        </select>
+                    </div>
+                    <div style="text-align: right; margin-top: 15px;">
+                        <button type="button" class="btn-cancel" onclick="document.getElementById('modal-editar-edificio').style.display='none'">Cancelar</button>
+                        <button type="submit" class="btn-save">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="modal-editar-aula" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+            <div style="background:white; padding:20px; border-radius:8px; width:400px; margin: 10% auto;">
+                <h3>Editar Aula</h3>
+                <form action="{{ url_for('gestion.editar_espacio') }}" method="POST">
+                    <input type="hidden" name="id_espacio" id="edit-aula-id">
+                    <div class="form-group">
+                        <label>Edificio</label>
+                        <select name="id_edificio" id="edit-aula-edificio" required>
+                            {% for edificio in edificios %}
+                                <option value="{{ edificio[0] }}">{{ edificio[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Nombre</label><input type="text" name="nombre" id="edit-aula-nombre" required></div>
+                    <div class="form-group"><label>Capacidad</label><input type="number" name="capacidad" id="edit-aula-capacidad" required></div>
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select name="tipo" id="edit-aula-tipo" required>
+                            <option value="Aula Clásica">Aula Clásica</option>
+                            <option value="Laboratorio">Laboratorio</option>
+                            <option value="Sala de Conferencia">Sala de Conferencia</option>
+                        </select>
+                    </div>
+                    <div style="text-align: right; margin-top: 15px;">
+                        <button type="button" class="btn-cancel" onclick="document.getElementById('modal-editar-aula').style.display='none'">Cancelar</button>
+                        <button type="submit" class="btn-save">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <section class="workspace">
             
             <div class="tabs-container">
@@ -112,8 +165,16 @@
                             <p><i class="fas fa-tag"></i> Tipo: {{ aula[3] }}</p>
                         </div>
                         <div class="card-actions">
-                            <button class="action-btn btn-edit"><i class="fas fa-pencil-alt"></i></button>
-                            <button class="action-btn btn-delete"><i class="fas fa-trash-alt"></i></button>
+                            <button class="action-btn btn-edit btn-edit-aula" 
+                                    data-id="{{ aula[0] }}" 
+                                    data-nombre="{{ aula[1] }}" 
+                                    data-capacidad="{{ aula[2] }}" 
+                                    data-tipo="{{ aula[3] }}" 
+                                    data-idedificio="{{ aula[5] }}"> <i class="fas fa-pencil-alt"></i>
+                            </button>
+                            <form action="{{ url_for('gestion.eliminar_espacio', id=aula[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta aula?');">
+                                <button type="submit" class="action-btn btn-delete"><i class="fas fa-trash-alt"></i></button>
+                            </form>
                         </div>
                     </div>
                     {% else %}
@@ -135,9 +196,20 @@
                             <span class="badge activo">Activo</span>
                         </div>
                         <div class="card-title">{{ edificio[1] }}</div>
-                        <div class="card-details">
-                            <p><i class="fas fa-hashtag"></i> Código: {{ edificio[2] }}</p>
-                        </div>
+                        
+                    <div class="card-details">
+                        <p><i class="fas fa-hashtag"></i> Código: {{ edificio[2] }}</p>
+                        <p><i class="fas fa-info-circle"></i> Estatus: {{ edificio[3] }}</p> 
+                    </div>
+                    <div class="card-actions">
+                        <button class="action-btn btn-edit btn-edit-edificio" 
+                                data-id="{{ edificio[0] }}" 
+                                data-nombre="{{ edificio[1] }}" 
+                                data-codigo="{{ edificio[2] }}" 
+                                data-estatus="{{ edificio[3] }}">
+                            <i class="fas fa-pencil-alt"></i> Editar
+                        </button>
+                    </div>
                     </div>
                     {% else %}
                     <p style="color: #888; grid-column: 1 / -1; text-align: center; padding: 20px;">No hay edificios registrados en el sistema.</p>
@@ -177,6 +249,30 @@
             panelAulas.style.display = 'none';
             document.getElementById('form-espacio').reset();
         }); 
+
+        // LÓGICA PARA EDITAR EDIFICIOS
+        document.querySelectorAll('.btn-edit-edificio').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('edit-edificio-id').value = this.getAttribute('data-id');
+                document.getElementById('edit-edificio-nombre').value = this.getAttribute('data-nombre');
+                document.getElementById('edit-edificio-codigo').value = this.getAttribute('data-codigo');
+                document.getElementById('edit-edificio-estatus').value = this.getAttribute('data-estatus') || 'Activo';
+                
+                document.getElementById('modal-editar-edificio').style.display = 'block';
+            });
+        });
+
+        // LÓGICA PARA EDITAR AULAS
+        document.querySelectorAll('.btn-edit-aula').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('edit-aula-id').value = this.getAttribute('data-id');
+                document.getElementById('edit-aula-nombre').value = this.getAttribute('data-nombre');
+                document.getElementById('edit-aula-capacidad').value = this.getAttribute('data-capacidad');
+                document.getElementById('edit-aula-tipo').value = this.getAttribute('data-tipo');
+                
+                document.getElementById('modal-editar-aula').style.display = 'block';
+            });
+        });
     </script>
 </body>
 </html>
