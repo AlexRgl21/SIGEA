@@ -11,7 +11,7 @@ def vista_gestion():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id_edificio, nombre, codigo FROM Edificios")
+    cursor.execute("SELECT id_edificio, nombre, codigo, estatus FROM Edificios")
     edificios = cursor.fetchall()
 
     cursor.execute( """
@@ -47,3 +47,63 @@ def agregar_espacio():
         conn.close()
 
         return redirect(url_for('gestion.vista_gestion'))
+    
+# EDITAR EDIFICIO
+
+@gestion_bp.route('/gestion/editar_edificio', methods=['´PST'])
+def editar_edificio():
+    if request.method == 'POST':
+        id_edificio = request.form['id_edificio']
+        nombre = request.form['nombre']
+        codigo = request.form['codigo']
+        estatus = request.form['estatus']
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+                UPDATE Edificios
+                SET nombre = ?, codigo = ?, estatus = ?
+                WHERE id_edificio = ? 
+                """, (nombre, codigo, estatus, id_edificio))
+        
+        conn.commit()
+        conn.close()
+        return redirect(url_for('gestion.vista_gestion'))
+    
+
+# EDITAR AULAS
+
+@gestion_bp.route('/gestion/editar_espacio', methods=['POST'])
+def editar_espacio():
+    if request.method == 'POST':
+        id_espacio = request.form['id_espacio']
+        id_edificio = request.form['id_edificio']
+        nombre = request.form['nombre']
+        capacidad = request.form['capacidad']
+        tipo = request.form['tipo']
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+                       UPDATE Espacios
+                       SET nombre = ?, capacidad = ?, tipo = ?, id_edificio = ?
+                       WHERE id_espacio = ?
+                       """, (nombre, capacidad, tipo, id_edificio, id_espacio))
+        
+        conn.commit()
+        conn.close()
+        return redirect(url_for('gestion.vista_gestion'))
+    
+# ELIMINAR AULA
+@gestion_bp.route('/gestion/eliminar_espacio/<int:id>', methods=['POST'])
+def eliminar_espacio(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM Espacios WHERE id_espacio = ?", (id,))
+
+    conn.commit()
+    conn.close()
+    
+    return redirect(url_for('gestion.vista_gestion'))
+        
+        
