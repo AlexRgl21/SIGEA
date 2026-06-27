@@ -66,6 +66,13 @@ def editar_edificio():
                 WHERE id_edificio = ? 
                 """, (nombre, codigo, estatus, id_edificio))
         
+        # EFECTO CASACA DEPENDIENDO DEL ESTATUS DEL EDIFICIO
+        cursor.execute("""
+                UPDATE Espacios
+            SET estatus = ?
+                WHERE id_edificio = ?
+            """, (estatus, id_edificio))
+        
         conn.commit()
         conn.close()
         return redirect(url_for('gestion.vista_gestion'))
