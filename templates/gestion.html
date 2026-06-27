@@ -307,6 +307,33 @@
                 document.getElementById('modal-editar-aula').style.display = 'block';
             });
         });
+
+        // LÓGICA DE LA BARRA DE BUSQUEDA
+        const inputBusqueda = document.querySelector('.search-box input');
+
+        if (inputBusqueda){
+            inputBusqueda.addEventListener('input', function(){
+                
+                const textoBuscado = this.value.toLowerCase().trim();
+                const tarjetasAulas = document.querySelectorAll('#vista-aulas .card');
+
+                tarjetasAulas.forEach(tarjeta => {
+                    const elementoTitulo = tarjeta.querySelector('.card-title');
+                    const elementoDetalles = tarjeta.querySelector('.card-details');
+
+                    if (elementoTitulo && elementoDetalles) {
+                            const titulo = elementoTitulo.textContent.toLowerCase();
+                            const detalles = elementoDetalles.textContent.toLowerCase();
+
+                        if (textoBuscado === "" || titulo.includes(textoBuscado) || detalles.includes(textoBuscado)){
+                            tarjeta.style.display = '';
+                        } else {
+                            tarjeta.style.display = 'none';
+                        }
+                    }
+                });
+            });
+        }
     </script>
 </body>
 </html>
