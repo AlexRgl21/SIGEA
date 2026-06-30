@@ -7,6 +7,7 @@
     
     <link rel="stylesheet" href="../static/style.css">
     <link rel="stylesheet" href="../static/asignaciones.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
 </head>
@@ -117,8 +118,8 @@
                     
                     <div class="form-container">
                         <h3 class="section-title">Nuevo Grupo</h3>
-                        <form action="{{ url_for('asignaciones.agregar_grupo') }}" method="POST"></form>
-                        
+                        <form action="{{ url_for('asignaciones.agregar_grupo') }}" method="POST">
+
                             <div class="form-group">
                                 <label>Nombre del Grupo (Ej. ITIID SM-01)</label>
                                 <input type="text" name="nombre_grupo" placeholder="Ej. ISA-43" required>
@@ -139,37 +140,54 @@
                                 <label>Carrera</label>
                                 <select name="id_carrera" required>
                                     <option value="">Selecciona una opción...</option>
-                                    <option value="1">Ingeniería en Software (ID: 1)</option>
-                                    <option value="2">Ingeniería en Robótica (ID: 2)</option>
-                                    <option value="3">Licenciatura en Administración (ID: 3)</option>
+                                    {% for carrera in carreras %}
+                                    <option value="{{carrera.id_carrera}}">{{ carrera.nombre_carrera}}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
 
-                            <button type="submit" class="btn-submit">Guardar Grupo</button>
-                        </>
+                            <form action="{{ url_for('asignaciones.agregar_grupo') }}" method="POST">
+                                <button type="submit" class="btn-submit">Guardar Grupo</button>
+                            </form>
+                        </form>
                     </div>
                     
                     <div class="calendar-container"> <h3 class="section-title">Grupos Registrados</h3>
                         <div class="table-responsive">
                             <table class="grupos-table" style="width: 100%;"> <thead>
                                     <tr>
-                                        <th>Nombre</th>
+                                        <th>Nombre del Grupo</th>
                                         <th>Carrera</th>
-                                        <th>Turno</th>
+                                        <th>Generacion</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {% for grupo in grupos %}
                                     <tr>
-                                        <td class="fw-bold" style="color: var(--azul-oscuro);">ITIID SM-01</td>
-                                        <td>Ingeniería en Software</td>
-                                        <td>Matutino</td>
+                                        <td class="fw-bold" style="color: var(--azul-oscuro);">{{ grupo.nombre_grupo }}</td>
+                                        <td>{{ grupo.acronimo }}</td>
                                         <td>
-                                            <button class="btn-action-delete" style="color: #dc3545; border-color: #dc3545;">
+                                            {{ grupo.generacion_inicio }} - 
+                                            {% if grupo.generacion_fin %}
+                                                {{ grupo.generacion_fin }}
+                                            {% else %}
+                                                En curso
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn-action-delete">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </td>
                                     </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; padding: 20px;">
+                                            No hay grupos registrados todavía.
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>
