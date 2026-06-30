@@ -141,3 +141,87 @@
     .calendar-controls { flex-direction: column; gap: 15px; align-items: stretch; }
     .filters-group { flex-direction: column; align-items: stretch; gap: 10px; }
 }
+
+/* NAVEGACIÓN POR PESTAÑAS (TABS) */
+.tabs-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #eee;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 5px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    color: #17a2b8;
+}
+
+.tab-btn.active {
+    color: #004a98; /* Azul oscuro SIGEA */
+    border-bottom-color: #17a2b8; /* Acento Turquesa */
+}
+
+/* Ocultar contenido inactivo */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+/* TABLA DE CATÁLOGO DE GRUPOS */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.grupos-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    margin-top: 15px;
+}
+
+.grupos-table th {
+    background-color: #f8f9fa;
+    color: #004a98;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 14px 16px;
+    border-bottom: 2px solid #E2E8F0;
+}
+
+.grupos-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #E2E8F0;
+    color: #4A5568;
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+/* Botón de eliminar específico para la tabla */
+.btn-action-delete {
+    background-color: transparent;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-action-delete:hover {
+    background-color: #dc3545;
+    color: white;
+}

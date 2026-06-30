@@ -41,70 +41,140 @@
         </header>
 
         <section class="workspace">
-            <div class="workspace-split">
-                
-                <div class="calendar-container">
-                    
-                    <div class="calendar-controls">
-                        <h3 style="margin: 0; color: #333;">Calendario Semanal por Espacio</h3>
-                        
-                        <div class="filters-group">
-                            <label>Edificio</label>
-                            <select>
-                                <option>Edificio 1</option>
-                                <option selected>Edificio 2</option>
-                            </select>
-                            
-                            <label>Salón</label>
-                            <select>
-                                <option>Salón 1</option>
-                                <option>Salón 2</option>
-                                <option selected>Salón 3</option>
-                            </select>
+            <div class="tabs-container">
+                <button class="tab-btn active" onclick="abrirPestana(event, 'vista-calendario')">Calendario de Horarios</button>
+                <button class="tab-btn" onclick="abrirPestana(event, 'vista-grupos')">Catálogo de Grupos</button>
+            </div>
 
-                            <button class="btn-toggle-form" onclick="toggleFormularioAsignacion()">+ Nueva Asignación</button>
+            <div id="vista-calendario" class="tab-content active">
+                <div class="workspace-split">
+                    
+                    <div class="calendar-container">
+                        
+                        <div class="calendar-controls">
+                            <h3 style="margin: 0; color: #333;">Calendario Semanal por Espacio</h3>
+                            
+                            <div class="filters-group">
+                                <label>Edificio</label>
+                                <select>
+                                    <option>Edificio 1</option>
+                                    <option selected>Edificio 2</option>
+                                </select>
+                                
+                                <label>Salón</label>
+                                <select>
+                                    <option>Salón 1</option>
+                                    <option>Salón 2</option>
+                                    <option selected>Salón 3</option>
+                                </select>
+
+                                <button class="btn-toggle-form" onclick="toggleFormularioAsignacion()">+ Nueva Asignación</button>
+                            </div>
                         </div>
+            
+                        <div id='calendar'></div>
                     </div>
 
-                    <div id='calendar'></div>
-                </div>
-
-                <div class="form-container" id="panel-asignacion" style="display: none;">
-                    <h3 class="section-title">Nueva Asignación Rápida</h3>
-                    
-                    <form id="form-asignacion" onsubmit="event.preventDefault(); alert('Modo Demo: Asignación registrada para presentación.');">
-                        <div class="form-group">
-                            <label>Grupo:</label>
-                            <input type="text" placeholder="Ej. ITIID 01">
-                        </div>
-
-                        <div class="form-group">
-                            <label>Días:</label>
-                            <div class="checkbox-group">
-                                <label><input type="checkbox"> L</label>
-                                <label><input type="checkbox"> M</label>
-                                <label><input type="checkbox"> X</label>
-                                <label><input type="checkbox"> J</label>
-                                <label><input type="checkbox"> V</label>
-                                <label><input type="checkbox"> S</label>
+                    <div class="form-container" id="panel-asignacion" style="display: none;">
+                        <h3 class="section-title">Nueva Asignación Rápida</h3>
+                        
+                        <form id="form-asignacion" onsubmit="event.preventDefault(); alert('Modo Demo: Asignación registrada para presentación.');">
+                            <div class="form-group">
+                                <label>Grupo:</label>
+                                <input type="text" placeholder="Ej. ITIID 01">
                             </div>
-                        </div>
 
-                        <div class="form-group" style="display: flex; gap: 10px;">
-                            <div style="flex: 1;">
-                                <label>Hora Inicio:</label>
-                                <input type="time" value="07:00">
+                            <div class="form-group">
+                                <label>Días:</label>
+                                <div class="checkbox-group">
+                                    <label><input type="checkbox"> L</label>
+                                    <label><input type="checkbox"> M</label>
+                                    <label><input type="checkbox"> X</label>
+                                    <label><input type="checkbox"> J</label>
+                                    <label><input type="checkbox"> V</label>
+                                    <label><input type="checkbox"> S</label>
+                                </div>
                             </div>
-                            <div style="flex: 1;">
-                                <label>Hora Fin:</label>
-                                <input type="time" value="09:00">
-                            </div>
-                        </div>
 
-                        <button type="submit" class="btn-submit">Registrar Asignación</button>
-                    </form>
+                            <div class="form-group" style="display: flex; gap: 10px;">
+                                <div style="flex: 1;">
+                                    <label>Hora Inicio:</label>
+                                    <input type="time" value="07:00">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label>Hora Fin:</label>
+                                    <input type="time" value="09:00">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-submit">Registrar Asignación</button>
+                        </form>
+                    </div>
                 </div>
             </div>
+            <div id="vista-grupos" class="tab-content">
+                <div class="workspace-split">
+                    
+                    <div class="form-container">
+                        <h3 class="section-title">Nuevo Grupo</h3>
+                        <form action="{{ url_for('asignaciones.agregar_grupo') }}" method="POST"></form>
+                        
+                            <div class="form-group">
+                                <label>Nombre del Grupo (Ej. ITIID SM-01)</label>
+                                <input type="text" name="nombre_grupo" placeholder="Ej. ISA-43" required>
+                            </div>
+
+                            <div class="form-row" style="display: flex; gap: 15px;">
+                                <div class="form-group" style="flex: 1;">
+                                    <label>Año Inicio</label>
+                                    <input type="number" name="generacion_inicio" placeholder="Ej. 2024" required>
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label>Año Fin</label>
+                                    <input type="number" name="generacion_fin" placeholder="Ej. 2028">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Carrera</label>
+                                <select name="id_carrera" required>
+                                    <option value="">Selecciona una opción...</option>
+                                    <option value="1">Ingeniería en Software (ID: 1)</option>
+                                    <option value="2">Ingeniería en Robótica (ID: 2)</option>
+                                    <option value="3">Licenciatura en Administración (ID: 3)</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn-submit">Guardar Grupo</button>
+                        </>
+                    </div>
+                    
+                    <div class="calendar-container"> <h3 class="section-title">Grupos Registrados</h3>
+                        <div class="table-responsive">
+                            <table class="grupos-table" style="width: 100%;"> <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Carrera</th>
+                                        <th>Turno</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold" style="color: var(--azul-oscuro);">ITIID SM-01</td>
+                                        <td>Ingeniería en Software</td>
+                                        <td>Matutino</td>
+                                        <td>
+                                            <button class="btn-action-delete" style="color: #dc3545; border-color: #dc3545;">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
         </section>
     </main>
 
@@ -165,6 +235,25 @@
                 calendar.updateSize();
             }, 100);
         }
+
+        /* CONTROL DE PESTAÑAS (TABS) */
+        function abrirPestana(evt, nombrePestana) {
+        // 1. Ocultar todos los contenidos
+        let contenidos = document.getElementsByClassName("tab-content");
+        for (let i = 0; i < contenidos.length; i++) {
+            contenidos[i].classList.remove("active");
+        }
+
+        // 2. Quitar el color activo de todos los botones
+        let botones = document.getElementsByClassName("tab-btn");
+        for (let i = 0; i < botones.length; i++) {
+            botones[i].classList.remove("active");
+        }
+
+        // 3. Mostrar la pestaña seleccionada y pintar su botón
+        document.getElementById(nombrePestana).classList.add("active");
+        evt.currentTarget.classList.add("active");
+    }
     </script>
 </body>
 </html>
