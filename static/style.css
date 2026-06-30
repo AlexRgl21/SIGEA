@@ -416,3 +416,76 @@ body {
     padding-bottom: 6px !important;
     margin-bottom: 4px;
 }
+
+/* RESPONSIVO GLOBAL Y DASHBOARD */
+@media (max-width: 768px) {
+    body { 
+        flex-direction: column; 
+    }
+    
+    /* 1. SIDEBAR Y LOGO */
+    .sidebar { 
+        width: 100%; 
+        height: auto; 
+        display: block !important; 
+    }
+    .logo-container { 
+        padding: 15px 15px 5px 15px; 
+    }
+    
+    /* 2. MENÚ DE NAVEGACIÓN DESLIZABLE */
+    .menu {
+        display: block !important;
+        width: 100%;
+    }
+    .menu ul { 
+        display: flex !important; 
+        overflow-x: auto; /* Permite scroll horizontal */
+        white-space: nowrap; 
+        padding: 10px 15px; 
+        gap: 15px; 
+        list-style: none;
+        margin: 0;
+        border-bottom: 2px solid var(--verde-acua);
+    }
+    .menu li { 
+        margin: 0; 
+    }
+    .menu a { 
+        display: inline-block;
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    /* 3. BARRA SUPERIOR */
+    .top-bar { 
+        height: auto; 
+        flex-direction: column; 
+        padding: 15px; 
+        gap: 10px; 
+        text-align: center; 
+    }
+    
+    /* 4. LAYOUT GLOBAL */
+    .workspace { 
+        padding: 15px; 
+        overflow-x: hidden; /* Evita que la pantalla baile hacia los lados */
+    }
+    .kpi-container, .widgets-container { 
+        flex-direction: column; 
+    }
+    
+    /* 5. RESCATE DE LA TABLA (Scroll Horizontal) */
+    /* Apuntamos a los contenedores que envuelven tablas o listas */
+    .schedule-table, .reservas-list, .table-container { 
+        display: block !important;
+        width: 100%;
+        overflow-x: auto !important; 
+        white-space: nowrap; /* Evita que el texto se aplaste */
+        padding-bottom: 10px; /* Espacio para la barra de scroll */
+    }
+    
+    .table-header, .table-row { 
+        min-width: 650px; 
+    } 
+}

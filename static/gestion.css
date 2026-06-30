@@ -303,3 +303,17 @@
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* RESPONSIVO GESTIÓN DE ESPACIOS */
+@media (max-width: 768px) {
+    .section-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+    .header-actions { flex-direction: column; width: 100%; }
+    .search-box, .search-box input, .btn-add { width: 100%; justify-content: center; }
+    
+    /* Tarjetas y Formularios */
+    .cards-grid { grid-template-columns: 1fr; }
+    .form-row { flex-direction: column; gap: 15px; }
+    
+    /* Pestañas (Tabs) deslizables */
+    .tabs-container { overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
+}
