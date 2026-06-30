@@ -5,14 +5,31 @@ asignaciones_bp = Blueprint('asignaciones', __name__)
 
 @asignaciones_bp.route('/asignaciones')
 def vista_asignaciones():
-    return render_template('asignaciones.html')
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute ("SELECT id_carrera, nombre_carrera FROM Carreras")
+    carreras = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT g.id_grupo, g.nombre_grupo, g.generacion_inicio, g.generacion_fin, c.acronimo
+        FROM Grupos g
+        INNER JOIN Carreras c ON g.id_carrera = c.id_carrera
+        WHERE g.estatus = 'Activo' 
+    """)
+
+    grupos = cursor.fetchall()
+    conn.close()
+
+    return render_template('asignaciones.html', carreras=carreras, grupos=grupos)
 
 @asignaciones_bp.route('/asignaciones/agregar_grupo', methods=['POST'])
 def agregar_grupo():
-    nombre_grupo = request.form('nombre_grupo')
-    generacion_inicio = request.form('generacion_inicio')
-    generacion_fin = request.form('generacion_fin')
-    id_carrera = request.form('id_carrera')
+    nombre_grupo = request.form.get('nombre_grupo')
+    generacion_inicio = request.form.get('generacion_inicio')
+    generacion_fin = request.form.get('generacion_fin')
+    id_carrera = request.form.get('id_carrera')
 
     if not generacion_fin or generacion_fin.strip() == "":
         generacion_fin = None
