@@ -24,6 +24,7 @@ def vista_asignaciones():
 
     return render_template('asignaciones.html', carreras=carreras, grupos=grupos)
 
+#AGREGAR GRUPO
 @asignaciones_bp.route('/asignaciones/agregar_grupo', methods=['POST'])
 def agregar_grupo():
     nombre_grupo = request.form.get('nombre_grupo')
@@ -48,6 +49,24 @@ def agregar_grupo():
         conn.commit()
     except Exception as e:
         print(f"Error al guardar el grupo {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
+    return redirect(url_for('asignaciones.vista_asignaciones'))
+
+#ELIMINAR GRUPO
+@asignaciones_bp.route('/asignaciones/eliminar_grupo/<int:id_grupo>', methods=['POST'])
+def eliminar_grupo(id_grupo):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("UPDATE Grupos SET estatus = 'Inactivo' WHERE id_grupo = ?", (id_grupo,))
+        conn.commit()
+
+    except Exception as e:
+        print(f"Error al eliminar el grupo: {e}")
         conn.rollback()
     finally:
         conn.close()
