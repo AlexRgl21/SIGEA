@@ -9,7 +9,7 @@ def vista_asignaciones():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute ("SELECT id_carrera, nombre_carrera FROM Carreras")
+    cursor.execute ("SELECT id_carrera, nombre_carrera, acronimo FROM Carreras")
     carreras = cursor.fetchall()
 
     cursor.execute("""
@@ -47,9 +47,11 @@ def agregar_grupo():
         """, (nombre_grupo, int(generacion_inicio), generacion_fin, int(id_carrera) ))
 
         conn.commit()
+        flash(f"El grupo {nombre_grupo} se registro correctamente.", "success")
     except Exception as e:
         print(f"Error al guardar el grupo {e}")
         conn.rollback()
+        flash(f"Ocurrio un error al intentar guardar el grupo. Intentalo de nuevo.", "danger")
     finally:
         conn.close()
 
@@ -64,10 +66,12 @@ def eliminar_grupo(id_grupo):
     try:
         cursor.execute("UPDATE Grupos SET estatus = 'Inactivo' WHERE id_grupo = ?", (id_grupo,))
         conn.commit()
+        flash(f"El grupo ha sido eliminado.", "success")
 
     except Exception as e:
         print(f"Error al eliminar el grupo: {e}")
         conn.rollback()
+        flash(f"No se pudo eliminar el grupo. Intentalo de nuevo.", "danger")
     finally:
         conn.close()
 
@@ -101,6 +105,7 @@ def editar_grupo(id_grupo):
     except Exception as e:
         print(f"Error al actualizar el grupo {e}")
         conn.rollback()
+        flash(f"Error al intentar actualizar los datos del grupo.", "danger")
     finally:
         conn.close()
 
