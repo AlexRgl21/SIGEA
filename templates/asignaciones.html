@@ -115,50 +115,52 @@
             </div>
             <div id="vista-grupos" class="tab-content">
                 <div class="workspace-split">
-                    
+            
                     <div class="form-container">
-                        <h3 class="section-title">Nuevo Grupo</h3>
-                        <form action="{{ url_for('asignaciones.agregar_grupo') }}" method="POST">
-
+                        <h3 class="section-title" id="form-titulo">Nuevo Grupo</h3>
+                        <form id="form-grupo" action="{{ url_for('asignaciones.agregar_grupo') }}" method="POST">
+                            
                             <div class="form-group">
                                 <label>Nombre del Grupo (Ej. ITIID SM-01)</label>
-                                <input type="text" name="nombre_grupo" placeholder="Ej. ISA-43" required>
+                                <input type="text" id="input-nombre" name="nombre_grupo" placeholder="Ej. ISA-43" required>
                             </div>
 
                             <div class="form-row" style="display: flex; gap: 15px;">
                                 <div class="form-group" style="flex: 1;">
                                     <label>Año Inicio</label>
-                                    <input type="number" name="generacion_inicio" placeholder="Ej. 2024" required>
+                                    <input type="number" id="input-inicio" name="generacion_inicio" placeholder="Ej. 2024" required>
                                 </div>
                                 <div class="form-group" style="flex: 1;">
                                     <label>Año Fin</label>
-                                    <input type="number" name="generacion_fin" placeholder="Ej. 2028">
+                                    <input type="number" id="input-fin" name="generacion_fin" placeholder="Ej. 2028">
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <label>Carrera</label>
-                                <select name="id_carrera" required>
+                                <select id="select-carrera" name="id_carrera" required>
                                     <option value="">Selecciona una opción...</option>
                                     {% for carrera in carreras %}
-                                    <option value="{{carrera.id_carrera}}">{{ carrera.nombre_carrera}}</option>
+                                    <option value="{{ carrera.id_carrera }}">{{ carrera.nombre_carrera }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
 
-                            <form action="{{ url_for('asignaciones.agregar_grupo') }}" method="POST">
-                                <button type="submit" class="btn-submit">Guardar Grupo</button>
-                            </form>
+                            <button type="submit" id="btn-guardar" class="btn-submit">Guardar Grupo</button>
+                            
+                            <button type="button" id="btn-cancelar" class="btn-submit" style="background-color: #6c757d; margin-top: 10px; display: none;" onclick="cancelarEdicion()">Cancelar Edición</button>
                         </form>
                     </div>
                     
-                    <div class="calendar-container"> <h3 class="section-title">Grupos Registrados</h3>
+                    <div class="calendar-container">
+                        <h3 class="section-title">Grupos Registrados</h3>
                         <div class="table-responsive">
-                            <table class="grupos-table" style="width: 100%;"> <thead>
+                            <table class="grupos-table" style="width: 100%;">
+                                <thead>
                                     <tr>
                                         <th>Nombre del Grupo</th>
                                         <th>Carrera</th>
-                                        <th>Generacion</th>
+                                        <th>Generación</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
@@ -169,14 +171,20 @@
                                         <td>{{ grupo.acronimo }}</td>
                                         <td>
                                             {{ grupo.generacion_inicio }} - 
-                                            {% if grupo.generacion_fin %}
-                                                {{ grupo.generacion_fin }}
-                                            {% else %}
-                                                En curso
-                                            {% endif %}
+                                            {% if grupo.generacion_fin %}{{ grupo.generacion_fin }}{% else %}En curso{% endif %}
                                         </td>
-                                        <td>
-                                            <form action="{{ url_for('asignaciones.eliminar_grupo', id_grupo=grupo.id_grupo) }}" method="POST"     style="display:inline;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este grupo?');">
+                                        <td style="display: flex; gap: 8px;">
+                                            <button type="button" class="btn-action-edit" style="border: 1px solid #004a98; color: #004a98; background: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"
+                                                    data-id="{{ grupo.id_grupo }}"
+                                                    data-nombre="{{ grupo.nombre_grupo }}"
+                                                    data-inicio="{{ grupo.generacion_inicio }}"
+                                                    data-fin="{{ grupo.generacion_fin if grupo.generacion_fin else '' }}"
+                                                    data-carrera="{{ grupo.id_carrera }}"
+                                                    onclick="activarEdicion(this)">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+
+                                            <form action="{{ url_for('asignaciones.eliminar_grupo', id_grupo=grupo.id_grupo) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este grupo?');">
                                                 <button type="submit" class="btn-action-delete">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
@@ -185,9 +193,7 @@
                                     </tr>
                                     {% else %}
                                     <tr>
-                                        <td colspan="4" style="text-align: center; padding: 20px;">
-                                            No hay grupos registrados todavía.
-                                        </td>
+                                        <td colspan="4" style="text-align: center; padding: 20px;">No hay grupos registrados todavía.</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -292,6 +298,51 @@
                 }
             }
         });
+
+
+        // Variable global para guardar la ruta original de creación
+        const rutaCrear = "{{ url_for('asignaciones.agregar_grupo') }}";
+
+        function activarEdicion(boton) {
+            // 1. Extraer los datos guardados en el botón que se presionó
+            let id_grupo = boton.getAttribute("data-id");
+            let nombre = boton.getAttribute("data-nombre");
+            let inicio = boton.getAttribute("data-inicio");
+            let fin = boton.getAttribute("data-fin");
+            let carrera = boton.getAttribute("data-carrera");
+
+            // 2. Rellenar los campos del formulario de la izquierda
+            document.getElementById("input-nombre").value = nombre;
+            document.getElementById("input-inicio").value = inicio;
+            document.getElementById("input-fin").value = fin;
+            document.getElementById("select-carrera").value = carrera;
+
+            // 3. Transformar visualmente el formulario a Modo Edición
+            document.getElementById("form-titulo").innerText = "Editar Grupo: " + nombre;
+            document.getElementById("btn-guardar").innerText = "Actualizar Cambios";
+            document.getElementById("btn-guardar").style.backgroundColor = "#004a98"; // Azul oscuro para diferenciar
+            document.getElementById("btn-cancelar").style.display = "block"; // Mostrar botón cancelar
+
+            // 4. Cambiar el action del formulario para que apunte a la ruta de editar en Flask
+            document.getElementById("form-grupo").action = "/asignaciones/editar_grupo/" + id_grupo;
+            
+            // Hacer scroll suave hacia el formulario (útil si la lista es muy larga)
+            document.getElementById("form-grupo").scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelarEdicion() {
+            // 1. Limpiar todos los campos del formulario
+            document.getElementById("form-grupo").reset();
+
+            // 2. Restaurar los textos originales
+            document.getElementById("form-titulo").innerText = "Nuevo Grupo";
+            document.getElementById("btn-guardar").innerText = "Guardar Grupo";
+            document.getElementById("btn-guardar").style.backgroundColor = ""; // Regresa a su color original css
+            document.getElementById("btn-cancelar").style.display = "none"; // Esconder botón cancelar
+
+            // 3. Regresar el formulario a la ruta de inserción original
+            document.getElementById("form-grupo").action = rutaCrear;
+        }
     </script>
 </body>
 </html>
