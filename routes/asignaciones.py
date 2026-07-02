@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from database.conexion import get_db_connection
 
 asignaciones_bp = Blueprint('asignaciones', __name__)
@@ -97,6 +97,7 @@ def editar_grupo(id_grupo):
         """, (nombre_grupo, int(generacion_inicio), generacion_fin, int(id_carrera), id_grupo))
 
         conn.commit()
+        flash('El grupo fue actualizado correctamente.', 'success')
     except Exception as e:
         print(f"Error al actualizar el grupo {e}")
         conn.rollback()

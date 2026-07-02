@@ -116,6 +116,16 @@
                 </div>
             </div>
             <div id="vista-grupos" class="tab-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alerta-sigea alerta-{{ category }}">
+                                <span class="cerrar-alerta" onclick="this.parentElement.style.display='none';">&times;</span> 
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
                 <div class="workspace-split">
             
                     <div class="form-container">

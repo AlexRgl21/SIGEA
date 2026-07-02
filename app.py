@@ -8,6 +8,7 @@ from routes.reservas import reservas_bp
 # Inicializamos la aplicación de Flask
 
 app = Flask(__name__)
+app.secret_key = "una_clave_muy_secreta_para_sigea"
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(panel_bp)
