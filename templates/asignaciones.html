@@ -258,22 +258,40 @@
 
         /* CONTROL DE PESTAÑAS (TABS) */
         function abrirPestana(evt, nombrePestana) {
-        // 1. Ocultar todos los contenidos
-        let contenidos = document.getElementsByClassName("tab-content");
-        for (let i = 0; i < contenidos.length; i++) {
-            contenidos[i].classList.remove("active");
+            
+            let contenidos = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < contenidos.length; i++) {
+                contenidos[i].classList.remove("active");
+            }
+
+            // 2. Quitar el color activo de todos los botones
+            let botones = document.getElementsByClassName("tab-btn");
+            for (let i = 0; i < botones.length; i++) {
+                botones[i].classList.remove("active");
+            }
+
+            // 3. Mostrar la pestaña seleccionada y pintar su botón
+            document.getElementById(nombrePestana).classList.add("active");
+            evt.currentTarget.classList.add("active");
+
+            // 4. Guardar en la memoria del navegador qué pestaña abriste
+            // Usamos el pathname (la URL actual) para que no se mezclen las pestañas de otros módulos
+            localStorage.setItem("pestanaActiva_" + window.location.pathname, nombrePestana);
         }
 
-        // 2. Quitar el color activo de todos los botones
-        let botones = document.getElementsByClassName("tab-btn");
-        for (let i = 0; i < botones.length; i++) {
-            botones[i].classList.remove("active");
-        }
-
-        // 3. Mostrar la pestaña seleccionada y pintar su botón
-        document.getElementById(nombrePestana).classList.add("active");
-        evt.currentTarget.classList.add("active");
-    }
+        // 5. Al terminar de cargar la página, recuperar la pestaña guardada
+        document.addEventListener("DOMContentLoaded", function() {
+            // Buscar si hay una pestaña guardada para esta página en específico
+            let pestanaGuardada = localStorage.getItem("pestanaActiva_" + window.location.pathname);
+            
+            if (pestanaGuardada) {
+                // Buscar el botón que corresponde a esa pestaña y simular un clic
+                let btn = document.querySelector(`button[onclick*="${pestanaGuardada}"]`);
+                if (btn) {
+                    btn.click();
+                }
+            }
+        });
     </script>
 </body>
 </html>
