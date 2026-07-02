@@ -35,7 +35,9 @@
                 <h1>Asignación de Horarios Académicos</h1>
             </div>
             <div class="user-profile" style="display: flex; align-items: center; gap: 15px;">
-                <input type="text" class="search-input" placeholder="Buscar..." style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                
+                <input type="text" id="input-busqueda" class="search-input" placeholder="Buscar..." onkeyup="ejecutarBusqueda()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                
                 <span class="user-name">Coordinación Académica</span>
                 <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center;">Salir</a>
             </div>
@@ -262,9 +264,9 @@
             }, 100);
         }
 
-        /* CONTROL DE PESTAÑAS (TABS) */
+        /* CONTROL DE PESTAÑAS (TABS)*/
         function abrirPestana(evt, nombrePestana) {
-            
+            // 1. Ocultar todos los contenidos
             let contenidos = document.getElementsByClassName("tab-content");
             for (let i = 0; i < contenidos.length; i++) {
                 contenidos[i].classList.remove("active");
@@ -279,26 +281,46 @@
             // 3. Mostrar la pestaña seleccionada y pintar su botón
             document.getElementById(nombrePestana).classList.add("active");
             evt.currentTarget.classList.add("active");
-
-            // 4. Guardar en la memoria del navegador qué pestaña abriste
-            // Usamos el pathname (la URL actual) para que no se mezclen las pestañas de otros módulos
             localStorage.setItem("pestanaActiva_" + window.location.pathname, nombrePestana);
-        }
 
-        // 5. Al terminar de cargar la página, recuperar la pestaña guardada
-        document.addEventListener("DOMContentLoaded", function() {
-            // Buscar si hay una pestaña guardada para esta página en específico
-            let pestanaGuardada = localStorage.getItem("pestanaActiva_" + window.location.pathname);
-            
-            if (pestanaGuardada) {
-                // Buscar el botón que corresponde a esa pestaña y simular un clic
-                let btn = document.querySelector(`button[onclick*="${pestanaGuardada}"]`);
-                if (btn) {
-                    btn.click();
+            // 4. CONTROL DE LA BARRA DE BÚSQUEDA
+            let buscador = document.getElementById("input-busqueda");
+            if (buscador) {
+                buscador.value = ""; // Limpiamos el texto por si había algo escrito
+                
+                if (nombrePestana === "vista-grupos") {
+                    // Si estamos en grupos, mostramos la barra y reiniciamos el filtro
+                    buscador.style.display = "inline-block"; 
+                    if (typeof ejecutarBusqueda === "function") {
+                        ejecutarBusqueda(); 
+                    }
+                } else if (nombrePestana === "vista-calendario") {
+                    // Si estamos en el calendario, la ocultamos por completo
+                    buscador.style.display = "none"; 
                 }
             }
-        });
+        }
 
+
+        /* ARRANQUE DE LA PÁGINA  */
+        document.addEventListener("DOMContentLoaded", function() {
+            let buscador = document.getElementById("input-busqueda");
+            let pestanaGuardada = localStorage.getItem("pestanaActiva_" + window.location.pathname);
+            
+            // 1. Si el usuario ya había estado aquí y guardó una pestaña en la memoria:
+            if (pestanaGuardada) {
+                let btn = document.querySelector(`button[onclick*="${pestanaGuardada}"]`);
+                if (btn) {
+                    btn.click(); // Esto dispara abrirPestana() y acomoda la barra automáticamente
+                    return; // Detenemos el código aquí
+                }
+            }
+            
+            // 2. Si es la primera vez (Arranque en frío)
+            if (buscador) {
+                buscador.style.display = "none";
+            }
+        });
 
         // Variable global para guardar la ruta original de creación
         const rutaCrear = "{{ url_for('asignaciones.agregar_grupo') }}";
@@ -343,6 +365,35 @@
             // 3. Regresar el formulario a la ruta de inserción original
             document.getElementById("form-grupo").action = rutaCrear;
         }
+
+        /* MOTOR DE BÚSQUEDA EN TIEMPO REAL */
+        function ejecutarBusqueda() {
+            let buscador = document.getElementById("input-busqueda");
+            if (!buscador) return;
+            let filtro = buscador.value.toUpperCase();
+            let pestanaActiva = document.querySelector('.tab-content.active');
+            
+            if (pestanaActiva && pestanaActiva.id === "vista-grupos") {
+                
+                // Atrapamos todas las filas de la tabla de grupos
+                let filas = document.querySelectorAll("#vista-grupos .grupos-table tbody tr");
+                
+                filas.forEach(function(fila) {
+                    // Ignorar la fila que dice "No hay grupos registrados"
+                    if (fila.cells.length === 1) return; 
+
+                    // Extraemos todo el texto de la fila (Nombre, Carrera, Generación)
+                    let textoFila = fila.textContent || fila.innerText;
+                    
+                    // Si el texto de la fila incluye lo que escribimos, la fila se muestra. Si no, se oculta.
+                    if (textoFila.toUpperCase().indexOf(filtro) > -1) {
+                        fila.style.display = ""; 
+                    } else {
+                        fila.style.display = "none"; 
+                    }
+                });
+            }
+        } 
     </script>
 </body>
 </html>
