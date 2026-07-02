@@ -13,7 +13,7 @@ def vista_asignaciones():
     carreras = cursor.fetchall()
 
     cursor.execute("""
-        SELECT g.id_grupo, g.nombre_grupo, g.generacion_inicio, g.generacion_fin, c.acronimo
+        SELECT g.id_grupo, g.nombre_grupo, g.generacion_inicio, g.generacion_fin, c.acronimo, g.id_carrera
         FROM Grupos g
         INNER JOIN Carreras c ON g.id_carrera = c.id_carrera
         WHERE g.estatus = 'Activo' 
@@ -67,6 +67,38 @@ def eliminar_grupo(id_grupo):
 
     except Exception as e:
         print(f"Error al eliminar el grupo: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
+    return redirect(url_for('asignaciones.vista_asignaciones'))
+
+# FUNCION PARA EDIAR GRUPOS
+@asignaciones_bp.route('/asignaciones/editar_grupo/<int:id_grupo>', methods=['POST'])
+def editar_grupo(id_grupo):
+    nombre_grupo = request.form.get('nombre_grupo')
+    generacion_inicio = request.form.get('generacion_inicio')
+    generacion_fin = request.form.get('generacion_fin')
+    id_carrera = request.form.get('id_carrera')
+
+    if not generacion_fin or generacion_fin.strip() == "":
+        generacion_fin = None
+    else:
+        generacion_fin = int(generacion_fin)
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            UPDATE Grupos
+            SET nombre_grupo = ?, generacion_inicio = ?, generacion_fin = ?, id_carrera = ?
+            WHERE id_grupo = ? 
+        """, (nombre_grupo, int(generacion_inicio), generacion_fin, int(id_carrera), id_grupo))
+
+        conn.commit()
+    except Exception as e:
+        print(f"Error al actualizar el grupo {e}")
         conn.rollback()
     finally:
         conn.close()
