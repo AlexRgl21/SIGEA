@@ -1,10 +1,13 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from database.conexion import get_db_connection
 
 asignaciones_bp = Blueprint('asignaciones', __name__)
 
 @asignaciones_bp.route('/asignaciones')
 def vista_asignaciones():
+    #candado para mandarte al login despues del tiempo establecido
+    if 'id_usuario' not in session:
+        return redirect(url_for('auth.login'))
     
     conn = get_db_connection()
     cursor = conn.cursor()

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, session
 from database.conexion import get_db_connection
 
 gestion_bp = Blueprint('gestion', __name__)
@@ -8,6 +8,10 @@ gestion_bp = Blueprint('gestion', __name__)
 
 @gestion_bp.route('/gestion')
 def vista_gestion():
+    #candado para mandarte al login despues del tiempo establecido
+    if 'id_usuario' not in session:
+        return redirect(url_for('auth.login'))
+    
     conn = get_db_connection()
     cursor = conn.cursor()
 

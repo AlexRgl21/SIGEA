@@ -1,10 +1,15 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, session
 from database.conexion import get_db_connection
 
 usuarios_bp = Blueprint('usuarios', __name__)
 
 @usuarios_bp.route('/usuarios')
 def lista_usuarios():
+
+    #candado para mandarte al login despues del tiempo establecido
+    if 'id_usuario' not in session:
+        return redirect(url_for('auth.login'))
+    
     conn = get_db_connection()
 
     if conn:
