@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SIGEA{% endblock %}</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    {% block custom_head %}{% endblock %}
+    {% block custom_css %}{% endblock %}
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='img/logo_sigea.png') }}" alt="Logo SIGEA" class="logo">
+        </div>
+
+        <nav class="menu">
+            <ul>
+                <li class="{% if request.endpoint == 'panel.inicio' %}active{% endif %}">
+                    <a href="{{ url_for('panel.inicio') }}">Panel Principal</a>
+                </li>
+                
+                <li class="{% if request.endpoint == 'gestion.vista_gestion' %}active{% endif %}">
+                    <a href="{{ url_for('gestion.vista_gestion') }}">Gestión de Infraestructura</a>
+                </li>
+                
+                <li class="{% if request.endpoint == 'asignaciones.vista_asignaciones' %}active{% endif %}">
+                    <a href="{{ url_for('asignaciones.vista_asignaciones') }}">Asignación de Horarios</a>
+                </li>
+                
+                <li class="{% if request.endpoint == 'reservas.vista_reserva' %}active{% endif %}">
+                    <a href="{{ url_for('reservas.vista_reserva') }}">Reservas Especiales</a>
+                </li>
+                
+                <li class="{% if request.endpoint == 'usuarios.lista_usuarios' %}active{% endif %}">
+                    <a href="{{ url_for('usuarios.lista_usuarios') }}">Usuarios</a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="page-title">
+                <h1>{% block header_title %}Módulo SIGEA{% endblock %}</h1>
+            </div>
+
+            <div class="user-profile" style="display: flex; align-items: center; gap: 15px;">
+                <input type="text" id="input-busqueda" class="search-input" placeholder="Buscar..." onkeyup="ejecutarBusqueda()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; display: none;">
+                
+                <span class="user-name">Coordinación Académica</span>
+                <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center; padding: 5px 10px; border-radius: 5px; background: #dc3545; color: white;">Salir</a>
+            </div>
+        </header>
+
+        <div class="flash-messages-container" style="padding: 0 20px;">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alerta-sigea alerta-{{ category }}" style="margin-top: 15px;">
+                            <span class="cerrar-alerta" onclick="this.parentElement.style.display='none';">&times;</span> 
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <section class="content-area">
+            {% block content %}
+            {% endblock %}
+        </section>
+    </main>
+
+    {% block scripts %}{% endblock %}
+    
+</body>
+</html>
