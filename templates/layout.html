@@ -75,6 +75,28 @@
         </section>
     </main>
 
+    <script>
+        // temporizador de inactividad
+        let tiempoInactividad;
+
+        function reiniciarTemporizador() {
+            clearTimeout(tiempoInactividad);
+            
+            // Configurado a 300,000 para que sean los 5 minutos
+            tiempoInactividad = setTimeout(() => {
+                alert("Tu sesión ha expirado por inactividad.");
+                window.location.href = "{{ url_for('auth.logout') }}";
+            }, 300000); 
+        }
+
+        // El sistema vigilará si el usuario hace alguna de estas acciones para reiniciar el reloj
+        window.onload = reiniciarTemporizador;
+        document.onmousemove = reiniciarTemporizador; // Si mueve el ratón
+        document.onkeypress = reiniciarTemporizador;  // Si teclea algo
+        document.onclick = reiniciarTemporizador;     // Si hace clic
+        document.onscroll = reiniciarTemporizador;    // Si baja la página
+        
+    </script>
     {% block scripts %}{% endblock %}
     
 </body>
