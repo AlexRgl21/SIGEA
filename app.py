@@ -5,10 +5,13 @@ from routes.usuarios import usuarios_bp
 from routes.gestion import gestion_bp
 from routes.asignaciones import asignaciones_bp
 from routes.reservas import reservas_bp
+from datetime import timedelta
 # Inicializamos la aplicación de Flask
 
 app = Flask(__name__)
 app.secret_key = "una_clave_muy_secreta_para_sigea"
+
+app.permanent_session_lifetime = timedelta(minutes=5) #contador para cerrar sesión
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(panel_bp)
