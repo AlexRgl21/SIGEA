@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, session
 from database.conexion import get_db_connection
 
 auth_bp = Blueprint('auth', __name__)
@@ -23,6 +23,9 @@ def login():
                 if estado_usuario == 'Inactivo':
                     return render_template('login.html', error = "Tu cuenta ha sido desactivada. Por favor, contacta a la Coordinación Académica.")
                 else: 
+                    session.permanent = True
+                    session['id_usuario'] = usuario[0]
+                    session['nombre_usuario'] = usuario[1]
                     return redirect(url_for('panel.inicio'))
             else:
                 return render_template('login.html', error = "Correo o contraseña incorrectos")
@@ -35,4 +38,5 @@ def login():
 #regresar el login
 @auth_bp.route('/logout')
 def logout():
+    session.clear()
     return redirect(url_for('auth.login'))
