@@ -1,279 +1,253 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIGEA | Gestión de Usuarios</title>
-    <link rel="stylesheet" href="../static/usuarios.css">
-    <link rel="stylesheet" href="../static/style.css">
-</head>
-<body>
+{% extends "layout.html" %}
 
-    <aside class="sidebar">
-        <div class="logo-container">
-            <img src="../static/img/logo_sigea.png">
-        </div>
+{% block title %}SIGEA | Gestión de Usuarios{% endblock %}
 
-        <nav class="menu">
-            <ul>
-                <li><a href="{{ url_for('panel.inicio') }}">Panel Principal</a></li>
-                <li><a href="{{ url_for('gestion.vista_gestion') }}">Gestión de Infraestructura</a></li>
-                <li><a href="{{ url_for('asignaciones.vista_asignaciones') }}">Asignación de Horarios</a></li>
-                <li><a href="{{ url_for('reservas.vista_reserva')}}">Reservas Especiales</a></li>
-                <li class="active"><a href="{{ url_for('usuarios.lista_usuarios') }}">Usuarios</a></li>
-            </ul>
-        </nav>
-    </aside>
+{% block header_title %}Gestión de Usuarios del Sistema{% endblock %}
 
-    <main class="main-content">
-        <header class="top-bar">
-            <div class="page-title">
-                <h1>Gestión de Usuarios del Sistema</h1>
-            </div>
-            <div class="user-profile">
-                <span class="user-name">Coordinación Académica</span>
-                 <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center;">Salir</a>
-            </div>
-        </header>
+{% block custom_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='usuarios.css') }}">
+{% endblock %}
 
-        <section class="workspace">
-            <div class="search-box-container">
-                <input type="text" id="buscador" class="search-input" placeholder="Buscar por nombre o correo..." oninput="filtrarTabla()">
-            </div> 
-            <div class="filters-container">
-                <select id="filtroRol" class="filter-select" onchange="filtrarTabla()">
-                    <option value="">Rol (todos)</option>
-                    <option value="Administrador">Administrador</option>
-                    <option value="Coordinador de Carrera">Coordinador de Carrera</option>
-                    <option value="Docente">Docente</option>
-                </select>
-                
-                <select id="filtroEstado" class="filter-select" onchange="filtrarTabla()">
-                    <option value="">Estado (todos)</option>
-                    <option value="Activo">Activos</option>
-                    <option value="Inactivo">Inactivos</option>
-                </select>
-                <button class="btn-primary" onclick="toggleFormulario()">+ Nuevo Usuario</button>
-                <div id="formularioNuevoUsuario" class="add-user-section" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
-                    <h3 style="margin-top: 0; color: #333;">Añadir Nuevo Usuario</h3>
-                    
-                    <form action="{{ url_for('usuarios.agregar_usuario') }}" method="POST">
-                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                            <input type="text" name="nombre" placeholder="Nombre(s)" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
-                            <input type="text" name="apellidos" placeholder="Apellidos" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
-                        </div>
-                        
-                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                            <input type="email" name="correo" placeholder="Correo electrónico" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
-                            <input type="password" name="contrasena" placeholder="Contraseña temporal" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
-                        </div>
-                        
-                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                            <select name="id_rol" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
-                                <option value="">-- Selecciona un Rol --</option>
-                                <option value="1">Administrador</option>
-                                <option value="2">Coordinador de Carrera</option>
-                                <option value="3">Docente</option>
-                            </select>
-                        </div>
+{% block content %}
+<section class="workspace">
+    <div class="search-box-container">
+        <input type="text" id="buscador" class="search-input" placeholder="Buscar por nombre o correo..." oninput="filtrarTabla()">
+    </div> 
+    
+    <div class="filters-container">
+        <select id="filtroRol" class="filter-select" onchange="filtrarTabla()">
+            <option value="">Rol (todos)</option>
+            <option value="Administrador">Administrador</option>
+            <option value="Coordinador de Carrera">Coordinador de Carrera</option>
+            <option value="Docente">Docente</option>
+        </select>
         
-                        <button type="submit" style="background: #004a98; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
-                            Guardar Usuario
-                        </button>
-                        <button type="button" onclick="toggleFormulario()" style="background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 10px;">
-                            Cancelar
-                        </button>
-                    </form>
+        <select id="filtroEstado" class="filter-select" onchange="filtrarTabla()">
+            <option value="">Estado (todos)</option>
+            <option value="Activo">Activos</option>
+            <option value="Inactivo">Inactivos</option>
+        </select>
+        
+        <button class="btn-primary" onclick="toggleFormulario()">+ Nuevo Usuario</button>
+        
+        <div id="formularioNuevoUsuario" class="add-user-section" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+            <h3 style="margin-top: 0; color: #333;">Añadir Nuevo Usuario</h3>
+            
+            <form action="{{ url_for('usuarios.agregar_usuario') }}" method="POST">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" name="nombre" placeholder="Nombre(s)" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" name="apellidos" placeholder="Apellidos" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="email" name="correo" placeholder="Correo electrónico" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="password" name="contrasena" placeholder="Contraseña temporal" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <select name="id_rol" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
+                        <option value="">-- Selecciona un Rol --</option>
+                        <option value="1">Administrador</option>
+                        <option value="2">Coordinador de Carrera</option>
+                        <option value="3">Docente</option>
+                    </select>
                 </div>
 
-            </div>  
-            
-            <div class="table-responsive">
-                <table class="users-table">
-                    <thead>
-                        <tr>
-                            <th>Nombre Completo</th>
-                            <th>Correo Electronico</th>
-                            <th>Rol asignado</th>
-                            <th>Estado</th>
-                            <th style="text-align: center;">Acciones</th>
-                        </tr>
-                    </thead>
-
-                    <tbody id="cuerpoTabla">
-                         {% for usuario in usuarios %}
-                        <tr>
-                            <td class="user-name-cell">
-                                <span class="main-name">{{ usuario.nombre_completo }}</span>
-                            </td>
-                            
-                            <td>{{ usuario.correo }}</td>
-                            
-                            <td>
-                                {% if usuario.rol_nombre == 'Administrador' %}
-                                    <span class="role-badge badge-admin">Administrador</span>
-                                {% elif usuario.rol_nombre == 'Coordinador de Carrera' %}
-                                    <span class="role-badge badge-coord">Coordinador de Carrera</span>
-                                {% else %}
-                                    <span class="role-badge badge-docente">{{ usuario.rol_nombre }}</span>
-                                {% endif %}
-                            </td>
-                            
-                            <td>
-                                {% if usuario.estado == 'Activo' %}
-                                    <span class="status-indicator status-active">Activo</span>
-                                {% else %}
-                                    <span class="status-indicator status-inactive">Inactivo</span>
-                                {% endif %}
-                            </td>
-        
-                            <td class="actions-cell">
-                                <button class="btn-action-edit" title="Editar datos personales" onclick="abrirModalEditar('{{ usuario.id_usuario }}')">
-                                    <i class="icon-edit">✏️</i>
-                                </button>
-                                
-                                <button class="btn-action-config" title="Configurar permisos y estado" onclick="abrirModalConfig('{{ usuario.id_usuario }}')">
-                                    <i class="icon-gear">⚙️</i>
-                                </button>
-
-                                <div id="modal-editar-{{ usuario.id_usuario }}" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
-                                    <div style="background: white; padding: 25px; border-radius: 8px; width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: left;">
-                                        <h4 style="margin-top: 0; color: #333; border-bottom: 2px solid #004a98; padding-bottom: 8px;">Editar Datos Personales</h4>
-                                        
-                                        <form action="{{ url_for('usuarios.editar_usuario', id=usuario.id_usuario) }}" method="POST">
-                                            
-                                            <div style="margin-bottom: 10px;">
-                                                <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">NOMBRE(S):</label>
-                                                <input type="text" name="nombre" value="{{ usuario.nombre }}" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                                            </div>
-                                            
-                                            <div style="margin-bottom: 10px;">
-                                                <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">APELLIDOS:</label>
-                                                <input type="text" name="apellidos" value="{{ usuario.apellidos }}" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                                            </div>
-                                            
-                                            <div style="margin-bottom: 20px;">
-                                                <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">CORREO ELECTRÓNICO:</label>
-                                                <input type="email" name="correo" value="{{ usuario.correo }}" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                                            </div>
-
-                                            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                                                <button type="button" onclick="cerrarModalEditar('{{ usuario.id_usuario }}')" style="background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Cancelar</button>
-                                                <button type="submit" style="background: #004a98; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar Cambios</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-
-                                <div id="modal-config-{{ usuario.id_usuario }}" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
-                                    <div style="background: white; padding: 25px; border-radius: 8px; width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: left;">
-                                        <h4 style="margin-top: 0; color: #333; border-bottom: 2px solid #004a98; padding-bottom: 8px;">Configurar Cuenta</h4>
-                                        <p style="font-size: 14px; color: #555; margin-bottom: 15px;">Usuario: <strong>{{ usuario.nombre_completo }}</strong></p>
-                                        
-                                        <form action="{{ url_for('usuarios.configurar_usuario', id=usuario.id_usuario) }}" method="POST">
-                                            
-                                            <div style="margin-bottom: 15px;">
-                                                <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">ROL DEL SISTEMA:</label>
-                                                <select name="id_rol" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                                                    <option value="1" {% if usuario.rol_nombre == 'Administrador' %}selected{% endif %}>Administrador</option>
-                                                    <option value="2" {% if usuario.rol_nombre == 'Coordinador de Carrera' %}selected{% endif %}>Coordinador de Carrera</option>
-                                                    <option value="3" {% if usuario.rol_nombre == 'Docente' %}selected{% endif %}>Docente</option>
-                                                </select>
-                                            </div>
-
-                                            <div style="margin-bottom: 20px;">
-                                                <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">ESTADO DE LA CUENTA:</label>
-                                                <select name="estado" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                                                    <option value="Activo" {% if usuario.estado == 'Activo' %}selected{% endif %}>Activo (Permitir acceso)</option>
-                                                    <option value="Inactivo" {% if usuario.estado == 'Inactivo' %}selected{% endif %}>Inactivo (Bloquear acceso)</option>
-                                                </select>
-                                            </div>
-
-                                            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                                                <button type="button" onclick="cerrarModalConfig('{{ usuario.id_usuario }}')" style="background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Cancelar</button>
-                                                <button type="submit" style="background: #004a98; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    <script>
-                        function toggleFormulario(){
-                            var form = document.getElementById("formularioNuevoUsuario")
-                            if (form.style.display === "none" || form.style.display === "") {
-                                form.style.display = "block";
-                            } else {
-                                form.style.display = "none";
-                            }
-                        } 
-                        
-                        function abrirModalConfig(id) {
-                            var modal = document.getElementById("modal-config-" + id);
-                            if (modal) {
-                                modal.style.display = "flex";
-                            }
-                        }
-
-                        function cerrarModalConfig(id) {
-                            var modal = document.getElementById("modal-config-" + id);
-                            if (modal) {
-                                modal.style.display = "none";
-                            }
-                        }
-
-                        // Función para filtrar la tabla en tiempo real
-                        function filtrarTabla() {
-                            let textoBusqueda = document.getElementById("buscador").value.toLowerCase();
-                            let valorRol = document.getElementById("filtroRol").value.toLowerCase();
-                            let valorEstado = document.getElementById("filtroEstado").value.toLowerCase();
-
-                            let filas = document.getElementById("cuerpoTabla").getElementsByTagName("tr");
-
-                            for (let i = 0; i < filas.length; i++) {
-                                let celdas = filas[i].getElementsByTagName("td");
-                                
-                                if (celdas.length > 0) {
-                                    let nombre = celdas[0].innerText.toLowerCase();
-                                    let correo = celdas[1].innerText.toLowerCase();
-                                    let rol = celdas[2].innerText.toLowerCase().trim();
-                                    let estado = celdas[3].innerText.toLowerCase().trim();
-
-                                    let coincideBusqueda = nombre.includes(textoBusqueda) || correo.includes(textoBusqueda);
-                                    
-                                    let coincideRol = (valorRol === "") || (rol === valorRol);
-                                    let coincideEstado = (valorEstado === "") || (estado === valorEstado);
-
-                                    if (coincideBusqueda && coincideRol && coincideEstado) {
-                                        filas[i].style.display = "";
-                                    } else {
-                                        filas[i].style.display = "none";
-                                    }
-                                }
-                            }
-                        }
-
-                        function abrirModalEditar(id) {
-                            var modal = document.getElementById("modal-editar-" + id);
-                            if (modal) {
-                                modal.style.display = "flex";
-                            }
-                        }
-
-                        function cerrarModalEditar(id) {
-                            var modal = document.getElementById("modal-editar-" + id);
-                            if (modal) {
-                                modal.style.display = "none";
-                            }
-                        }
-                    </script>
-                    </tbody>
-
-                </table>
-            </div>
-        </section>
-    </main>
+                <button type="submit" style="background: #004a98; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                    Guardar Usuario
+                </button>
+                <button type="button" onclick="toggleFormulario()" style="background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 10px;">
+                    Cancelar
+                </button>
+            </form>
+        </div>
+    </div>  
     
-</body>
-</html>
+    <div class="table-responsive">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>Nombre Completo</th>
+                    <th>Correo Electronico</th>
+                    <th>Rol asignado</th>
+                    <th>Estado</th>
+                    <th style="text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+
+            <tbody id="cuerpoTabla">
+                 {% for usuario in usuarios %}
+                <tr>
+                    <td class="user-name-cell">
+                        <span class="main-name">{{ usuario.nombre_completo }}</span>
+                    </td>
+                    
+                    <td>{{ usuario.correo }}</td>
+                    
+                    <td>
+                        {% if usuario.rol_nombre == 'Administrador' %}
+                            <span class="role-badge badge-admin">Administrador</span>
+                        {% elif usuario.rol_nombre == 'Coordinador de Carrera' %}
+                            <span class="role-badge badge-coord">Coordinador de Carrera</span>
+                        {% else %}
+                            <span class="role-badge badge-docente">{{ usuario.rol_nombre }}</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td>
+                        {% if usuario.estado == 'Activo' %}
+                            <span class="status-indicator status-active">Activo</span>
+                        {% else %}
+                            <span class="status-indicator status-inactive">Inactivo</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="actions-cell">
+                        <button class="btn-action-edit" title="Editar datos personales" onclick="abrirModalEditar('{{ usuario.id_usuario }}')">
+                            <i class="icon-edit">✏️</i>
+                        </button>
+                        
+                        <button class="btn-action-config" title="Configurar permisos y estado" onclick="abrirModalConfig('{{ usuario.id_usuario }}')">
+                            <i class="icon-gear">⚙️</i>
+                        </button>
+
+                        <div id="modal-editar-{{ usuario.id_usuario }}" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+                            <div style="background: white; padding: 25px; border-radius: 8px; width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: left;">
+                                <h4 style="margin-top: 0; color: #333; border-bottom: 2px solid #004a98; padding-bottom: 8px;">Editar Datos Personales</h4>
+                                
+                                <form action="{{ url_for('usuarios.editar_usuario', id=usuario.id_usuario) }}" method="POST">
+                                    
+                                    <div style="margin-bottom: 10px;">
+                                        <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">NOMBRE(S):</label>
+                                        <input type="text" name="nombre" value="{{ usuario.nombre }}" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 10px;">
+                                        <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">APELLIDOS:</label>
+                                        <input type="text" name="apellidos" value="{{ usuario.apellidos }}" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 20px;">
+                                        <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">CORREO ELECTRÓNICO:</label>
+                                        <input type="email" name="correo" value="{{ usuario.correo }}" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                    </div>
+
+                                    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                                        <button type="button" onclick="cerrarModalEditar('{{ usuario.id_usuario }}')" style="background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                                        <button type="submit" style="background: #004a98; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar Cambios</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div id="modal-config-{{ usuario.id_usuario }}" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+                            <div style="background: white; padding: 25px; border-radius: 8px; width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: left;">
+                                <h4 style="margin-top: 0; color: #333; border-bottom: 2px solid #004a98; padding-bottom: 8px;">Configurar Cuenta</h4>
+                                <p style="font-size: 14px; color: #555; margin-bottom: 15px;">Usuario: <strong>{{ usuario.nombre_completo }}</strong></p>
+                                
+                                <form action="{{ url_for('usuarios.configurar_usuario', id=usuario.id_usuario) }}" method="POST">
+                                    
+                                    <div style="margin-bottom: 15px;">
+                                        <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">ROL DEL SISTEMA:</label>
+                                        <select name="id_rol" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                            <option value="1" {% if usuario.rol_nombre == 'Administrador' %}selected{% endif %}>Administrador</option>
+                                            <option value="2" {% if usuario.rol_nombre == 'Coordinador de Carrera' %}selected{% endif %}>Coordinador de Carrera</option>
+                                            <option value="3" {% if usuario.rol_nombre == 'Docente' %}selected{% endif %}>Docente</option>
+                                        </select>
+                                    </div>
+
+                                    <div style="margin-bottom: 20px;">
+                                        <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">ESTADO DE LA CUENTA:</label>
+                                        <select name="estado" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                            <option value="Activo" {% if usuario.estado == 'Activo' %}selected{% endif %}>Activo (Permitir acceso)</option>
+                                            <option value="Inactivo" {% if usuario.estado == 'Inactivo' %}selected{% endif %}>Inactivo (Bloquear acceso)</option>
+                                        </select>
+                                    </div>
+
+                                    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                                        <button type="button" onclick="cerrarModalConfig('{{ usuario.id_usuario }}')" style="background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                                        <button type="submit" style="background: #004a98; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleFormulario(){
+        var form = document.getElementById("formularioNuevoUsuario")
+        if (form.style.display === "none" || form.style.display === "") {
+            form.style.display = "block";
+        } else {
+            form.style.display = "none";
+        }
+    } 
+    
+    function abrirModalConfig(id) {
+        var modal = document.getElementById("modal-config-" + id);
+        if (modal) {
+            modal.style.display = "flex";
+        }
+    }
+
+    function cerrarModalConfig(id) {
+        var modal = document.getElementById("modal-config-" + id);
+        if (modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    // Función para filtrar la tabla en tiempo real
+    function filtrarTabla() {
+        let textoBusqueda = document.getElementById("buscador").value.toLowerCase();
+        let valorRol = document.getElementById("filtroRol").value.toLowerCase();
+        let valorEstado = document.getElementById("filtroEstado").value.toLowerCase();
+
+        let filas = document.getElementById("cuerpoTabla").getElementsByTagName("tr");
+
+        for (let i = 0; i < filas.length; i++) {
+            let celdas = filas[i].getElementsByTagName("td");
+            
+            if (celdas.length > 0) {
+                let nombre = celdas[0].innerText.toLowerCase();
+                let correo = celdas[1].innerText.toLowerCase();
+                let rol = celdas[2].innerText.toLowerCase().trim();
+                let estado = celdas[3].innerText.toLowerCase().trim();
+
+                let coincideBusqueda = nombre.includes(textoBusqueda) || correo.includes(textoBusqueda);
+                
+                let coincideRol = (valorRol === "") || (rol === valorRol);
+                let coincideEstado = (valorEstado === "") || (estado === valorEstado);
+
+                if (coincideBusqueda && coincideRol && coincideEstado) {
+                    filas[i].style.display = "";
+                } else {
+                    filas[i].style.display = "none";
+                }
+            }
+        }
+    }
+
+    function abrirModalEditar(id) {
+        var modal = document.getElementById("modal-editar-" + id);
+        if (modal) {
+            modal.style.display = "flex";
+        }
+    }
+
+    function cerrarModalEditar(id) {
+        var modal = document.getElementById("modal-editar-" + id);
+        if (modal) {
+            modal.style.display = "none";
+        }
+    }
+</script>
+{% endblock %}
