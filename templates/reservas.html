@@ -27,19 +27,20 @@
 
     <div class="form-container" id="panel-nueva-reserva" style="display: none;">
         <h3>Registrar Solicitud Extraordinaria</h3>
-        <form id="form-reserva">
+        <form id="form-reserva" action="{{ url_for('reservas.crear_reserva') }}" method="POST">
             <div class="form-row">
                 <div class="form-group">
                     <label>Solicitante</label>
-                    <input type="text" placeholder="Ej. Ing. Juan Manuel" required>
+                    <input type="text" value="{{ session.get('nombre_usuario') }}" disabled style="background: #e9ecef;">
                 </div>
 
                 <div class="form-group">
                     <label>Espacio Requerido</label>
-                    <select required>
+                    <select name="id_espacio" required>
                         <option value="">Seleccione...</option>
-                        <option value="Audiovisual">Edificio 1 - Sala Audiovisual</option>
-                        <option value="LabRedes">Edificio 2 - Lab. Redes</option>
+                        {% for espacio in espacios %}
+                            <option value="{{ espacio.id_espacio }}">{{ espacio.edificio_nombre }} - {{ espacio.espacio_nombre }}</option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>
@@ -47,21 +48,21 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Fecha del Evento</label>
-                    <input type="date" required>
+                    <input type="date" name="fecha" required>
                 </div>
                 <div class="form-group">
                     <label>Horario</label>
                     <div style="display: flex; gap: 10px;">
-                        <input type="time" required style="flex: 1;">
+                        <input type="time" name="hora_inicio" required style="flex: 1;">
                         <span style="align-self: center;">a</span>
-                        <input type="time" required style="flex: 1;">
+                        <input type="time" name="hora_fin" required style="flex: 1;">
                     </div>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Motivo / Nombre del Evento</label>
-                    <input type="text" placeholder="Ej. Conferencia de Inteligencia Artificial" required>
+                    <input type="text" name="motivo" placeholder="Ej. Conferencia de Inteligencia Artificial" required>
                 </div>
             </div>
             <div class="form-actions">
@@ -72,65 +73,66 @@
     </div>
 
     <div class="kanban-board">
-        
+    
         <div class="kanban-column">
             <div class="column-header pendiente">
                 <h3><i class="fas fa-clock"></i> Pendientes de Revisión</h3>
-                <span class="count-badge">2</span>
+                <span class="count-badge">{{ pendientes|length }}</span>
             </div>
             <div class="kanban-cards">
-                
-                <div class="card mantenimiento"> <div class="card-header">
-                        <span style="font-weight: bold; color: #555;">🎫 REQ-042</span>
+                {% for res in pendientes %}
+                <div class="card mantenimiento"> 
+                    <div class="card-header">
+                        <span style="font-weight: bold; color: #555;">🎫 REQ-00{{ res.id_reserva }}</span>
                         <span class="badge mantenimiento">Pendiente</span>
                     </div>
-                    <div class="card-title" style="font-size: 14px; margin-top: 5px;">Conferencia de IA</div>
+                    <div class="card-title" style="font-size: 14px; margin-top: 5px;">{{ res.motivo }}</div>
                     <div class="card-details">
-                        <p><i class="fas fa-user"></i> Dr. Hernández</p>
-                        <p><i class="fas fa-map-marker-alt"></i> Edificio 3 - Audiovisual</p>
-                        <p><i class="fas fa-calendar-alt"></i> Jueves 25/Jun • 10:00 - 14:00</p>
+                        <p><i class="fas fa-user"></i> {{ res.nombre }} {{ res.apellidos }}</p>
+                        <p><i class="fas fa-map-marker-alt"></i> {{ res.edificio_nombre }} - {{ res.espacio_nombre }}</p>
+                        <p><i class="fas fa-calendar-alt"></i> {{ res.fecha }} • {{ res.hora_inicio.strftime('%H:%M') }} - {{ res.hora_fin.strftime('%H:%M') }}</p>
                     </div>
                     <div class="card-actions" style="gap: 10px;">
-                        <button class="action-btn" style="border: 1px solid #28a745; color: #28a745;" onclick="alert('Reserva Aprobada')"><i class="fas fa-check"></i> Aprobar</button>
-                        <button class="action-btn" style="border: 1px solid #dc3545; color: #dc3545;" onclick="alert('Reserva Rechazada')"><i class="fas fa-times"></i></button>
+                        <button class="action-btn" style="border: 1px solid #28a745; color: #28a745;"><i class="fas fa-check"></i> Aprobar</button>
+                        <button class="action-btn" style="border: 1px solid #dc3545; color: #dc3545;"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
-
+                {% else %}
+                <p style="text-align: center; color: #888; font-size: 13px;">No hay reservas pendientes.</p>
+                {% endfor %}
             </div>
         </div>
 
         <div class="kanban-column">
             <div class="column-header aprobada">
                 <h3><i class="fas fa-check-circle"></i> Aprobadas Recientemente</h3>
-                <span class="count-badge">1</span>
+                <span class="count-badge">{{ aprobadas|length }}</span>
             </div>
             <div class="kanban-cards">
-                
-                <div class="card activo"> <div class="card-header">
-                        <span style="font-weight: bold; color: #555;">🎫 REQ-039</span>
+                {% for res in aprobadas %}
+                <div class="card activo"> 
+                    <div class="card-header">
+                        <span style="font-weight: bold; color: #555;">🎫 REQ-00{{ res.id_reserva }}</span>
                         <span class="badge activo">Aprobada</span>
                     </div>
-                    <div class="card-title" style="font-size: 14px; margin-top: 5px;">Taller de Kotlin</div>
+                    <div class="card-title" style="font-size: 14px; margin-top: 5px;">{{ res.motivo }}</div>
                     <div class="card-details">
-                        <p><i class="fas fa-user"></i> Ing. Martínez</p>
-                        <p><i class="fas fa-map-marker-alt"></i> Edificio 2 - Lab. Redes</p>
-                        <p><i class="fas fa-calendar-alt"></i> Lunes 22/Jun • 16:00 - 18:00</p>
-                    </div>
-                    <div class="card-actions">
-                        <button class="action-btn btn-edit"><i class="fas fa-eye"></i> Ver Detalles</button>
+                        <p><i class="fas fa-user"></i> {{ res.nombre }} {{ res.apellidos }}</p>
+                        <p><i class="fas fa-map-marker-alt"></i> {{ res.edificio_nombre }} - {{ res.espacio_nombre }}</p>
+                        <p><i class="fas fa-calendar-alt"></i> {{ res.fecha }} • {{ res.hora_inicio.strftime('%H:%M') }} - {{ res.hora_fin.strftime('%H:%M') }}</p>
                     </div>
                 </div>
-
+                {% else %}
+                <p style="text-align: center; color: #888; font-size: 13px;">No hay reservas aprobadas.</p>
+                {% endfor %}
             </div>
         </div>
-
     </div>
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Lógica para mostrar/ocultar el formulario
     const btnToggleReserva = document.getElementById('btn-toggle-reserva');
     const panelReserva = document.getElementById('panel-nueva-reserva');
     const formReserva = document.getElementById('form-reserva');
@@ -142,13 +144,6 @@
     });
 
     btnCancelReserva.addEventListener('click', () => {
-        panelReserva.style.display = 'none';
-        formReserva.reset();
-    });
-
-    formReserva.addEventListener('submit', (e) => {
-        e.preventDefault();
-        alert('¡Solicitud enviada a revisión! (Demo)');
         panelReserva.style.display = 'none';
         formReserva.reset();
     });
