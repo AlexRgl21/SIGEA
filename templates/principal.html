@@ -11,7 +11,7 @@
         <div class="kpi-container">
             <div class="card kpi-card">
                 <span class="kpi-title">Espacios</span>
-                <span class="kpi-value">45</span>
+                <span class="kpi-value">{{ total_espacios }}</span>
             </div>
             <div class="card kpi-card">
                 <span class="kpi-title">Ocupados</span>
@@ -23,7 +23,7 @@
             </div>
             <div class="card kpi-card">
                 <span class="kpi-title">Bloqueados</span>
-                <span class="kpi-value">2</span>
+                <span class="kpi-value">{{ bloqueados }}</span>
             </div>
         </div>
 
@@ -36,22 +36,16 @@
                         <span>Hora de uso</span>
                     </li>
                     
+                    {% for reserva in reservas_hoy %}
                     <li>
-                        <span>Edificio 2 - Laboratorio de Computo</span>
-                        <span class="reserva-hora">08:00 - 10:00</span>
+                        <span>{{ reserva.edificio }} - {{ reserva.espacio }}</span>
+                        <span class="reserva-hora">{{ reserva.hora_inicio.strftime('%H:%M') }} - {{ reserva.hora_fin.strftime('%H:%M') }}</span>
                     </li>
-                    <li>
-                        <span>Edificio 1 - Sala Audio-Visual</span>
-                        <span class="reserva-hora">11:00 - 13:00</span>
-                    </li>
-                    <li>
-                        <span>Edificio 3 - Laboratorio de Computo</span>
-                        <span class="reserva-hora">14:00 - 16:00</span>
-                    </li>
-                    <li>
-                        <span>Edificio 3 - Sala de Conferencias</span>
-                        <span class="reserva-hora">16:00 - 18:00</span>
-                    </li>
+                    {% else %}
+                        <li style="text-align: center; color: #888; padding-top: 15px;">
+                            <span>No hay reservas aprobadas para el día de hoy.</span>
+                        </li>
+                    {% endfor %}
                 </ul>
             </div>
 
