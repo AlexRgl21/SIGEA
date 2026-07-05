@@ -28,16 +28,19 @@
                         
                         <div class="filters-group">
                             <label>Edificio</label>
-                            <select>
-                                <option>Edificio 1</option>
-                                <option selected>Edificio 2</option>
+                            <select id="filtro-edificio">
+                                <option value="todos">Todos los Edificios</option>
+                                {% for ed in edificios %}
+                                <option value="{{ ed[0] }}">{{ ed[1] }}</option>
+                                {% endfor %}
                             </select>
                             
                             <label>Salón</label>
-                            <select>
-                                <option>Salón 1</option>
-                                <option>Salón 2</option>
-                                <option selected>Salón 3</option>
+                            <select id="filtro-espacio">
+                                <option value="todos">Todos los Salones</option>
+                                {% for esp in espacios %}
+                                <option value="{{ esp.id_espacio }}" data-edificio="{{ esp.id_edificio}}">{{ esp.nombre }}</option>
+                                {% endfor %}
                             </select>
 
                             <button class="btn-toggle-form" onclick="toggleFormularioAsignacion()">+ Nueva Asignación</button>
@@ -222,11 +225,63 @@
             headerToolbar: false,
             contentHeight: 'auto',
             
-            events: JSON.parse(document.getElementById('eventos-data').textContent)
+            events: []
         });
 
         calendar.render();
     });
+
+    // 1. Extraemos TODOS los eventos originales desde el JSON oculto
+    const todosLosEventos = JSON.parse(document.getElementById('eventos-data').textContent);
+    
+    // 2. Atrapamos los menús desplegables
+    const selectEdificio = document.getElementById('filtro-edificio');
+    const selectEspacio = document.getElementById('filtro-espacio');
+
+    // 3. La función que filtra el calendario
+    function filtrarCalendario() {
+        let idEdificioSeleccionado = selectEdificio.value;
+
+        Array.from(selectEspacio.options).forEach(opcion => {
+            if (opcion.value === 'todos') return; // La opción "Todos" siempre se queda
+
+            let idEdificioOpcion = opcion.getAttribute('data-edificio');
+
+            if (idEdificioSeleccionado === 'todos' || idEdificioOpcion == idEdificioSeleccionado) {
+                opcion.style.display = '';       
+                opcion.hidden = false;
+                opcion.disabled = false;         
+            } else {
+                // Si no coincide, lo ocultamos y deshabilitamos totalmente
+                opcion.style.display = 'none';   
+                opcion.hidden = true;            
+                opcion.disabled = true;          
+            }
+        });
+
+        if (selectEspacio.options[selectEspacio.selectedIndex].disabled) {
+            selectEspacio.value = 'todos';
+        }
+
+        // FILTRAR EL CALENDARIO
+        let idEspacioSeleccionado = selectEspacio.value; 
+
+        let eventosFiltrados = []; 
+
+        if (idEspacioSeleccionado !== 'todos') {
+            eventosFiltrados = todosLosEventos.filter(evento => {
+                return evento.extendedProps.id_espacio == idEspacioSeleccionado;
+            });
+        }
+
+        // Actualizamos FullCalendar
+        calendar.removeAllEventSources();
+        calendar.addEventSource(eventosFiltrados);
+    }
+
+    // 4. Le decimos a los menús que ejecuten el filtro cada vez que cambien
+    selectEdificio.addEventListener('change', filtrarCalendario);
+    selectEspacio.addEventListener('change', filtrarCalendario);
 
     function toggleFormularioAsignacion() {
         var panel = document.getElementById("panel-asignacion");
