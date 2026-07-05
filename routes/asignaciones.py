@@ -3,6 +3,68 @@ from database.conexion import get_db_connection
 
 asignaciones_bp = Blueprint('asignaciones', __name__)
 
+@asignaciones_bp.route('/asignaciones/nueva_asignacion', methods=['POST'])
+def nueva_asignacion():
+    #  Atrapamos los datos y forzamos a que sean números enteros (int)
+    id_grupo = int(request.form.get('id_grupo'))
+    id_espacio = int(request.form.get('id_espacio'))
+    id_periodo = int(request.form.get('id_periodo')) 
+
+    hora_inicio = request.form.get('hora_inicio')
+    hora_fin = request.form.get('hora_fin')
+    dias = request.form.getlist('dias') 
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        for dia in dias:
+            
+            cursor.execute("""
+                SELECT a.id_grupo, h.hora_inicio, h.hora_fin
+                FROM Horarios h
+                JOIN Asignaciones a ON h.id_asignacion = a.id_asignacion
+                WHERE a.id_espacio = ? 
+                  AND a.id_periodo = ?
+                  AND h.dia_semana = ?
+                  AND (h.hora_fin > CAST(? AS TIME) AND h.hora_inicio < CAST(? AS TIME))
+            """, (id_espacio, id_periodo, dia, hora_inicio, hora_fin))
+            
+            choque = cursor.fetchone()
+            
+            if choque:
+                hora_c_inicio = choque[1].strftime('%H:%M')
+                hora_c_fin = choque[2].strftime('%H:%M')
+                flash(f"Choque detectado el {dia}: El salón ya está ocupado de {hora_c_inicio} a {hora_c_fin}.", "danger")
+                return redirect(url_for('asignaciones.vista_asignaciones'))
+
+        cursor.execute("""
+            INSERT INTO Asignaciones (id_grupo, id_espacio, id_periodo)
+            OUTPUT INSERTED.id_asignacion
+            VALUES (?, ?, ?)
+        """, (id_grupo, id_espacio, id_periodo))
+        
+        id_nueva_asignacion = cursor.fetchone()[0]
+
+        for dia in dias:
+            cursor.execute('''
+                INSERT INTO Horarios (id_asignacion, dia_semana, hora_inicio, hora_fin)
+                VALUES (?, ?, CAST(? AS TIME), CAST(? AS TIME))
+            ''', (id_nueva_asignacion, dia, hora_inicio, hora_fin))
+            
+        conn.commit()
+        flash("Horario asignado con éxito. No se detectaron empalmes.", "success")
+
+    except Exception as e:
+        conn.rollback()
+        print(f"Error crítico en asignación: {e}")
+        flash("Ocurrió un error interno al intentar guardar el horario.", "danger")
+    finally:
+        conn.close()
+
+    return redirect(url_for('asignaciones.vista_asignaciones'))
+
+
 @asignaciones_bp.route('/asignaciones')
 def vista_asignaciones():
     #candado para mandarte al login despues del tiempo establecido
@@ -23,9 +85,45 @@ def vista_asignaciones():
     """)
 
     grupos = cursor.fetchall()
+
+    cursor.execute("SELECT id_espacio, nombre FROM Espacios WHERE estatus = 'Activo'")
+    espacios = cursor.fetchall()
+
+    cursor.execute("SELECT id_periodo, nombre FROM Periodos WHERE activo = 1")
+    periodos = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT g.nombre_grupo, h.dia_semana, h.hora_inicio, h.hora_fin
+        FROM Horarios h
+        JOIN Asignaciones a ON h.id_asignacion = a.id_asignacion
+        JOIN Grupos g ON a.id_grupo = g.id_grupo
+    """)
+    horarios_db = cursor.fetchall()
+
+    # FullCalendar usa números para los días
+    mapa_dias = {'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6}
+    eventos_calendario = []
+
+    for h in horarios_db:
+
+        nombre_grupo = h[0]
+        dia_num = mapa_dias.get(h[1], 1)
+
+        hora_inicio_str = h[2].strftime('%H:%M:%S')
+        hora_fin_str = h[3].strftime('%H:%M:%S')
+
+        eventos_calendario.append({
+            'title': nombre_grupo,
+            'daysOfWeek': [dia_num],
+            'startTime': hora_inicio_str,
+            'endTime': hora_fin_str,
+            'color': '#004a98' 
+        })
+
+
     conn.close()
 
-    return render_template('asignaciones.html', carreras=carreras, grupos=grupos)
+    return render_template('asignaciones.html', carreras=carreras, grupos=grupos, espacios=espacios, periodos=periodos, eventos_calendario=eventos_calendario)
 
 #AGREGAR GRUPO
 @asignaciones_bp.route('/asignaciones/agregar_grupo', methods=['POST'])
