@@ -25,23 +25,45 @@ def vista_reserva():
         WHERE e.estatus = 'Activo' AND e.tipo IN ('laboratorio', 'sala de conferencia')
     """)
 
-    espacios = cursor.fetchall()
+    cols_esp = [col[0] for col in cursor.description]
+    espacios = [dict(zip(cols_esp, row)) for row in cursor.fetchall()]
 
-    cursor.execute("""
-        SELECT r.id_reserva, r.fecha, r.hora_inicio, r.hora_fin, r.motivo, r.estado,
-            u.nombre, u.apellidos,
-            e.nombre AS espacio_nombre, ed.nombre AS edificio_nombre
-        FROM Reservas r
-        JOIN Usuarios u ON r.id_usuario = u.id_usuario
-        JOIN Espacios e ON r.id_espacio = e.id_espacio
-        JOIN Edificios ed ON e.id_edificio = ed.id_edificio
-        ORDER BY R.fecha ASC, r.hora_inicio ASC
-    """)
+    rol_actual = session.get('role')
+    id_usuario_actual = session.get('id_usuario')
 
-    todas_reservas = cursor.fetchall()
+    if rol_actual == 'MAESTRO':
+        # El maestro solo ve sus reservas que sean de HOY en adelante
+        cursor.execute("""
+            SELECT r.id_reserva, r.fecha, r.hora_inicio, r.hora_fin, r.motivo, r.estado,
+                u.nombre, u.apellidos,
+                e.nombre AS espacio_nombre, ed.nombre AS edificio_nombre
+            FROM Reservas r
+            JOIN Usuarios u ON r.id_usuario = u.id_usuario
+            JOIN Espacios e ON r.id_espacio = e.id_espacio
+            JOIN Edificios ed ON e.id_edificio = ed.id_edificio
+            WHERE r.id_usuario = ? AND r.fecha >= CAST(GETDATE() AS DATE)
+            ORDER BY r.fecha ASC, r.hora_inicio ASC
+        """, (id_usuario_actual,))
+       
+    else:
+        # Admin y Coordinador ven lo pendiente/aprobado de HOY en adelante
+        cursor.execute("""
+            SELECT r.id_reserva, r.fecha, r.hora_inicio, r.hora_fin, r.motivo, r.estado,
+                u.nombre, u.apellidos,
+                e.nombre AS espacio_nombre, ed.nombre AS edificio_nombre
+            FROM Reservas r
+            JOIN Usuarios u ON r.id_usuario = u.id_usuario
+            JOIN Espacios e ON r.id_espacio = e.id_espacio
+            JOIN Edificios ed ON e.id_edificio = ed.id_edificio
+            WHERE r.fecha >= CAST(GETDATE() AS DATE)
+            ORDER BY r.fecha ASC, r.hora_inicio ASC
+        """)
 
-    pendientes = [res for res in todas_reservas if res.estado == 'Pendiente']
-    aprobadas = [res for res in todas_reservas if res.estado == 'Aprobada']
+    cols_res = [col[0] for col in cursor.description]
+    todas_reservas = [dict(zip(cols_res, row)) for row in cursor.fetchall()]
+
+    pendientes = [res for res in todas_reservas if res['estado'] == 'Pendiente']
+    aprobadas = [res for res in todas_reservas if res['estado'] == 'Aprobada']
 
     conn.close()
 
