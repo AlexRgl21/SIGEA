@@ -86,17 +86,18 @@ def vista_asignaciones():
 
     grupos = cursor.fetchall()
 
-    cursor.execute("SELECT id_espacio, nombre FROM Espacios WHERE estatus = 'Activo'")
+    cursor.execute("SELECT id_espacio, nombre, id_edificio FROM Espacios WHERE estatus = 'Activo'")
     espacios = cursor.fetchall()
 
     cursor.execute("SELECT id_periodo, nombre FROM Periodos WHERE activo = 1")
     periodos = cursor.fetchall()
 
     cursor.execute("""
-        SELECT g.nombre_grupo, h.dia_semana, h.hora_inicio, h.hora_fin
+        SELECT g.nombre_grupo, h.dia_semana, h.hora_inicio, h.hora_fin, a.id_espacio, e.id_edificio
         FROM Horarios h
         JOIN Asignaciones a ON h.id_asignacion = a.id_asignacion
         JOIN Grupos g ON a.id_grupo = g.id_grupo
+        JOIN Espacios e ON a.id_espacio = e.id_espacio
     """)
     horarios_db = cursor.fetchall()
 
@@ -117,13 +118,21 @@ def vista_asignaciones():
             'daysOfWeek': [dia_num],
             'startTime': hora_inicio_str,
             'endTime': hora_fin_str,
-            'color': '#004a98' 
+            'color': '#004a98' ,
+
+            'extendedProps': {
+                'id_espacio' : h[4],
+                'id_edificio' : h[5]
+            } 
         })
+    
+    cursor.execute("SELECT id_edificio, nombre FROM Edificios")
+    edificios = cursor.fetchall()
 
 
     conn.close()
 
-    return render_template('asignaciones.html', carreras=carreras, grupos=grupos, espacios=espacios, periodos=periodos, eventos_calendario=eventos_calendario)
+    return render_template('asignaciones.html', carreras=carreras, grupos=grupos, espacios=espacios, periodos=periodos, edificios=edificios, eventos_calendario=eventos_calendario)
 
 #AGREGAR GRUPO
 @asignaciones_bp.route('/asignaciones/agregar_grupo', methods=['POST'])
