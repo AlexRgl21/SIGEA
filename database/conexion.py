@@ -6,8 +6,9 @@ load_dotenv()
 
 def get_db_connection():
     try:
-        server = os.getenv('DB_SERVER')
-        database = os.getenv('DB_NAME')
+        server = 'DESKTOP-3T28HSM\\DIEGO'
+        database = 'SIGEA'
+
 
         driver = '{ODBC Driver 17 for SQL Server}'
 

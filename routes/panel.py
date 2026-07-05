@@ -1,12 +1,14 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from database.conexion import get_db_connection
 from datetime import date
+from .auth import role_required # Importamos el decorador
 
 panel_bp = Blueprint('panel', __name__)
 
 @panel_bp.route('/panel')
+@role_required('ADMIN', 'COORDINADOR') # Protegido: El maestro no entra aquí
 def inicio():
-    #candado para mandarte al login despues del tiempo establecido
+    
     if 'id_usuario' not in session:
         return redirect(url_for('auth.login'))
     
@@ -17,13 +19,11 @@ def inicio():
     cursor = conn.cursor()
 
     # CALCULO DE KPIs
-    # ESPACIOS REGISTRADOS
     cursor.execute("SELECT COUNT(*) FROM Espacios")
     total_espacios = cursor.fetchone()[0] or 0
 
     cursor.execute("SELECT COUNT(*) FROM Espacios WHERE estatus = 'Mantenimiento' ")
     bloqueados = cursor.fetchone()[0] or 0
-
 
     # RESERVAS DE HOY
     hoy = date.today()
@@ -37,7 +37,6 @@ def inicio():
      """, (hoy,))
     
     reservas_hoy = cursor.fetchall()
-
     conn.close()
     
     return render_template('principal.html', total_espacios=total_espacios, bloqueados=bloqueados, reservas_hoy=reservas_hoy)

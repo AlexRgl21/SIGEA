@@ -9,6 +9,9 @@
 {% endblock %}
 
 {% block content %}
+    
+    {% if session.get('role') == 'ADMIN' %}
+    <!-- Modales exclusivos del ADMIN -->
     <div id="modal-editar-edificio" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
         <div style="background:white; padding:20px; border-radius:8px; width:400px; margin: 10% auto;">
             <h3>Editar Edificio</h3>
@@ -68,6 +71,7 @@
             </form>
         </div>
     </div>
+    {% endif %}
 
     <section class="workspace">
         
@@ -84,12 +88,15 @@
                         <i class="fas fa-search"></i>
                         <input type="text" placeholder="Buscar aula...">
                     </div>
+                    {% if session.get('role') == 'ADMIN' %}
                     <button class="btn-add" id="btn-toggle-form">
                         <i class="fas fa-plus"></i> Añadir Espacio
                     </button>
+                    {% endif %}
                 </div>
             </div>
 
+            {% if session.get('role') == 'ADMIN' %}
             <div class="form-container" id="panel-nuevo-espacio" style="display: none;">
                 <h3>Registrar Nuevo Espacio</h3>
                 <form id="form-espacio" action="{{ url_for('gestion.agregar_espacio') }}" method="POST">
@@ -129,6 +136,7 @@
                     </div>
                 </form>
             </div>
+            {% endif %}
 
             <div class="cards-grid">
                 {% for aula in aulas %}
@@ -147,6 +155,8 @@
                         <p><i class="fas fa-users"></i> Capacidad: {{ aula[2] }} alumnos</p>
                         <p><i class="fas fa-tag"></i> Tipo: {{ aula[3] }}</p>
                     </div>
+                    
+                    {% if session.get('role') == 'ADMIN' %}
                     <div class="card-actions">
                         <button class="action-btn btn-edit btn-edit-aula" 
                                 data-id="{{ aula[0] }}" 
@@ -160,6 +170,7 @@
                             <button type="submit" class="action-btn btn-delete"><i class="fas fa-trash-alt"></i></button>
                         </form>
                     </div>
+                    {% endif %}
                 </div>
                 {% else %}
                 <p style="color: #888; grid-column: 1 / -1; text-align: center; padding: 20px;">No hay aulas registradas en el sistema.</p>
@@ -189,6 +200,8 @@
                     <p><i class="fas fa-hashtag"></i> Código: {{ edificio[2] }}</p>
                     <p><i class="fas fa-info-circle"></i> Estatus: {{ edificio[3] }}</p> 
                 </div>
+                
+                {% if session.get('role') == 'ADMIN' %}
                 <div class="card-actions">
                     <button class="action-btn btn-edit btn-edit-edificio" 
                             data-id="{{ edificio[0] }}" 
@@ -198,6 +211,7 @@
                         <i class="fas fa-pencil-alt"></i> Editar
                     </button>
                 </div>
+                {% endif %}
                 </div>
                 {% else %}
                 <p style="color: #888; grid-column: 1 / -1; text-align: center; padding: 20px;">No hay edificios registrados en el sistema.</p>
@@ -247,14 +261,16 @@
     const panelAulas = document.getElementById('panel-nuevo-espacio');
     const btnCancelAulas = document.getElementById('btn-cancelar');
     
-    btnToggleAulas.addEventListener('click', () => {
-        panelAulas.style.display = panelAulas.style.display === 'none' ? 'block' : 'none';
-    });
+    if(btnToggleAulas && panelAulas) {
+        btnToggleAulas.addEventListener('click', () => {
+            panelAulas.style.display = panelAulas.style.display === 'none' ? 'block' : 'none';
+        });
 
-    btnCancelAulas.addEventListener('click', () => {
-        panelAulas.style.display = 'none';
-        document.getElementById('form-espacio').reset();
-    }); 
+        btnCancelAulas.addEventListener('click', () => {
+            panelAulas.style.display = 'none';
+            document.getElementById('form-espacio').reset();
+        }); 
+    }
 
     // LÓGICA PARA EDITAR EDIFICIOS
     document.querySelectorAll('.btn-edit-edificio').forEach(btn => {

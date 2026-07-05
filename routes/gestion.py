@@ -117,5 +117,6 @@ def eliminar_espacio(id):
     conn.close()
     
     return redirect(url_for('gestion.vista_gestion'))
+
         
         

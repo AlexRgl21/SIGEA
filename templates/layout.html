@@ -19,14 +19,21 @@
 
         <nav class="menu">
             <ul>
+                <!-- Panel Principal: Solo ADMIN y COORDINADOR -->
+                {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                 <li class="{% if request.endpoint == 'panel.inicio' %}active{% endif %}">
                     <a href="{{ url_for('panel.inicio') }}">Panel Principal</a>
                 </li>
+                {% endif %}
                 
+                <!-- Gestión de Infraestructura: Solo ADMIN -->
+                {% if session.get('role') == 'ADMIN' %}
                 <li class="{% if request.endpoint == 'gestion.vista_gestion' %}active{% endif %}">
                     <a href="{{ url_for('gestion.vista_gestion') }}">Gestión de Infraestructura</a>
                 </li>
+                {% endif %}
                 
+                <!-- Asignaciones y Reservas: TODOS -->
                 <li class="{% if request.endpoint == 'asignaciones.vista_asignaciones' %}active{% endif %}">
                     <a href="{{ url_for('asignaciones.vista_asignaciones') }}">Asignación de Horarios</a>
                 </li>
@@ -35,9 +42,12 @@
                     <a href="{{ url_for('reservas.vista_reserva') }}">Reservas Especiales</a>
                 </li>
                 
+                <!-- Usuarios: Solo ADMIN -->
+                {% if session.get('role') == 'ADMIN' %}
                 <li class="{% if request.endpoint == 'usuarios.lista_usuarios' %}active{% endif %}">
                     <a href="{{ url_for('usuarios.lista_usuarios') }}">Usuarios</a>
                 </li>
+                {% endif %}
             </ul>
         </nav>
     </aside>
@@ -51,7 +61,7 @@
             <div class="user-profile" style="display: flex; align-items: center; gap: 15px;">
                 <input type="text" id="input-busqueda" class="search-input" placeholder="Buscar..." onkeyup="ejecutarBusqueda()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; display: none;">
                 
-                <span class="user-name">Coordinación Académica</span>
+                <span class="user-name">{{ session.get('nombre_usuario', 'Usuario') }} ({{ session.get('role', '') }})</span>
                 <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center; padding: 5px 10px; border-radius: 5px; background: #dc3545; color: white;">Salir</a>
             </div>
         </header>
@@ -81,23 +91,18 @@
 
         function reiniciarTemporizador() {
             clearTimeout(tiempoInactividad);
-            
-            // Configurado a 300,000 para que sean los 5 minutos
             tiempoInactividad = setTimeout(() => {
                 alert("Tu sesión ha expirado por inactividad.");
                 window.location.href = "{{ url_for('auth.logout') }}";
             }, 300000); 
         }
 
-        // El sistema vigilará si el usuario hace alguna de estas acciones para reiniciar el reloj
         window.onload = reiniciarTemporizador;
-        document.onmousemove = reiniciarTemporizador; // Si mueve el ratón
-        document.onkeypress = reiniciarTemporizador;  // Si teclea algo
-        document.onclick = reiniciarTemporizador;     // Si hace clic
-        document.onscroll = reiniciarTemporizador;    // Si baja la página
-        
+        document.onmousemove = reiniciarTemporizador; 
+        document.onkeypress = reiniciarTemporizador;  
+        document.onclick = reiniciarTemporizador;     
+        document.onscroll = reiniciarTemporizador;    
     </script>
     {% block scripts %}{% endblock %}
-    
 </body>
 </html>

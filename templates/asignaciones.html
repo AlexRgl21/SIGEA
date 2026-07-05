@@ -22,7 +22,6 @@
             <div class="workspace-split">
                 
                 <div class="calendar-container">
-                    
                     <div class="calendar-controls">
                         <h3 style="margin: 0; color: #333;">Calendario Semanal por Espacio</h3>
                         
@@ -43,18 +42,19 @@
                                 {% endfor %}
                             </select>
 
+                            {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                             <button class="btn-toggle-form" onclick="toggleFormularioAsignacion()">+ Nueva Asignación</button>
+                            {% endif %}
                         </div>
                     </div>
-        
                     <div id='calendar'></div>
                 </div>
 
+                {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                 <div class="form-container" id="panel-asignacion" style="display: none;">
                     <h3 class="section-title">Nueva Asignación Rápida</h3>
                     
                     <form id="form-asignacion" action="{{ url_for('asignaciones.nueva_asignacion') }}" method="POST">
-
                         <div class="form-group">
                             <label>Grupo:</label>
                             <select name="id_grupo" required>
@@ -64,7 +64,6 @@
                                 {% endfor %}
                             </select>
                         </div>
-
                         <div class="form-group">
                             <label>Espacio Académico:</label>
                             <select name="id_espacio" required>
@@ -74,7 +73,6 @@
                                 {% endfor %}
                             </select>
                         </div>
-
                         <div class="form-group">
                             <label>Periodo / Cuatrimestre:</label>
                             <select name="id_periodo" required>
@@ -84,7 +82,6 @@
                                 {% endfor %}
                             </select>
                         </div>
-
                         <div class="form-group">
                             <label>Días de la semana:</label>
                             <div class="checkbox-group">
@@ -96,7 +93,6 @@
                                 <label><input type="checkbox" name="dias" value="Sábado"> S</label>
                             </div>
                         </div>
-
                         <div class="form-group" style="display: flex; gap: 10px;">
                             <div style="flex: 1;">
                                 <label>Hora Inicio:</label>
@@ -107,25 +103,24 @@
                                 <input type="time" name="hora_fin" required>
                             </div>
                         </div>
-
                         <button type="submit" class="btn-submit">Registrar Asignación</button>
                     </form>
                 </div>
+                {% endif %}
             </div>
         </div>
+
         <div id="vista-grupos" class="tab-content">
-            
             <div class="workspace-split">
-        
+                
+                {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                 <div class="form-container">
                     <h3 class="section-title" id="form-titulo">Nuevo Grupo</h3>
                     <form id="form-grupo" action="{{ url_for('asignaciones.agregar_grupo') }}" method="POST">
-                        
                         <div class="form-group">
                             <label>Nombre del Grupo (Ej. ITIID SM-01)</label>
                             <input type="text" id="input-nombre" name="nombre_grupo" placeholder="Ej. ISA-43" required>
                         </div>
-
                         <div class="form-row" style="display: flex; gap: 15px;">
                             <div class="form-group" style="flex: 1;">
                                 <label>Año Inicio</label>
@@ -136,7 +131,6 @@
                                 <input type="number" id="input-fin" name="generacion_fin" placeholder="Ej. 2028">
                             </div>
                         </div>
-
                         <div class="form-group">
                             <label>Carrera</label>
                             <select id="select-carrera" name="id_carrera" required>
@@ -146,12 +140,11 @@
                                 {% endfor %}
                             </select>
                         </div>
-
                         <button type="submit" id="btn-guardar" class="btn-submit">Guardar Grupo</button>
-                        
                         <button type="button" id="btn-cancelar" class="btn-submit" style="background-color: #6c757d; margin-top: 10px; display: none;" onclick="cancelarEdicion()">Cancelar Edición</button>
                     </form>
                 </div>
+                {% endif %}
                 
                 <div class="calendar-container">
                     <h3 class="section-title">Grupos Registrados</h3>
@@ -162,7 +155,9 @@
                                     <th>Nombre del Grupo</th>
                                     <th>Carrera</th>
                                     <th>Generación</th>
+                                    {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                                     <th>Acciones</th>
+                                    {% endif %}
                                 </tr>
                             </thead>
                             <tbody>
@@ -174,6 +169,8 @@
                                         {{ grupo.generacion_inicio }} - 
                                         {% if grupo.generacion_fin %}{{ grupo.generacion_fin }}{% else %}En curso{% endif %}
                                     </td>
+                                    
+                                    {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                                     <td style="display: flex; gap: 8px;">
                                         <button type="button" class="btn-action-edit" style="border: 1px solid #004a98; color: #004a98; background: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"
                                                 data-id="{{ grupo.id_grupo }}"
@@ -191,10 +188,12 @@
                                             </button>
                                         </form>
                                     </td>
+                                    {% endif %}
                                 </tr>
                                 {% else %}
                                 <tr>
-                                    <td colspan="4" style="text-align: center; padding: 20px;">No hay grupos registrados todavía.</td>
+                                    <!-- Ajustamos el colspan dinámicamente -->
+                                    <td colspan="{% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}4{% else %}3{% endif %}" style="text-align: center; padding: 20px;">No hay grupos registrados todavía.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -207,7 +206,7 @@
 {% endblock %}
 
 {% block scripts %}
-
+<!-- Dejo tus scripts JS exactamente iguales a como me los enviaste para no romper tu lógica visual -->
 <script type="application/json" id="eventos-data">
     {{ eventos_calendario | tojson | safe }}
 </script>
@@ -224,35 +223,25 @@
             locale: 'es',
             headerToolbar: false,
             contentHeight: 'auto',
-            
             events: []
         });
-
         calendar.render();
     });
 
-    // 1. Extraemos TODOS los eventos originales desde el JSON oculto
     const todosLosEventos = JSON.parse(document.getElementById('eventos-data').textContent);
-    
-    // 2. Atrapamos los menús desplegables
     const selectEdificio = document.getElementById('filtro-edificio');
     const selectEspacio = document.getElementById('filtro-espacio');
 
-    // 3. La función que filtra el calendario
     function filtrarCalendario() {
         let idEdificioSeleccionado = selectEdificio.value;
-
         Array.from(selectEspacio.options).forEach(opcion => {
-            if (opcion.value === 'todos') return; // La opción "Todos" siempre se queda
-
+            if (opcion.value === 'todos') return; 
             let idEdificioOpcion = opcion.getAttribute('data-edificio');
-
             if (idEdificioSeleccionado === 'todos' || idEdificioOpcion == idEdificioSeleccionado) {
                 opcion.style.display = '';       
                 opcion.hidden = false;
                 opcion.disabled = false;         
             } else {
-                // Si no coincide, lo ocultamos y deshabilitamos totalmente
                 opcion.style.display = 'none';   
                 opcion.hidden = true;            
                 opcion.disabled = true;          
@@ -262,143 +251,108 @@
         if (selectEspacio.options[selectEspacio.selectedIndex].disabled) {
             selectEspacio.value = 'todos';
         }
-
-        // FILTRAR EL CALENDARIO
         let idEspacioSeleccionado = selectEspacio.value; 
-
         let eventosFiltrados = []; 
-
         if (idEspacioSeleccionado !== 'todos') {
             eventosFiltrados = todosLosEventos.filter(evento => {
                 return evento.extendedProps.id_espacio == idEspacioSeleccionado;
             });
         }
-
-        // Actualizamos FullCalendar
         calendar.removeAllEventSources();
         calendar.addEventSource(eventosFiltrados);
     }
 
-    // 4. Le decimos a los menús que ejecuten el filtro cada vez que cambien
     selectEdificio.addEventListener('change', filtrarCalendario);
     selectEspacio.addEventListener('change', filtrarCalendario);
 
     function toggleFormularioAsignacion() {
         var panel = document.getElementById("panel-asignacion");
-        if (panel.style.display === "none" || panel.style.display === "") {
-            panel.style.display = "block";
-        } else {
-            panel.style.display = "none";
+        if(panel) {
+            if (panel.style.display === "none" || panel.style.display === "") {
+                panel.style.display = "block";
+            } else {
+                panel.style.display = "none";
+            }
+            setTimeout(function() {
+                calendar.updateSize();
+            }, 100);
         }
-        
-        setTimeout(function() {
-            calendar.updateSize();
-        }, 100);
     }
 
-    /* CONTROL DE PESTAÑAS (TABS)*/
     function abrirPestana(evt, nombrePestana) {
-        // 1. Ocultar todos los contenidos
         let contenidos = document.getElementsByClassName("tab-content");
         for (let i = 0; i < contenidos.length; i++) {
             contenidos[i].classList.remove("active");
         }
-
-        // 2. Quitar el color activo de todos los botones
         let botones = document.getElementsByClassName("tab-btn");
         for (let i = 0; i < botones.length; i++) {
             botones[i].classList.remove("active");
         }
-
-        // 3. Mostrar la pestaña seleccionada y pintar su botón
         document.getElementById(nombrePestana).classList.add("active");
         evt.currentTarget.classList.add("active");
         localStorage.setItem("pestanaActiva_" + window.location.pathname, nombrePestana);
 
-        // 4. CONTROL DE LA BARRA DE BÚSQUEDA
         let buscador = document.getElementById("input-busqueda");
         if (buscador) {
-            buscador.value = ""; // Limpiamos el texto por si había algo escrito
-            
+            buscador.value = ""; 
             if (nombrePestana === "vista-grupos") {
-                // Si estamos en grupos, mostramos la barra y reiniciamos el filtro
                 buscador.style.display = "inline-block"; 
                 if (typeof ejecutarBusqueda === "function") {
                     ejecutarBusqueda(); 
                 }
             } else if (nombrePestana === "vista-calendario") {
-                // Si estamos en el calendario, la ocultamos por completo
                 buscador.style.display = "none"; 
             }
         }
     }
 
-
-    /* ARRANQUE DE LA PÁGINA  */
     document.addEventListener("DOMContentLoaded", function() {
         let buscador = document.getElementById("input-busqueda");
         let pestanaGuardada = localStorage.getItem("pestanaActiva_" + window.location.pathname);
-        
-        // 1. Si el usuario ya había estado aquí y guardó una pestaña en la memoria:
         if (pestanaGuardada) {
             let btn = document.querySelector(`button[onclick*="${pestanaGuardada}"]`);
             if (btn) {
-                btn.click(); // Esto dispara abrirPestana() y acomoda la barra automáticamente
-                return; // Detenemos el código aquí
+                btn.click(); 
+                return; 
             }
         }
-        
-        // 2. Si es la primera vez (Arranque en frío)
         if (buscador) {
             buscador.style.display = "none";
         }
     });
 
-    // Variable global para guardar la ruta original de creación
     const rutaCrear = "{{ url_for('asignaciones.agregar_grupo') }}";
 
     function activarEdicion(boton) {
-        // 1. Extraer los datos guardados en el botón que se presionó
         let id_grupo = boton.getAttribute("data-id");
         let nombre = boton.getAttribute("data-nombre");
         let inicio = boton.getAttribute("data-inicio");
         let fin = boton.getAttribute("data-fin");
         let carrera = boton.getAttribute("data-carrera");
 
-        // 2. Rellenar los campos del formulario de la izquierda
         document.getElementById("input-nombre").value = nombre;
         document.getElementById("input-inicio").value = inicio;
         document.getElementById("input-fin").value = fin;
         document.getElementById("select-carrera").value = carrera;
 
-        // 3. Transformar visualmente el formulario a Modo Edición
         document.getElementById("form-titulo").innerText = "Editar Grupo: " + nombre;
         document.getElementById("btn-guardar").innerText = "Actualizar Cambios";
-        document.getElementById("btn-guardar").style.backgroundColor = "#004a98"; // Azul oscuro para diferenciar
-        document.getElementById("btn-cancelar").style.display = "block"; // Mostrar botón cancelar
+        document.getElementById("btn-guardar").style.backgroundColor = "#004a98"; 
+        document.getElementById("btn-cancelar").style.display = "block"; 
 
-        // 4. Cambiar el action del formulario para que apunte a la ruta de editar en Flask
         document.getElementById("form-grupo").action = "/asignaciones/editar_grupo/" + id_grupo;
-        
-        // Hacer scroll suave hacia el formulario (útil si la lista es muy larga)
         document.getElementById("form-grupo").scrollIntoView({ behavior: 'smooth' });
     }
 
     function cancelarEdicion() {
-        // 1. Limpiar todos los campos del formulario
         document.getElementById("form-grupo").reset();
-
-        // 2. Restaurar los textos originales
         document.getElementById("form-titulo").innerText = "Nuevo Grupo";
         document.getElementById("btn-guardar").innerText = "Guardar Grupo";
-        document.getElementById("btn-guardar").style.backgroundColor = ""; // Regresa a su color original css
-        document.getElementById("btn-cancelar").style.display = "none"; // Esconder botón cancelar
-
-        // 3. Regresar el formulario a la ruta de inserción original
+        document.getElementById("btn-guardar").style.backgroundColor = ""; 
+        document.getElementById("btn-cancelar").style.display = "none"; 
         document.getElementById("form-grupo").action = rutaCrear;
     }
 
-    /* MOTOR DE BÚSQUEDA EN TIEMPO REAL */
     function ejecutarBusqueda() {
         let buscador = document.getElementById("input-busqueda");
         if (!buscador) return;
@@ -406,18 +360,10 @@
         let pestanaActiva = document.querySelector('.tab-content.active');
         
         if (pestanaActiva && pestanaActiva.id === "vista-grupos") {
-            
-            // Atrapamos todas las filas de la tabla de grupos
             let filas = document.querySelectorAll("#vista-grupos .grupos-table tbody tr");
-            
             filas.forEach(function(fila) {
-                // Ignorar la fila que dice "No hay grupos registrados"
                 if (fila.cells.length === 1) return; 
-
-                // Extraemos todo el texto de la fila (Nombre, Carrera, Generación)
                 let textoFila = fila.textContent || fila.innerText;
-                
-                // Si el texto de la fila incluye lo que escribimos, la fila se muestra. Si no, se oculta.
                 if (textoFila.toUpperCase().indexOf(filtro) > -1) {
                     fila.style.display = ""; 
                 } else {

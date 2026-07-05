@@ -1,12 +1,13 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from database.conexion import get_db_connection
+from .auth import role_required # Importamos el decorador
 
 reservas_bp = Blueprint('reservas', __name__)
 
 @reservas_bp.route('/reservas')
+@role_required('ADMIN', 'COORDINADOR', 'MAESTRO') # Todos pueden ver el estatus
 def vista_reserva():
-
-    #candado para mandarte al login despues del tiempo establecido
+    
     if 'id_usuario' not in session:
         return redirect(url_for('auth.login'))
     
@@ -44,17 +45,17 @@ def vista_reserva():
 
     conn.close()
 
-    return render_template('reservas.html', pendientes = pendientes, 
-                                            aprobadas = aprobadas,
-                                            espacios = espacios)
+    return render_template('reservas.html', pendientes=pendientes, 
+                                            aprobadas=aprobadas,
+                                            espacios=espacios)
 
+# CREAR RESERVA (SOLO ADMIN Y MAESTRO)
 @reservas_bp.route('/reservas/nueva', methods=['POST'])
+@role_required('ADMIN', 'MAESTRO') # Protegido
 def crear_reserva():
-    # Candado de seguridad
     if 'id_usuario' not in session:
         return redirect(url_for('auth.login'))
 
-    # datos del formulario
     id_usuario = session['id_usuario'] 
     id_espacio = request.form.get('id_espacio')
     fecha = request.form.get('fecha')
@@ -66,7 +67,6 @@ def crear_reserva():
     if conn:
         try:
             cursor = conn.cursor()
-
             cursor.execute('''
                 INSERT INTO Reservas (id_usuario, id_espacio, fecha, hora_inicio, hora_fin, motivo, estado)
                 VALUES (?, ?, ?, ?, ?, ?, 'Pendiente')
@@ -79,4 +79,42 @@ def crear_reserva():
         finally:
             conn.close()
     
+    return redirect(url_for('reservas.vista_reserva'))
+
+# APROBAR RESERVA (SOLO ADMIN Y COORDINADOR)
+@reservas_bp.route('/reservas/aceptar/<int:id>', methods=['POST'])
+@role_required('ADMIN', 'COORDINADOR') # Protegido
+def aceptar_reserva(id):
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE Reservas SET estado = 'Aprobada' WHERE id_reserva = ?", (id,))
+            conn.commit()
+            flash("La reserva fue aprobada con éxito.", "success")
+        except Exception as e:
+            conn.rollback()
+            flash(f"Error al aceptar la reserva: {str(e)}", "danger")
+        finally:
+            conn.close()
+            
+    return redirect(url_for('reservas.vista_reserva'))
+
+# RECHAZAR RESERVA (SOLO ADMIN Y COORDINADOR)
+@reservas_bp.route('/reservas/rechazar/<int:id>', methods=['POST'])
+@role_required('ADMIN', 'COORDINADOR') # Protegido
+def rechazar_reserva(id):
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE Reservas SET estado = 'Rechazada' WHERE id_reserva = ?", (id,))
+            conn.commit()
+            flash("La reserva fue rechazada y eliminada del panel.", "success")
+        except Exception as e:
+            conn.rollback()
+            flash(f"Error al rechazar la reserva: {str(e)}", "danger")
+        finally:
+            conn.close()
+            
     return redirect(url_for('reservas.vista_reserva'))
