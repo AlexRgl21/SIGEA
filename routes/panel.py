@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from database.conexion import get_db_connection
-from datetime import date
+from datetime import date, datetime
 from .auth import role_required # Importamos el decorador
 
 panel_bp = Blueprint('panel', __name__)
@@ -25,6 +25,41 @@ def inicio():
     cursor.execute("SELECT COUNT(*) FROM Espacios WHERE estatus = 'Mantenimiento' ")
     bloqueados = cursor.fetchone()[0] or 0
 
+    # espacios libres y ocupados
+    ahora = datetime.now()
+    hora_actual = ahora.strftime('%H:%M:%S')
+    fecha_hoy = ahora.date()
+
+    dias_semana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
+    dia_hoy = dias_semana[ahora.weekday()]
+
+    # SALONES QUE TIENEN CLASE
+    cursor.execute("""
+        SELECT COUNT(DISTINCT a.id_espacio)
+        FROM Asignaciones a
+        JOIN Horarios h ON a.id_asignacion = h.id_asignacion
+        WHERE h.dia_semana = ? 
+          AND h.hora_inicio <= CAST(? AS TIME) 
+          AND h.hora_fin > CAST(? AS TIME)
+    """, (dia_hoy, hora_actual, hora_actual))
+    ocupados_por_clase = cursor.fetchone()[0] or 0
+
+    # RESERVAS ESPECIALES 
+    cursor.execute("""
+        SELECT COUNT(DISTINCT id_espacio)
+        FROM Reservas
+        WHERE fecha = ? AND estado = 'Aprobada'
+          AND hora_inicio <= CAST(? AS TIME) 
+          AND hora_fin > CAST(? AS TIME)
+    """, (fecha_hoy, hora_actual, hora_actual))
+    ocupados_por_reserva = cursor.fetchone()[0] or 0
+
+    ocupados = ocupados_por_clase + ocupados_por_reserva
+
+    libres = total_espacios - bloqueados - ocupados
+    libres = max(0, libres)
+
+
     # RESERVAS DE HOY
     hoy = date.today()
     cursor.execute(""" 
@@ -39,9 +74,6 @@ def inicio():
     reservas_hoy = cursor.fetchall()
 
     # GRAFICAS DE OCUPACIÓN 
-    dias_semana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
-    dia_hoy = dias_semana[hoy.weekday()]
-
     cursor.execute("""
         SELECT 
             ed.nombre AS nombre_edificio,
@@ -78,4 +110,7 @@ def inicio():
                             bloqueados=bloqueados,  
                             reservas_hoy=reservas_hoy, 
                             datos_grafica=datos_grafica,
-                            dia_hoy=dia_hoy)
+                            dia_hoy=dia_hoy, 
+                            ocupados=ocupados, 
+                            libres=libres)
+                            
