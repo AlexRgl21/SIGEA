@@ -50,25 +50,20 @@
             </div>
 
             <div class="card widget-card">
-                <h3 class="widget-title">Ocupación Edificios</h3>
+                <h3 class="widget-title">Ocupación Edificios (Hoy: {{ dia_hoy }})</h3>
                 <div class="chart-placeholder">
+
+                    {% for dato in datos_grafica %}
                     <div class="bar-column">
-                        <span class="bar-percent">100%</span>
-                        <div class="bar" style="height: 100%;"></div>
-                        <span class="bar-label">Edificio 1</span>
+                        <span class="bar-percent">{{ dato.porcentaje }}</span>
+
+                        <div class="bar" style="height: {{ dato.porcentaje }}%;"></div>
+
+                        <span class="bar-label">{{ dato.edificio }}</span>
                     </div>
-                    
-                    <div class="bar-column">
-                        <span class="bar-percent">60%</span>
-                        <div class="bar" style="height: 60%;"></div>
-                        <span class="bar-label">Edificio 2</span>
-                    </div>
-                    
-                    <div class="bar-column">
-                        <span class="bar-percent">80%</span>
-                        <div class="bar" style="height: 80%;"></div>
-                        <span class="bar-label">Edificio 3</span>
-                    </div>
+                    {% else %}
+                        <p style="width: 100%; text-align: center; color: #777;">No hay datos de ocupación para hoy</p>
+                    {% endfor %}
                 </div>
             </div>
         </div>
