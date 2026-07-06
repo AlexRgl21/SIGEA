@@ -14,10 +14,11 @@ def vista_reserva():
     conn = get_db_connection()
     if not conn:
         flash("Error de conexión a la base de datos", "danger")
-        return render_template('reservas.html', pendientes=[], aprobadas=[], espacios =[])
+        return render_template('reservas.html', pendientes=[], aprobadas=[], espacios=[])
     
     cursor = conn.cursor()
 
+    # 1. Traer los espacios disponibles para el formulario
     cursor.execute("""
         SELECT e.id_espacio, e.nombre AS espacio_nombre, ed.nombre AS edificio_nombre
         FROM Espacios e
@@ -32,7 +33,7 @@ def vista_reserva():
     id_usuario_actual = session.get('id_usuario')
 
     if rol_actual == 'MAESTRO':
-        # El maestro solo ve sus reservas que sean de HOY en adelante
+        # El maestro ve sus reservas (Futuras o que sigan Pendientes)
         cursor.execute("""
             SELECT r.id_reserva, r.fecha, r.hora_inicio, r.hora_fin, r.motivo, r.estado,
                 u.nombre, u.apellidos,
@@ -41,12 +42,12 @@ def vista_reserva():
             JOIN Usuarios u ON r.id_usuario = u.id_usuario
             JOIN Espacios e ON r.id_espacio = e.id_espacio
             JOIN Edificios ed ON e.id_edificio = ed.id_edificio
-            WHERE r.id_usuario = ? AND r.fecha >= CAST(GETDATE() AS DATE)
+            WHERE r.id_usuario = ? AND (r.fecha >= CAST(GETDATE() AS DATE) OR r.estado = 'Pendiente')
             ORDER BY r.fecha ASC, r.hora_inicio ASC
         """, (id_usuario_actual,))
        
     else:
-        # Admin y Coordinador ven lo pendiente/aprobado de HOY en adelante
+        # Admin y Coordinador ven TODO lo futuro y TODAS las pendientes sin importar la fecha
         cursor.execute("""
             SELECT r.id_reserva, r.fecha, r.hora_inicio, r.hora_fin, r.motivo, r.estado,
                 u.nombre, u.apellidos,
@@ -55,15 +56,15 @@ def vista_reserva():
             JOIN Usuarios u ON r.id_usuario = u.id_usuario
             JOIN Espacios e ON r.id_espacio = e.id_espacio
             JOIN Edificios ed ON e.id_edificio = ed.id_edificio
-            WHERE r.fecha >= CAST(GETDATE() AS DATE)
+            WHERE r.fecha >= CAST(GETDATE() AS DATE) OR r.estado = 'Pendiente'
             ORDER BY r.fecha ASC, r.hora_inicio ASC
         """)
 
     cols_res = [col[0] for col in cursor.description]
     todas_reservas = [dict(zip(cols_res, row)) for row in cursor.fetchall()]
-
-    pendientes = [res for res in todas_reservas if res['estado'] == 'Pendiente']
-    aprobadas = [res for res in todas_reservas if res['estado'] == 'Aprobada']
+    
+    pendientes = [res for res in todas_reservas if str(res['estado']).strip().capitalize() == 'Pendiente']
+    aprobadas = [res for res in todas_reservas if str(res['estado']).strip().capitalize() == 'Aprobada']
 
     conn.close()
 
