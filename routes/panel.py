@@ -37,6 +37,45 @@ def inicio():
      """, (hoy,))
     
     reservas_hoy = cursor.fetchall()
+
+    # GRAFICAS DE OCUPACIÓN 
+    dias_semana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
+    dia_hoy = dias_semana[hoy.weekday()]
+
+    cursor.execute("""
+        SELECT 
+            ed.nombre AS nombre_edificio,
+            COUNT(DISTINCT es.id_espacio) AS total_espacios,
+            COUNT(DISTINCT CASE WHEN h.dia_semana = ? THEN a.id_espacio END) AS espacios_ocupados_hoy
+        FROM Edificios ed
+        LEFT JOIN Espacios es ON ed.id_edificio = es.id_edificio AND es.estatus = 'Activo'
+        LEFT JOIN Asignaciones a ON es.id_espacio = a.id_espacio
+        LEFT JOIN Horarios h ON a.id_asignacion = h.id_asignacion
+        GROUP BY ed.nombre
+        HAVING COUNT(DISTINCT CASE WHEN h.dia_semana = ? THEN a.id_espacio END) > 0
+    """, (dia_hoy, dia_hoy))
+    resultados_ocupacion = cursor.fetchall()
+
+    datos_grafica = []
+    for row in resultados_ocupacion:
+        nombre = row.nombre_edificio
+        total = row.total_espacios
+        ocupados = row.espacios_ocupados_hoy
+
+        porcentaje = 0
+        if total > 0 :
+            porcentaje = int((ocupados / total) * 100)
+        
+        datos_grafica.append({
+            'edificio' : nombre,
+            'porcentaje' : porcentaje
+        })
+
     conn.close()
     
-    return render_template('principal.html', total_espacios=total_espacios, bloqueados=bloqueados, reservas_hoy=reservas_hoy)
+    return render_template('principal.html', 
+                            total_espacios=total_espacios, 
+                            bloqueados=bloqueados,  
+                            reservas_hoy=reservas_hoy, 
+                            datos_grafica=datos_grafica,
+                            dia_hoy=dia_hoy)
