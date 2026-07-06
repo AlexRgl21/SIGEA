@@ -89,6 +89,24 @@
     display: none;
 }
 
+.fc-event-title {
+    font-size: 25px !important;
+    font-weight: bold !important;
+    padding: 3px !important;
+    color: white;
+    -webkit-text-stroke: 0.8px black !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.08) !important;
+}
+
+.fc-event-time {
+    font-size: 25px !important;
+    font-weight: 650 !important;
+    color: white;
+    -webkit-text-stroke: 0.8px black !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.08) !important;
+
+}
+
 /* CONTROLES DEL CALENDARIO (FILTROS Y BOTÓN) */
 .calendar-controls {
     display: flex;
