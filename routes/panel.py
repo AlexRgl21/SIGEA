@@ -103,6 +103,79 @@ def inicio():
             'porcentaje' : porcentaje
         })
 
+    # TABLA DE DISPONIBILIDAD 
+    cursor.execute("""
+        SELECT e.id_espacio, e.nombre AS espacio, ed.nombre AS edificio
+        FROM Espacios e
+        JOIN Edificios ed ON e.id_edificio = ed.id_edificio
+        WHERE e.estatus = 'Activo' 
+          AND e.nombre LIKE 'Salón%' 
+        ORDER BY ed.nombre, CAST(SUBSTRING(e.nombre, 7, LEN(e.nombre)) AS INT)
+    """)
+    todos_espacios = cursor.fetchall()
+
+    # GRUPOS QUE ESTAN EN CLASE 
+    cursor.execute("""
+        SELECT a.id_espacio, g.nombre_grupo, h.hora_inicio, h.hora_fin
+        FROM Asignaciones a
+        JOIN Horarios h ON a.id_asignacion = h.id_asignacion
+        JOIN Grupos g ON a.id_grupo = g.id_grupo
+        WHERE h.dia_semana = ? 
+          AND h.hora_inicio <= CAST(? AS TIME) 
+          AND h.hora_fin > CAST(? AS TIME)   
+    """, (dia_hoy, hora_actual, hora_actual))
+    clases_ahora = {row[0]: {'grupo': row[1], 'horario': f"{str(row[2])[:5]} - {str(row[3])[:5]}"} for row in cursor.fetchall()}
+
+    # PROXIMAS CLASES
+    cursor.execute("""
+        SELECT a.id_espacio, g.nombre_grupo, h.hora_inicio, h.hora_fin
+        FROM Asignaciones a
+        JOIN Horarios h ON a.id_asignacion = h.id_asignacion
+        JOIN Grupos g ON a.id_grupo = g.id_grupo
+        WHERE h.dia_semana = ? 
+          AND h.hora_inicio > CAST(? AS TIME)
+        ORDER BY h.hora_inicio ASC
+    """, (dia_hoy, hora_actual))
+
+    clases_proximas = {}
+    for row in cursor.fetchall():
+        id_esp = row[0]
+        if id_esp not in clases_proximas:
+            clases_proximas[id_esp] = {'grupo': row[1], 'horario': f"{str(row[2])[:5]} - {str(row[3])[:5]}"}
+
+
+    tabla_disponibilidad = []
+    for esp in todos_espacios:
+        id_espacio = esp[0]
+        nombre_espacio = esp[1]
+        nombre_edificio = esp[2]
+
+        grupo = "-"
+        horario = "-"
+        estatus_final = "Libre"
+        badge_class = "badge-disponible"
+
+        if id_espacio in clases_ahora:
+            grupo = clases_ahora[id_espacio]['grupo']
+            horario = clases_ahora[id_espacio]['horario']
+            estatus_final = "Ocupado"
+            badge_class = "badge-ocupado"
+        elif id_espacio in clases_proximas:
+            grupo = clases_proximas[id_espacio]['grupo']
+            horario = clases_proximas[id_espacio]['horario']
+            estatus_final = "Próximo"
+            badge_class = "badge-proximo"
+
+        tabla_disponibilidad.append({
+            'edificio' : nombre_edificio,
+            'espacio' : nombre_espacio,
+            'grupo' : grupo,
+            'horario' : horario,
+            'estatus' : estatus_final, 
+            'badge_class' : badge_class
+        })
+
+
     conn.close()
     
     return render_template('principal.html', 
@@ -112,5 +185,6 @@ def inicio():
                             datos_grafica=datos_grafica,
                             dia_hoy=dia_hoy, 
                             ocupados=ocupados, 
-                            libres=libres)
+                            libres=libres,
+                            tabla_disponibilidad=tabla_disponibilidad)
                             
