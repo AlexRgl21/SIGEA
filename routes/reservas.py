@@ -111,9 +111,38 @@ def aceptar_reserva(id):
     if conn:
         try:
             cursor = conn.cursor()
-            cursor.execute("UPDATE Reservas SET estado = 'Aprobada' WHERE id_reserva = ?", (id,))
-            conn.commit()
-            flash("La reserva fue aprobada con éxito.", "success")
+
+            cursor.execute("""
+                SELECT id_espacio, fecha, hora_inicio, hora_fin 
+                FROM Reservas 
+                WHERE id_reserva = ?
+            """, (id,))
+            reserva_pendiente = cursor.fetchone()
+            
+            if reserva_pendiente:
+                id_espacio, fecha, hora_inicio, hora_fin = reserva_pendiente
+                
+                cursor.execute("""
+                    SELECT COUNT(*)
+                    FROM Reservas
+                    WHERE id_espacio = ? 
+                      AND fecha = ? 
+                      AND estado = 'Aprobada'
+                      AND hora_inicio < ? -- La nueva hora fin
+                      AND hora_fin > ?    -- La nueva hora inicio
+                """, (id_espacio, fecha, hora_fin, hora_inicio))
+                
+                empalmes = cursor.fetchone()[0]
+                
+                if empalmes > 0:
+                    flash("No se puede aprobar: El espacio ya cuenta con una reserva en ese horario.", "danger")
+                else:
+                    cursor.execute("UPDATE Reservas SET estado = 'Aprobada' WHERE id_reserva = ?", (id,))
+                    conn.commit()
+                    flash("La reserva fue aprobada con éxito.", "success")
+            else:
+                flash("Error: No se encontró la solicitud de reserva.", "danger")
+                
         except Exception as e:
             conn.rollback()
             flash(f"Error al aceptar la reserva: {str(e)}", "danger")
