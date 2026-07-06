@@ -25,7 +25,7 @@ def vista_asignaciones():
     """)
     grupos = cursor.fetchall()
 
-    cursor.execute("SELECT id_espacio, nombre, id_edificio FROM Espacios WHERE estatus = 'Activo'")
+    cursor.execute("SELECT id_espacio, nombre, id_edificio FROM Espacios WHERE estatus = 'Activo' AND tipo = 'Aula Clásica'")
     espacios = cursor.fetchall()
 
     cursor.execute("SELECT id_periodo, nombre FROM Periodos WHERE activo = 1")
