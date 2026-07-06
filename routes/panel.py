@@ -92,11 +92,11 @@ def inicio():
     for row in resultados_ocupacion:
         nombre = row.nombre_edificio
         total = row.total_espacios
-        ocupados = row.espacios_ocupados_hoy
+        ocupados_edificios = row.espacios_ocupados_hoy
 
         porcentaje = 0
         if total > 0 :
-            porcentaje = int((ocupados / total) * 100)
+            porcentaje = int((ocupados_edificios / total) * 100)
         
         datos_grafica.append({
             'edificio' : nombre,
