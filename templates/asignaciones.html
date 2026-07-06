@@ -65,11 +65,20 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Espacio Académico:</label>
-                            <select name="id_espacio" required>
+                            <label>Edificio:</label>
+                            <select id="select-edificio-form" required onchange="filtrarSalonesFormulario()">
+                                <option value="">Selecciona un edificio...</option>
+                                {% for ed in edificios %}
+                                    <option value="{{ ed[0] }}">{{ ed[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Salón:</label>
+                            <select name="id_espacio" id="select-espacio-form" required disabled> 
                                 <option value="">Seleccione el salón...</option>
                                 {% for espacio in espacios %}
-                                    <option value="{{ espacio.id_espacio }}">{{ espacio.nombre }}</option>
+                                    <option value="{{ espacio.id_espacio }}" data-edificio="{{ espacio.id_edificio}}">{{ espacio.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -96,11 +105,11 @@
                         <div class="form-group" style="display: flex; gap: 10px;">
                             <div style="flex: 1;">
                                 <label>Hora Inicio:</label>
-                                <input type="time" name="hora_inicio" required>
+                                <input type="time" name="hora_inicio" min="07:00" max="20:00" required>
                             </div>
                             <div style="flex: 1;">
                                 <label>Hora Fin:</label>
-                                <input type="time" name="hora_fin" required>
+                                <input type="time" name="hora_fin" min="07:00" max="20:00" required>
                             </div>
                         </div>
                         <button type="submit" class="btn-submit">Registrar Asignación</button>
@@ -277,6 +286,41 @@
                 calendar.updateSize();
             }, 100);
         }
+    }
+
+    function filtrarSalonesFormulario() {
+        let selectEdificio = document.getElementById('select-edificio-form');
+        let selectEspacio = document.getElementById('select-espacio-form');
+        let idEdificioSeleccionado = selectEdificio.value;
+
+        // Reiniciamos el select de salones
+        selectEspacio.value = ""; 
+
+        // Si eligen la opción vacía, bloqueamos el select de salones
+        if (idEdificioSeleccionado === "") {
+            selectEspacio.disabled = true;
+            return;
+        }
+
+        // Si ya eligieron edificio, desbloqueamos
+        selectEspacio.disabled = false; 
+
+        // Recorremos todos los salones y ocultamos los que no son de este edificio
+        Array.from(selectEspacio.options).forEach(opcion => {
+            if (opcion.value === "") return; // Ignorar el "Seleccione el salón..."
+
+            let idEdificioOpcion = opcion.getAttribute('data-edificio');
+            
+            if (idEdificioOpcion == idEdificioSeleccionado) {
+                opcion.style.display = '';
+                opcion.hidden = false;
+                opcion.disabled = false;
+            } else {
+                opcion.style.display = 'none';
+                opcion.hidden = true;
+                opcion.disabled = true;
+            }
+        });
     }
 
     function abrirPestana(evt, nombrePestana) {
