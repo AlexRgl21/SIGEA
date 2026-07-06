@@ -32,34 +32,56 @@ def vista_asignaciones():
     periodos = cursor.fetchall()
 
     cursor.execute("""
-        SELECT g.nombre_grupo, h.dia_semana, h.hora_inicio, h.hora_fin, a.id_espacio, e.id_edificio
+        SELECT g.nombre_grupo, h.dia_semana, h.hora_inicio, h.hora_fin, a.id_espacio, e.id_edificio, c.acronimo
         FROM Horarios h
         JOIN Asignaciones a ON h.id_asignacion = a.id_asignacion
         JOIN Grupos g ON a.id_grupo = g.id_grupo
         JOIN Espacios e ON a.id_espacio = e.id_espacio
+        JOIN Carreras c ON g.id_carrera = c.id_carrera
     """)
     horarios_db = cursor.fetchall()
 
     mapa_dias = {'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6}
-    eventos_calendario = []
 
+    colores_carrera = {
+        'ITIID': '#67A15F', #verde olivo
+        'IRC' : '#C8C7C5' ,#gris
+        'LTF' : '#436DA8', #azul
+        'IMI' : '#D67A38', #naranja
+        'ISA' : '#CF4444', #rojo
+        'IAEV' : '#9854C4', #morado
+        'ISW' : '#67A15F',
+        'ING' : "#F7F088" #amarillo
+    }
+        
+    eventos_calendario = []
     for h in horarios_db:
         nombre_grupo = h[0]
-        dia_num = mapa_dias.get(h[1], 1)
-        hora_inicio_str = h[2].strftime('%H:%M:%S')
-        hora_fin_str = h[3].strftime('%H:%M:%S')
+        dia_bd = str(h[1]).strip()
+        dia_num = mapa_dias.get(dia_bd)
 
-        eventos_calendario.append({
+        if dia_num is None:
+            continue
+
+        hora_inicio_str = str(h[2])[:5]
+        hora_fin_str = str(h[3])[:5]
+        id_espacio = h[4]
+        
+        acronimo_actual = str(h[6]).strip() if h[6] else ''
+        color_asignado = colores_carrera.get(acronimo_actual, '#004a98') 
+
+        evento = {
             'title': nombre_grupo,
-            'daysOfWeek': [dia_num],
             'startTime': hora_inicio_str,
             'endTime': hora_fin_str,
-            'color': '#004a98' ,
+            'daysOfWeek': [dia_num], 
+            'color': color_asignado,  
             'extendedProps': {
-                'id_espacio' : h[4],
-                'id_edificio' : h[5]
-            } 
-        })
+                'id_espacio': id_espacio
+            }
+    }
+        
+        eventos_calendario.append(evento)
     
     cursor.execute("SELECT id_edificio, nombre FROM Edificios")
     edificios = cursor.fetchall()
