@@ -1,7 +1,46 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from database.conexion import get_db_connection
+import string
+import secrets
+import smtplib
+from email.message import EmailMessage
+from werkzeug.security import generate_password_hash
 
 usuarios_bp = Blueprint('usuarios', __name__)
+
+def enviar_correo_bienvenida(correo_destino, nombre_usuario, password_temporal):
+    correo_emisor = "cuentapruebasigea@gmail.com"
+    password_emisor = "ndaz qtsz wxvv ejbq"
+
+    msg = EmailMessage()
+    msg['Subject'] = 'Bienvenido a SIGEA - Tus credenciales de acceso'
+    msg['From'] = correo_emisor
+    msg['To'] = correo_destino
+    
+    contenido = f""" Hola {nombre_usuario}, 
+    Has sido registrado exitosamente en el Sistema Integral de Gestión de Espacios Académicos (SIGEA).
+
+    Tus credenciales de acceso son:
+    Usuario / Correo: {correo_destino}
+    Contraseña Temporal: {password_temporal}
+
+    Te recomendamos iniciar sesión lo antes posible. 
+
+    Saludos, 
+    El equipo de SIGEA. 
+"""
+
+    msg.set_content(contenido)
+
+    try:
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.login(correo_emisor, password_emisor)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Error al enviar el correo: {e}")
+        return False
 
 @usuarios_bp.route('/usuarios')
 def lista_usuarios():
@@ -48,43 +87,52 @@ def agregar_usuario():
     nombre = request.form['nombre']
     apellidos = request.form['apellidos']
     correo = request.form['correo']
-    contrasena = request.form['contrasena']
     id_rol = request.form['id_rol']
     estado = 'Activo'
 
+    alfabeto = string.ascii_letters + string.digits
+    password_temporal = ''.join(secrets.choice(alfabeto) for i in range(8))
+    password_hash = generate_password_hash(password_temporal)
+
     conn = get_db_connection()
     if conn:
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
 
-        consulta = """
-            INSERT INTO Usuarios (nombre, apellidos, correo, contrasena, id_rol, estado)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """
+            consulta = """
+                INSERT INTO Usuarios (nombre, apellidos, correo, contrasena, id_rol, estado)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """
 
-        cursor.execute(consulta, (nombre, apellidos, correo, contrasena, id_rol, estado))
-        conn.commit()
+            cursor.execute(consulta, (nombre, apellidos, correo, password_hash, id_rol, estado))
+            conn.commit()
 
-        cursor.close()
-        conn.close()
+            correo_enviado = enviar_correo_bienvenida(correo, nombre, password_temporal)
+
+            if correo_enviado:
+                flash("Usuario registrado correctamente y correo enviado correctamente.", "success")
+            else:
+                flash("Usuario guardado, pero falló el envío del correo de credenciales.", "warning")
+        except Exception as e:
+            conn.rollback()
+            flash(f"Error al registrar: {str(e)}", "danger")
+        finally:
+            cursor.close()
+            conn.close()
         
     return redirect(url_for('usuarios.lista_usuarios'))
 
 @usuarios_bp.route('/usuarios/configurar/<int:id>', methods=['POST'])
 def configurar_usuario(id):
-    # 1. Imprimimos en la terminal negra lo que realmente llegó
-    print("====== ATENCIÓN: DATOS RECIBIDOS ======")
-    print(request.form)
-    print("=======================================")
 
-    # 2. Usamos .get() para evitar que la página colapse
     id_rol = request.form.get('id_rol')
     estado = request.form.get('estado')
 
-    # 3. Si 'estado' viene vacío, pausamos todo y te lo mostramos en pantalla
+    # Si 'estado' viene vacío, pausamos todo y te lo mostramos en pantalla
     if estado is None:
-        return f"<h3>¡El navegador sigue mandando los datos viejos!</h3> <p>Esto es lo que llegó a Python: {request.form}</p> <p>Por favor, regresa a la página y presiona <b>Ctrl + F5</b>.</p>"
+        return f"<h3>¡El navegador sigue mandando los datos viejos!</h3> <p>Por favor, regresa a la página y presiona <b>Ctrl + F5</b>.</p>"
 
-    # 4. Si todo está bien, guardamos en la base de datos
+    # Si todo está bien, guardamos en la base de datos
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
