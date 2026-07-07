@@ -533,3 +533,9 @@ body {
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
+
+.alerta-warnig {
+    background-color: #f6f8d7;
+    color: #e0902f;
+    border: 1px solid #f5eec6;
+}
