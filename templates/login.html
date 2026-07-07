@@ -39,9 +39,19 @@
                     <p style="color: red; text-align: center; margin-bottom: 10px; font-size: 14px;">{{ error }}</p>
                 {% endif %}
 
+                {% if success %}
+                    <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; border: 1px solid #c3e6cb;">
+                    {{ success }}
+                {% endif %}
+                </div>
+
                 <button type="submit" class="btn-login">
                     Ingresar
                 </button>
+
+                <div style="margin-top: 15px; text-align: right;">
+                    <a href="{{ url_for('auth.olvide_contrasena') }}" style="color: #2AB7CA;; text-decoration: none; font-size: 13px;">¿Olvidaste tu contraseña?</a>
+                </div>
 
             </form>
         </div>
