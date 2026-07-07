@@ -1,6 +1,7 @@
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, session
 from database.conexion import get_db_connection
+from werkzeug.security import check_password_hash 
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -27,18 +28,18 @@ def login():
 
     if request.method == 'POST':
         correo = request.form['correo']
-        contrasena = request.form['contrasena']
+        contrasena_ingresada = request.form['contrasena']
 
         conn = get_db_connection()
         if conn:
             cursor = conn.cursor()
             
             # Solo pedimos el id_rol (1, 2 o 3) 
-            cursor.execute("SELECT id_usuario, nombre, estado, id_rol FROM Usuarios WHERE correo = ? AND contrasena = ?", (correo, contrasena))
+            cursor.execute("SELECT id_usuario, nombre, estado, id_rol, contrasena FROM Usuarios WHERE correo = ?", (correo,))
             usuario = cursor.fetchone()
             conn.close()
 
-            if usuario: 
+            if usuario and (check_password_hash(usuario[4], contrasena_ingresada) or usuario[4] == contrasena_ingresada): 
                 estado_usuario = usuario[2]
 
                 if estado_usuario == 'Inactivo':
@@ -48,7 +49,6 @@ def login():
                     session['id_usuario'] = usuario[0]
                     session['nombre_usuario'] = usuario[1]
                     
-                    # ASIGNAMOS EL ROL EXACTO 
                     id_rol = usuario[3]
                     
                     if id_rol == 1:
@@ -60,7 +60,6 @@ def login():
                     else:
                         return render_template('login.html', error="Tu usuario no tiene un rol válido asignado.")
                     
-                    # Redirigimos según el rol que se acaba de setear
                     if session['role'] == 'MAESTRO':
                         return redirect(url_for('asignaciones.vista_asignaciones'))
                     
