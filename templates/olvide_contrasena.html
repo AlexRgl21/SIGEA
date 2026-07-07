@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SIGEA | Recuperar Acceso</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='usuarios.css') }}"> </head>
+<body style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f6f9; font-family: sans-serif;">
+    <div style="background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center;">
+        <h2 style="color:#2AB7CA; ; margin-bottom: 10px;">¿Olvidaste tu contraseña?</h2>
+        <p style="color: #666; font-size: 14px; margin-bottom: 25px;">Introduce tu correo electrónico institucional. Te enviaremos un código de verificación para restablecer tu acceso.</p>
+        
+        {% if error %}
+            <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; border: 1px solid #f5c6cb;">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <form action="{{ url_for('auth.olvide_contrasena') }}" method="POST">
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555;">CORREO ELECTRÓNICO:</label>
+                <input type="email" name="correo" required placeholder="ejemplo@correo.com" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;">
+            </div>
+            
+            <button type="submit" style="background: #2AB7CA;; color: white; width: 100%; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 15px;">
+                Enviar Código de Verificación
+            </button>
+        </form>
+        
+        <div style="margin-top: 20px;">
+            <a href="{{ url_for('auth.login') }}" style="color: #2AB7CA;; text-decoration: none; font-size: 14px;">Regresar al Login</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SIGEA | Restablecer Contraseña</title>
+</head>
+<body style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f6f9; font-family: sans-serif;">
+    <div style="background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center;">
+        <h2 style="color: #004a98; margin-bottom: 10px;">Restablecer Contraseña</h2>
+        <p style="color: #666; font-size: 14px; margin-bottom: 25px;">Hemos enviado un código a tu correo electrónico. Completa los campos para actualizar tu cuenta.</p>
+        
+        {% if error %}
+            <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; border: 1px solid #f5c6cb;">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <form action="{{ url_for('auth.restablecer_contrasena') }}" method="POST">
+            <div style="margin-bottom: 15px; text-align: left;">
+                <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555;">CÓDIGO DE VERIFICACIÓN (6 CARACTERES):</label>
+                <input type="text" name="codigo" required maxlength="6" placeholder="A1B2C3" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; text-transform: uppercase; font-weight: bold; letter-spacing: 2px; text-align: center;">
+            </div>
+
+            <div style="margin-bottom: 15px; text-align: left;">
+                <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555;">NUEVA CONTRASEÑA:</label>
+                <input type="password" name="nueva_contrasena" required minlength="6" placeholder="Mínimo 6 caracteres" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 25px; text-align: left;">
+                <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555;">CONFIRMAR NUEVA CONTRASEÑA:</label>
+                <input type="password" name="confirmar_contrasena" required minlength="6" placeholder="Repite la contraseña" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;">
+            </div>
+            
+            <button type="submit" style="background: #28a745; color: white; width: 100%; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 15px;">
+                Actualizar Contraseña
+            </button>
+        </form>
+    </div>
+</body>
+</html>
