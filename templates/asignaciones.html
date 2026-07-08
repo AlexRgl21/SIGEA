@@ -416,5 +416,58 @@
             });
         }
     } 
+
+    const inputGrupo = document.getElementById('input-nombre'); 
+    const selectCarrera = document.getElementById('select-carrera');
+
+    const diccionarioCarreras = {
+        'ITIID': 'Tecnologías',
+        'IRC': 'Robótica',
+        'LTF': 'Terapia',
+        'IMI': 'Metrología',
+        'ISA': 'Sistemas',
+        'IAEV': 'Animación',
+        'ISW': 'Software',
+        'ING': 'Ingles'
+    };
+
+    inputGrupo.addEventListener('input', function(e) {
+        const textoEscrito = e.target.value.toUpperCase();
+        let encontroCarrera = false;
+
+        // Revisamos si el texto escrito contiene alguna de nuestras siglas
+        for (const [siglas, palabraClave] of Object.entries(diccionarioCarreras)) {
+            
+            if (textoEscrito.includes(siglas)) {
+                encontroCarrera = true;
+                
+                // Si hay coincidencia, recorremos las opciones
+                for (let i = 0; i < selectCarrera.options.length; i++) {
+                    const opcion = selectCarrera.options[i];
+                    
+                    if (opcion.text.toUpperCase().includes(palabraClave.toUpperCase())) {
+                        selectCarrera.value = opcion.value; 
+                        
+                        // Desactivamos los clics y lo pintamos de gris para que parezca bloqueado
+                        selectCarrera.style.pointerEvents = 'none';
+                        selectCarrera.style.backgroundColor = '#e9ecef';
+                        break; 
+                    }
+                }
+                break; 
+            }
+        }
+        
+        // Si borran el texto o escriben algo que no coincide con las siglas
+        if (!encontroCarrera) {
+            // Quitamos el bloqueo para que puedan elegir manualmente si es necesario
+            selectCarrera.style.pointerEvents = 'auto';
+            selectCarrera.style.backgroundColor = '';
+            
+            if (textoEscrito === '') {
+                selectCarrera.value = '';
+            }
+        }
+    });
 </script>
 {% endblock %}
