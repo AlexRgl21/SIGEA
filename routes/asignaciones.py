@@ -159,28 +159,31 @@ def agregar_grupo():
     generacion_fin = request.form.get('generacion_fin')
     id_carrera = request.form.get('id_carrera')
 
-    if not generacion_fin or generacion_fin.strip() == "":
-        generacion_fin = None
-    else:
-        generacion_fin = int(generacion_fin)
-
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if conn:
+        try:
+            cursor = conn.cursor()
+    
+            cursor.execute("SELECT id_grupo FROM Grupos WHERE nombre_grupo = ?", (nombre_grupo,))
+            grupo_existente = cursor.fetchone()
+            
+            if grupo_existente:
+                flash(f"El grupo '{nombre_grupo}' ya existe. Por favor, elige otro nombre.", "danger")
+                return redirect(url_for('asignaciones.vista_asignaciones')) # Ajusta el nombre de tu vista si es diferente
 
-    try:
-        cursor.execute("""
-            INSERT INTO Grupos (nombre_grupo, generacion_inicio, generacion_fin, id_carrera, estatus)
-            VALUES (?, ?, ?, ?, 'Activo') 
-        """, (nombre_grupo, int(generacion_inicio), generacion_fin, int(id_carrera) ))
-
-        conn.commit()
-        flash(f"El grupo {nombre_grupo} se registro correctamente.", "success")
-    except Exception as e:
-        print(f"Error al guardar el grupo {e}")
-        conn.rollback()
-        flash(f"Ocurrio un error al intentar guardar el grupo. Intentalo de nuevo.", "danger")
-    finally:
-        conn.close()
+            cursor.execute("""
+                INSERT INTO Grupos (nombre_grupo, generacion_inicio, generacion_fin, id_carrera)
+                VALUES (?, ?, ?, ?)
+            """, (nombre_grupo, generacion_inicio, generacion_fin, id_carrera))
+            
+            conn.commit()
+            flash("Grupo registrado exitosamente.", "success")
+            
+        except Exception as e:
+            conn.rollback()
+            flash(f"Error al guardar el grupo: {str(e)}", "danger")
+        finally:
+            conn.close()
 
     return redirect(url_for('asignaciones.vista_asignaciones'))
 
@@ -222,6 +225,13 @@ def editar_grupo(id_grupo):
     cursor = conn.cursor()
 
     try:
+        cursor.execute("SELECT id_grupo FROM Grupos WHERE nombre_grupo = ? AND id_grupo != ?", (nombre_grupo, id_grupo))
+        grupo_existente = cursor.fetchone()
+
+        if grupo_existente:
+            flash(f"El grupo '{nombre_grupo}' ya existe. Por favor, elige otro nombre.", "warning")
+            return redirect(url_for('asignaciones.vista_asignaciones'))
+
         cursor.execute("""
             UPDATE Grupos
             SET nombre_grupo = ?, generacion_inicio = ?, generacion_fin = ?, id_carrera = ?
