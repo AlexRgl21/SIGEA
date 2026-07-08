@@ -534,8 +534,14 @@ body {
     border: 1px solid #f5c6cb;
 }
 
-.alerta-warnig {
-    background-color: #f6f8d7;
-    color: #e0902f;
-    border: 1px solid #f5eec6;
+.alert-info {
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
 }
