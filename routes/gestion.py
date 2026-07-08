@@ -16,7 +16,7 @@ def vista_gestion():
     cursor = conn.cursor()
 
     cursor.execute("SELECT id_edificio, nombre, codigo, estatus FROM Edificios")
-    edificios = cursor.fetchall()
+    edificios_db = cursor.fetchall()
 
     cursor.execute( """
         SELECT e.id_espacio, e.nombre, e.capacidad, e.tipo, e.estatus, ed.codigo
@@ -24,9 +24,30 @@ def vista_gestion():
         INNER JOIN Edificios ed ON e.id_edificio = ed.id_edificio
     """)
                 
-    aulas = cursor.fetchall()
+    aulas_db = cursor.fetchall()
     
     conn.close()
+
+    colores_edificios = {
+        'Edi - 1' : '#324F85',
+        'Edi - 2' : '#D12424',
+        'Edi - 3' : '#3A7824',
+        'Metra' : '#F2E052',
+        'Learning' : '#6F0EB5'
+    }
+
+    edificios = []
+    for ed in edificios_db:
+        codigo_actual = str(ed[2]).strip()
+        color_asignado = colores_edificios.get(codigo_actual, '#004a98' )
+        edificios.append(tuple(ed) + (color_asignado,))
+    
+    aulas = []
+    for au in aulas_db:
+        codigo_edificio = str(au[5]).strip()
+        color_asignado = colores_edificios.get(codigo_edificio, '#004a98')
+        aulas.append(tuple(au) + (color_asignado,))
+
     return render_template('gestion.html', edificios=edificios, aulas=aulas)
 
 # AGREGAR ESPACIO
