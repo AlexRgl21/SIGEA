@@ -133,11 +133,11 @@
                         <div class="form-row" style="display: flex; gap: 15px;">
                             <div class="form-group" style="flex: 1;">
                                 <label>Año Inicio</label>
-                                <input type="number" id="input-inicio" name="generacion_inicio" placeholder="Ej. 2024" required>
+                                <input type="number" id="input-inicio" name="generacion_inicio" placeholder="Ej. 2024" min="2020" max="2050" required>
                             </div>
                             <div class="form-group" style="flex: 1;">
                                 <label>Año Fin</label>
-                                <input type="number" id="input-fin" name="generacion_fin" placeholder="Ej. 2028">
+                                <input type="number" id="input-fin" name="generacion_fin" placeholder="Ej. 2028" min="2023" max="2060">
                             </div>
                         </div>
                         <div class="form-group">
@@ -467,6 +467,20 @@
             if (textoEscrito === '') {
                 selectCarrera.value = '';
             }
+        }
+    });
+
+    //  VALIDACIÓN DE AÑOS DE GENERACIÓN 
+    const inputInicio = document.getElementById('input-inicio');
+    const inputFin = document.getElementById('input-fin');
+
+    inputInicio.addEventListener('change', function() {
+        inputFin.min = this.value;
+        
+        if (inputFin.value && parseInt(inputFin.value) < parseInt(this.value)) {
+            inputFin.value = '';
+            inputFin.style.borderColor = 'red';
+            setTimeout(() => inputFin.style.borderColor = '#ccc', 1000);
         }
     });
 </script>
