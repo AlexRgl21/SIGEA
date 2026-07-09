@@ -40,6 +40,8 @@
                 </li>
                 
                 {% if session.get('role') == 'ADMIN' %}
+                <!-- Usuarios: Solo ADMIN y COORDINADOR -->
+                {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                 <li class="{% if request.endpoint == 'usuarios.lista_usuarios' %}active{% endif %}">
                     <a href="{{ url_for('usuarios.lista_usuarios') }}">Usuarios</a>
                 </li>

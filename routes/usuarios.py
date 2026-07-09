@@ -90,6 +90,9 @@ def agregar_usuario():
     id_rol = request.form['id_rol']
     estado = 'Activo'
 
+    if session.get('role') != 'ADMIN':
+        id_rol = '3'
+
     alfabeto = string.ascii_letters + string.digits
     password_temporal = ''.join(secrets.choice(alfabeto) for i in range(8))
     password_hash = generate_password_hash(password_temporal)
@@ -131,9 +134,17 @@ def configurar_usuario(id):
     # Si 'estado' viene vacío, pausamos todo y te lo mostramos en pantalla
     if estado is None:
         return f"<h3>¡El navegador sigue mandando los datos viejos!</h3> <p>Por favor, regresa a la página y presiona <b>Ctrl + F5</b>.</p>"
+    
+    if session.get('role') != 'ADMIN':
 
-    # Si todo está bien, guardamos en la base de datos
+        if str(id_rol) in ['1', '2']:
+            flash("Alerta de seguridad: No tienes permisos para asignar este rol.", "danger")
+            return redirect(url_for('usuarios.lista_usuarios'))
+        
+        id_rol = '3'
+
     conn = get_db_connection()
+
     if conn:
         cursor = conn.cursor()
         cursor.execute("""
