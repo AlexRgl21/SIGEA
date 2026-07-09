@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from database.conexion import get_db_connection
 from .auth import role_required # Importamos el decorador
+import datetime # <-- Agregamos la importación de datetime
 
 reservas_bp = Blueprint('reservas', __name__)
 
@@ -31,6 +32,9 @@ def vista_reserva():
 
     rol_actual = session.get('role')
     id_usuario_actual = session.get('id_usuario')
+    
+    # <-- AQUI ESTA LA MAGIA: Capturamos la fecha de hoy desde Python
+    hoy = datetime.date.today() 
 
     if rol_actual == 'MAESTRO':
         # El maestro ve sus reservas (Futuras o que sigan Pendientes)
@@ -42,9 +46,9 @@ def vista_reserva():
             JOIN Usuarios u ON r.id_usuario = u.id_usuario
             JOIN Espacios e ON r.id_espacio = e.id_espacio
             JOIN Edificios ed ON e.id_edificio = ed.id_edificio
-            WHERE r.id_usuario = ? AND (r.fecha >= CAST(GETDATE() AS DATE) OR r.estado = 'Pendiente')
+            WHERE r.id_usuario = ? AND (r.fecha >= ? OR r.estado = 'Pendiente')
             ORDER BY r.fecha ASC, r.hora_inicio ASC
-        """, (id_usuario_actual,))
+        """, (id_usuario_actual, hoy)) # <-- Pasamos la variable 'hoy'
        
     else:
         # Admin y Coordinador ven TODO lo futuro y TODAS las pendientes sin importar la fecha
@@ -56,9 +60,9 @@ def vista_reserva():
             JOIN Usuarios u ON r.id_usuario = u.id_usuario
             JOIN Espacios e ON r.id_espacio = e.id_espacio
             JOIN Edificios ed ON e.id_edificio = ed.id_edificio
-            WHERE r.fecha >= CAST(GETDATE() AS DATE) OR r.estado = 'Pendiente'
+            WHERE r.fecha >= ? OR r.estado = 'Pendiente'
             ORDER BY r.fecha ASC, r.hora_inicio ASC
-        """)
+        """, (hoy,)) # <-- Pasamos la variable 'hoy'
 
     cols_res = [col[0] for col in cursor.description]
     todas_reservas = [dict(zip(cols_res, row)) for row in cursor.fetchall()]
