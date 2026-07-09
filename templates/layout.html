@@ -39,7 +39,6 @@
                     <a href="{{ url_for('reservas.vista_reserva') }}">Reservas Especiales</a>
                 </li>
                 
-                {% if session.get('role') == 'ADMIN' %}
                 <!-- Usuarios: Solo ADMIN y COORDINADOR -->
                 {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                 <li class="{% if request.endpoint == 'usuarios.lista_usuarios' %}active{% endif %}">
@@ -63,7 +62,7 @@
                 <div class="campana-container" id="btn-campana" style="position: relative; cursor: pointer; display: flex; align-items: center; margin-right: 5px;">
                     <i class="fa-solid fa-bell" style="font-size: 20px; color: #4A5568;"></i>
                     
-                    {% if cant_notis > 0 %}
+                    {% if cant_notis|default(0) > 0 %}
                     <span class="badge-numero" style="position: absolute; top: -5px; right: -8px; background-color: #dc3545; color: white; border-radius: 50%; padding: 1px 5px; font-size: 10px; font-weight: bold; border: 2px solid white;">
                         {{ cant_notis }}
                     </span>
@@ -74,8 +73,8 @@
                             Notificaciones Recientes
                         </div>
                         <div style="max-height: 220px; overflow-y: auto;">
-                            {% if cant_notis > 0 %}
-                                {% for n in notis %}
+                            {% if cant_notis|default(0) > 0 %}
+                                {% for n in notis|default([]) %}
                                     <a href="{{ n.url }}" style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 15px; border-bottom: 1px solid #EDF2F7; font-size: 12px; color: #4A5568; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='#F7FAFC'" onmouseout="this.style.background='transparent'">
                                         <i class="fa-solid fa-circle-info" style="color: #2AB7CA; margin-top: 2px;"></i>
                                         <p style="margin: 0; line-height: 1.4;">{{ n.mensaje }}</p>
