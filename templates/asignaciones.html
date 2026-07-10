@@ -384,7 +384,14 @@
         document.getElementById("input-nombre").value = nombre;
         document.getElementById("input-inicio").value = inicio;
         document.getElementById("input-fin").value = fin;
-        document.getElementById("select-carrera").value = carrera;
+        
+        let selectCarrera = document.getElementById("select-carrera");
+        selectCarrera.value = carrera;
+
+        selectCarrera.style.pointerEvents = 'none';
+        selectCarrera.style.backgroundColor = '#e9ecef';
+        selectCarrera.tabIndex = -1;
+        selectCarrera.setAttribute('data-editando', 'true');
 
         document.getElementById("form-titulo").innerText = "Editar Grupo: " + nombre;
         document.getElementById("btn-guardar").innerText = "Actualizar Cambios";
@@ -402,6 +409,12 @@
         document.getElementById("btn-guardar").style.backgroundColor = ""; 
         document.getElementById("btn-cancelar").style.display = "none"; 
         document.getElementById("form-grupo").action = rutaCrear;
+
+        let selectCarrera = document.getElementById("select-carrera");
+        selectCarrera.style.pointerEvents = 'auto';
+        selectCarrera.style.backgroundColor = '';
+        selectCarrera.tabIndex = 0;
+        selectCarrera.removeAttribute('data-editando');
     }
 
     function ejecutarBusqueda() {
