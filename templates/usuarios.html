@@ -46,8 +46,11 @@
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                     <select name="id_rol" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
                         <option value="">-- Selecciona un Rol --</option>
-                        <option value="1">Administrador</option>
-                        <option value="2">Coordinador de Carrera</option>
+
+                        {% if session.get('role') == 'ADMIN' %}
+                            <option value="1">Administrador</option>
+                            <option value="2">Coordinador de Carrera</option>
+                        {% endif %}
                         <option value="3">Docente</option>
                     </select>
                 </div>
@@ -102,13 +105,20 @@
                     </td>
 
                     <td class="actions-cell">
-                        <button class="btn-action-edit" title="Editar datos personales" onclick="abrirModalEditar('{{ usuario.id_usuario }}')">
-                            <i class="icon-edit">✏️</i>
-                        </button>
-                        
-                        <button class="btn-action-config" title="Configurar permisos y estado" onclick="abrirModalConfig('{{ usuario.id_usuario }}')">
-                            <i class="icon-gear">⚙️</i>
-                        </button>
+                        {% if session.get('role') == 'ADMIN' or usuario.rol_nombre == 'Docente' %}
+                            <button class="btn-action-edit" title="Editar datos personales" onclick="abrirModalEditar('{{ usuario.id_usuario }}')">
+                                <i class="icon-edit">✏️</i>
+                            </button>
+                            
+                            <button class="btn-action-config" title="Configurar permisos y estado" onclick="abrirModalConfig('{{ usuario.id_usuario }}')">
+                                <i class="icon-gear">⚙️</i>
+                            </button>
+                        {% else %}
+                            <span style="color: #aaa; font-size: 12px; font-style: italic;">
+                                <i class="fas fa-lock"></i> Sin permisos
+                            </span>
+
+                        {% endif %}
 
                         <div id="modal-editar-{{ usuario.id_usuario }}" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
                             <div style="background: white; padding: 25px; border-radius: 8px; width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: left;">
@@ -149,8 +159,12 @@
                                     <div style="margin-bottom: 15px;">
                                         <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">ROL DEL SISTEMA:</label>
                                         <select name="id_rol" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                                            <option value="1" {% if usuario.rol_nombre == 'Administrador' %}selected{% endif %}>Administrador</option>
-                                            <option value="2" {% if usuario.rol_nombre == 'Coordinador de Carrera' %}selected{% endif %}>Coordinador de Carrera</option>
+
+                                            {% if session.get('role') == 'ADMIN' %}
+                                                <option value="1" {% if usuario.rol_nombre == 'Administrador' %}selected{% endif %}>Administrador</option>
+                                                <option value="2" {% if usuario.rol_nombre == 'Coordinador de Carrera' %}selected{% endif %}>Coordinador de Carrera</option>
+                                            {% endif %}
+
                                             <option value="3" {% if usuario.rol_nombre == 'Docente' %}selected{% endif %}>Docente</option>
                                         </select>
                                     </div>
