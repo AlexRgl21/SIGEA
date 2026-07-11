@@ -102,7 +102,7 @@ def crear_reserva():
             conn.commit()
             flash("Solicitud de reserva enviada correctamente a revisión.", "success")
         except Exception as e:
-            flash(f"Error al guardar la reserva: {str(e)}", "error")
+            flash(f"Error al guardar la reserva: {str(e)}", "danger")
         finally:
             conn.close()
     

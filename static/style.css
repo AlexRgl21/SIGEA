@@ -499,13 +499,6 @@ body {
     font-family: Arial, sans-serif;
 }
 
-/* COLOR ROJO */
-.alerta-roja {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
 /* BOTON PARA CERRAR*/
 .cerrar-alerta {
     position: absolute;
@@ -534,13 +527,13 @@ body {
     border: 1px solid #f5c6cb;
 }
 
-.alert-info {
+.alerta-info {
     color: #0c5460;
     background-color: #d1ecf1;
     border-color: #bee5eb;
 }
 
-.alert-warning {
+.alerta-warning {
     color: #856404;
     background-color: #fff3cd;
     border-color: #ffeeba;
@@ -641,20 +634,4 @@ body {
 
 .btn-verificar:hover { 
     background: #219baf; 
-}
-
-/* Animación para revelar el segundo paso */
-.revelar-suave {
-    animation: fadeInDown 0.4s ease-out forwards;
-}
-
-@keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-15px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
