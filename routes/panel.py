@@ -1,12 +1,12 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from database.conexion import get_db_connection
 from datetime import date, datetime
-from .auth import role_required # Importamos el decorador
+from .auth import role_required 
 
 panel_bp = Blueprint('panel', __name__)
 
 @panel_bp.route('/panel')
-@role_required('ADMIN', 'COORDINADOR') # Protegido: El maestro no entra aquí
+@role_required('ADMIN', 'COORDINADOR') 
 def inicio():
     
     if 'id_usuario' not in session:
@@ -18,20 +18,22 @@ def inicio():
     
     cursor = conn.cursor()
 
-    # CALCULO DE KPIs
-    cursor.execute("SELECT COUNT(*) FROM Espacios")
-    total_espacios = cursor.fetchone()[0] or 0
-
-    cursor.execute("SELECT COUNT(*) FROM Espacios WHERE estatus = 'Mantenimiento' ")
-    bloqueados = cursor.fetchone()[0] or 0
-
-    # espacios libres y ocupados
     ahora = datetime.now()
     hora_actual = ahora.strftime('%H:%M:%S')
-    fecha_hoy = ahora.date()
-
-    dias_semana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
+    hoy = ahora.date()
+    dias_semana = ['Lunes, Martes, Miercoles, Jueves, Viernes, Sabado, Domigo']
     dia_hoy = dias_semana[ahora.weekday()]
+
+    # CALCULO DE KPIs
+    cursor.execute("""
+        SELECT 
+            COUNT(*),
+            SUM(CASE WHEN estatus = 'Mantenimiento' THEN 1 ELSE 0 END)
+        FROM Espacios
+        """)
+    row_kpis = cursor.fetchone()
+    total_espacios = row_kpis[0] or 0
+    bloqueados = row_kpis[1] or 0
 
     # SALONES QUE TIENEN CLASE
     cursor.execute("""
@@ -51,17 +53,14 @@ def inicio():
         WHERE fecha = ? AND estado = 'Aprobada'
           AND hora_inicio <= CAST(? AS TIME) 
           AND hora_fin > CAST(? AS TIME)
-    """, (fecha_hoy, hora_actual, hora_actual))
+    """, (hoy, hora_actual, hora_actual))
     ocupados_por_reserva = cursor.fetchone()[0] or 0
 
     ocupados = ocupados_por_clase + ocupados_por_reserva
-
-    libres = total_espacios - bloqueados - ocupados
-    libres = max(0, libres)
+    libres = max(0, total_espacios - bloqueados - ocupados)
 
 
     # RESERVAS DE HOY
-    hoy = date.today()
     cursor.execute(""" 
         SELECT ed.nombre as edificio, e.nombre as espacio, r.hora_inicio, r.hora_fin
         FROM Reservas r
@@ -70,7 +69,6 @@ def inicio():
         WHERE r.fecha = ? AND r.estado = 'Aprobada'
         ORDER BY r.hora_inicio ASC
      """, (hoy,))
-    
     reservas_hoy = cursor.fetchall()
 
     # GRAFICAS DE OCUPACIÓN 
@@ -86,22 +84,14 @@ def inicio():
         GROUP BY ed.nombre
         HAVING COUNT(DISTINCT CASE WHEN h.dia_semana = ? THEN a.id_espacio END) > 0
     """, (dia_hoy, dia_hoy))
-    resultados_ocupacion = cursor.fetchall()
-
-    datos_grafica = []
-    for row in resultados_ocupacion:
-        nombre = row.nombre_edificio
-        total = row.total_espacios
-        ocupados_edificios = row.espacios_ocupados_hoy
-
-        porcentaje = 0
-        if total > 0 :
-            porcentaje = int((ocupados_edificios / total) * 100)
-        
-        datos_grafica.append({
-            'edificio' : nombre,
-            'porcentaje' : porcentaje
-        })
+    
+    datos_grafica = [
+        {
+            'edificio' : row[0],
+            'porcentaje' : int((row[2] / row[1] * 100) if row[1] > 0 else 0)
+        }
+        for row in cursor.fetchall()
+    ]
 
     # TABLA DE DISPONIBILIDAD 
     cursor.execute("""
@@ -142,41 +132,25 @@ def inicio():
         id_esp = row[0]
         if id_esp not in clases_proximas:
             clases_proximas[id_esp] = {'grupo': row[1], 'horario': f"{str(row[2])[:5]} - {str(row[3])[:5]}"}
+    conn.close()
 
 
     tabla_disponibilidad = []
     for esp in todos_espacios:
-        id_espacio = esp[0]
-        nombre_espacio = esp[1]
-        nombre_edificio = esp[2]
-
-        grupo = "-"
-        horario = "-"
-        estatus_final = "Libre"
-        badge_class = "badge-disponible"
-
+        id_espacio, nombre_espacio, nombre_edificio = esp
+        
+        info = {'grupo': '-', 'horario': '-', 'estatus': 'Libre', 'badge_class': 'badge-disponible'}
+        
         if id_espacio in clases_ahora:
-            grupo = clases_ahora[id_espacio]['grupo']
-            horario = clases_ahora[id_espacio]['horario']
-            estatus_final = "Ocupado"
-            badge_class = "badge-ocupado"
+            info.update({'grupo': clases_ahora[id_espacio]['grupo'], 'horario': clases_ahora[id_espacio]['horario'], 'estatus': 'Ocupado', 'badge_class': 'badge-ocupado'})
         elif id_espacio in clases_proximas:
-            grupo = clases_proximas[id_espacio]['grupo']
-            horario = clases_proximas[id_espacio]['horario']
-            estatus_final = "Próximo"
-            badge_class = "badge-proximo"
+            info.update({'grupo': clases_proximas[id_espacio]['grupo'], 'horario': clases_proximas[id_espacio]['horario'], 'estatus': 'Próximo', 'badge_class': 'badge-proximo'})
 
         tabla_disponibilidad.append({
-            'edificio' : nombre_edificio,
-            'espacio' : nombre_espacio,
-            'grupo' : grupo,
-            'horario' : horario,
-            'estatus' : estatus_final, 
-            'badge_class' : badge_class
+            'edificio': nombre_edificio,
+            'espacio': nombre_espacio,
+            **info 
         })
-
-
-    conn.close()
     
     return render_template('principal.html', 
                             total_espacios=total_espacios, 
@@ -187,4 +161,3 @@ def inicio():
                             ocupados=ocupados, 
                             libres=libres,
                             tabla_disponibilidad=tabla_disponibilidad)
-                            
