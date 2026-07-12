@@ -21,7 +21,7 @@ def inicio():
     ahora = datetime.now()
     hora_actual = ahora.strftime('%H:%M:%S')
     hoy = ahora.date()
-    dias_semana = ['Lunes, Martes, Miercoles, Jueves, Viernes, Sabado, Domigo']
+    dias_semana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domigo']
     dia_hoy = dias_semana[ahora.weekday()]
 
     # CALCULO DE KPIs
