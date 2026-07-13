@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     {% block custom_head %}{% endblock %}
     {% block custom_css %}{% endblock %}
 </head>
@@ -25,12 +27,6 @@
                 </li>
                 {% endif %}
                 
-                {% if session.get('role') == 'ADMIN' %}
-                <li class="{% if request.endpoint == 'gestion.vista_gestion' %}active{% endif %}">
-                    <a href="{{ url_for('gestion.vista_gestion') }}">Gestión de Infraestructura</a>
-                </li>
-                {% endif %}
-                
                 <li class="{% if request.endpoint == 'asignaciones.vista_asignaciones' %}active{% endif %}">
                     <a href="{{ url_for('asignaciones.vista_asignaciones') }}">Asignación de Horarios</a>
                 </li>
@@ -39,10 +35,13 @@
                     <a href="{{ url_for('reservas.vista_reserva') }}">Reservas Especiales</a>
                 </li>
                 
-                <!-- Usuarios: Solo ADMIN y COORDINADOR -->
-                {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
+                {% if session.get('role') == 'ADMIN' %}
                 <li class="{% if request.endpoint == 'usuarios.lista_usuarios' %}active{% endif %}">
                     <a href="{{ url_for('usuarios.lista_usuarios') }}">Usuarios</a>
+                </li>
+                
+                <li class="{% if request.endpoint == 'gestion.vista_gestion' %}active{% endif %}">
+                    <a href="{{ url_for('gestion.vista_gestion') }}">Gestión de Infraestructura</a>
                 </li>
                 {% endif %}
             </ul>
@@ -56,17 +55,18 @@
             </div>
 
             <div class="user-profile" style="display: flex; align-items: center; gap: 15px;">
-                <input type="text" id="input-busqueda" class="search-input" placeholder="Buscar..." onkeyup="ejecutarBusqueda()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; display: none;">
+                <input type="text" id="input-busqueda" class="search-input" placeholder="Buscar..." onkeyup="ejecutarBusqueda()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; outline: none;">
                 
                 {% if session.get('role') %}
-                <div class="campana-container" id="btn-campana" style="position: relative; cursor: pointer; display: flex; align-items: center; margin-right: 5px;">
+                <div class="campana-container" id="btn-campana" 
+                     data-cant="{{ cant_notis|default(0) }}" 
+                     data-user="{{ session.get('id_usuario', '') }}" 
+                     data-notis="{% if cant_notis is defined and cant_notis > 0 %}{% for n in notis %}{{ n.mensaje }}{% endfor %}{% endif %}"
+                     style="position: relative; cursor: pointer; display: flex; align-items: center; margin-right: 5px;">
+                    
                     <i class="fa-solid fa-bell" style="font-size: 20px; color: #4A5568;"></i>
                     
-<<<<<<< HEAD
                     {% if cant_notis is defined and cant_notis > 0 %}
-=======
-                    {% if cant_notis|default(0) > 0 %}
->>>>>>> 43d54e6986a3d616259e0563b4609bf9b9057395
                     <span class="badge-numero" style="position: absolute; top: -5px; right: -8px; background-color: #dc3545; color: white; border-radius: 50%; padding: 1px 5px; font-size: 10px; font-weight: bold; border: 2px solid white;">
                         {{ cant_notis }}
                     </span>
@@ -77,13 +77,8 @@
                             Notificaciones Recientes
                         </div>
                         <div style="max-height: 220px; overflow-y: auto;">
-<<<<<<< HEAD
                             {% if cant_notis is defined and cant_notis > 0 %}
                                 {% for n in notis %}
-=======
-                            {% if cant_notis|default(0) > 0 %}
-                                {% for n in notis|default([]) %}
->>>>>>> 43d54e6986a3d616259e0563b4609bf9b9057395
                                     <a href="{{ n.url }}" style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 15px; border-bottom: 1px solid #EDF2F7; font-size: 12px; color: #4A5568; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='#F7FAFC'" onmouseout="this.style.background='transparent'">
                                         <i class="fa-solid fa-circle-info" style="color: #2AB7CA; margin-top: 2px;"></i>
                                         <p style="margin: 0; line-height: 1.4;">{{ n.mensaje }}</p>
@@ -98,6 +93,7 @@
                     </div>
                 </div>
                 {% endif %}
+                
                 <span class="user-name">{{ session.get('nombre_usuario', 'Usuario') }} ({{ session.get('role', '') }})</span>
                 <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center; padding: 5px 10px; border-radius: 5px; background: #dc3545; color: white;">Salir</a>
             </div>
@@ -125,38 +121,63 @@
     </main>
 
     <script>
-        // temporizador de inactividad
-        let tiempoInactividad;
+        // SCRIPT DEL BUSCADOR GLOBAL
+        function ejecutarBusqueda() {
+            let input = document.getElementById('input-busqueda').value.toLowerCase();
+            let tarjetas = document.querySelectorAll('.reserva-card, .salon-card'); 
+            tarjetas.forEach(tarjeta => {
+                let texto = tarjeta.innerText.toLowerCase();
+                tarjeta.style.display = texto.includes(input) ? 'block' : 'none';
+            });
+        }
 
+        // SCRIPT DE INACTIVIDAD CON SWEETALERT2
+        let tiempoInactividad;
         function reiniciarTemporizador() {
             clearTimeout(tiempoInactividad);
             tiempoInactividad = setTimeout(() => {
-                alert("Tu sesión ha expirado por inactividad.");
-                window.location.href = "{{ url_for('auth.logout') }}";
+                Swal.fire({
+                    title: 'Sesión Expirada',
+                    text: 'Tu sesión se cerró por seguridad al no detectar movimiento.',
+                    icon: 'warning',
+                    confirmButtonColor: '#2AB7CA',
+                    allowOutsideClick: false
+                }).then(() => {
+                    window.location.href = "{{ url_for('auth.logout') }}";
+                });
             }, 300000); 
         }
 
-        window.onload = reiniciarTemporizador;
-        document.onmousemove = reiniciarTemporizador; 
-        document.onkeypress = reiniciarTemporizador;  
-        document.onclick = reiniciarTemporizador;     
-        document.onscroll = reiniciarTemporizador;    
+        window.onload = window.onmousemove = window.onkeypress = window.onclick = window.onscroll = reiniciarTemporizador;
 
-        // SCRIPT DE LA CAMPANA DE NOTIFICACIONES
+        // SCRIPT DE LA CAMPANA (Versión limpia sin errores de VS Code)
         const btnCampana = document.getElementById('btn-campana');
         const dropdownNotis = document.getElementById('dropdown-notis');
-
+        const badgeNumero = document.querySelector('.badge-numero');
+        
         if (btnCampana && dropdownNotis) {
-            btnCampana.addEventListener('click', function(e) {
-                if (dropdownNotis.style.display === 'none' || dropdownNotis.style.display === '') {
-                    dropdownNotis.style.display = 'block';
-                } else {
-                    dropdownNotis.style.display = 'none';
+            // Leemos las variables desde el HTML
+            const cantNotis = parseInt(btnCampana.getAttribute('data-cant')) || 0;
+            const idUsuario = btnCampana.getAttribute('data-user');
+            const notisActuales = btnCampana.getAttribute('data-notis');
+            const claveStorage = 'notis_vistas_' + idUsuario;
+
+            if (cantNotis > 0) {
+                let notisVistas = localStorage.getItem(claveStorage);
+                if (badgeNumero && notisActuales === notisVistas) {
+                    badgeNumero.style.display = 'none';
                 }
+            }
+
+            btnCampana.addEventListener('click', function(e) {
+                if (cantNotis > 0) {
+                    localStorage.setItem(claveStorage, notisActuales);
+                    if(badgeNumero) badgeNumero.style.display = 'none';
+                }
+                dropdownNotis.style.display = (dropdownNotis.style.display === 'none' || dropdownNotis.style.display === '') ? 'block' : 'none';
                 e.stopPropagation(); 
             });
 
-            // Cierra el menú desplegable si se hace clic fuera de la campana
             document.addEventListener('click', function(e) {
                 if (!btnCampana.contains(e.target)) {
                     dropdownNotis.style.display = 'none';
