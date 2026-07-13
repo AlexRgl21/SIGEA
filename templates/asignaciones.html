@@ -6,6 +6,11 @@
 
 {% block custom_head %}
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 {% endblock %}
 
 {% block custom_css %}
@@ -57,7 +62,7 @@
                     <form id="form-asignacion" action="{{ url_for('asignaciones.nueva_asignacion') }}" method="POST">
                         <div class="form-group">
                             <label>Grupo:</label>
-                            <select name="id_grupo" required>
+                            <select name="id_grupo" id="select-grupo-form" required>
                                 <option value="">Seleccione un grupo...</option>
                                 {% for grupo in grupos %}
                                     <option value="{{ grupo.id_grupo }}">{{ grupo.nombre_grupo }}</option>
@@ -65,7 +70,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Edificio:</label>
+                            <label> Edificio:</label>
                             <select id="select-edificio-form" required onchange="filtrarSalonesFormulario()">
                                 <option value="">Selecciona un edificio...</option>
                                 {% for ed in edificios %}
@@ -84,35 +89,37 @@
                         </div>
                         <div class="form-group">
                             <label>Periodo / Cuatrimestre:</label>
-                            <select name="id_periodo" required>
+                            <select name="id_periodo" id="select-periodo-form" required>
                                 <option value="">Seleccione el periodo...</option>
                                 {% for periodo in periodos %}
                                     <option value="{{ periodo.id_periodo }}">{{ periodo.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>
+                        
                         <div class="form-group">
-                            <label>Días de la semana:</label>
-                            <div class="checkbox-group">
-                                <label><input type="checkbox" name="dias" value="Lunes"> L</label>
-                                <label><input type="checkbox" name="dias" value="Martes"> M</label>
-                                <label><input type="checkbox" name="dias" value="Miércoles"> X</label>
-                                <label><input type="checkbox" name="dias" value="Jueves"> J</label>
-                                <label><input type="checkbox" name="dias" value="Viernes"> V</label>
-                                <label><input type="checkbox" name="dias" value="Sábado"> S</label>
+                            <label><i class="fas fa-calendar-day" style="color: #17a2b8; width: 20px;"></i> Días de la semana:</label>
+                            <div class="dias-group">
+                                <label class="dia-pill"><input type="checkbox" name="dias" value="Lunes"><span>L</span></label>
+                                <label class="dia-pill"><input type="checkbox" name="dias" value="Martes"><span>M</span></label>
+                                <label class="dia-pill"><input type="checkbox" name="dias" value="Miércoles"><span>X</span></label>
+                                <label class="dia-pill"><input type="checkbox" name="dias" value="Jueves"><span>J</span></label>
+                                <label class="dia-pill"><input type="checkbox" name="dias" value="Viernes"><span>V</span></label>
+                                <label class="dia-pill"><input type="checkbox" name="dias" value="Sábado"><span>S</span></label>
                             </div>
                         </div>
+                        
                         <div class="form-group" style="display: flex; gap: 10px;">
                             <div style="flex: 1;">
-                                <label>Hora Inicio:</label>
-                                <input type="time" name="hora_inicio" min="07:00" max="20:00" required>
+                                <label><i class="far fa-clock" style="color: #17a2b8; width: 15px;"></i> Inicio:</label>
+                                <input type="time" name="hora_inicio" id="hora-inicio-form" min="07:00" max="20:00" required>
                             </div>
                             <div style="flex: 1;">
-                                <label>Hora Fin:</label>
-                                <input type="time" name="hora_fin" min="07:00" max="20:00" required>
+                                <label><i class="far fa-clock" style="color: #17a2b8; width: 15px;"></i> Fin:</label>
+                                <input type="time" name="hora_fin" id="hora-fin-form" min="07:00" max="20:00" required>
                             </div>
                         </div>
-                        <button type="submit" class="btn-submit">Registrar Asignación</button>
+                        <button type="submit" class="btn-submit"><i class="fas fa-save"></i> Registrar Asignación</button>
                     </form>
                 </div>
                 {% endif %}
@@ -377,7 +384,14 @@
         document.getElementById("input-nombre").value = nombre;
         document.getElementById("input-inicio").value = inicio;
         document.getElementById("input-fin").value = fin;
-        document.getElementById("select-carrera").value = carrera;
+        
+        let selectCarrera = document.getElementById("select-carrera");
+        selectCarrera.value = carrera;
+
+        selectCarrera.style.pointerEvents = 'none';
+        selectCarrera.style.backgroundColor = '#e9ecef';
+        selectCarrera.tabIndex = -1;
+        selectCarrera.setAttribute('data-editando', 'true');
 
         document.getElementById("form-titulo").innerText = "Editar Grupo: " + nombre;
         document.getElementById("btn-guardar").innerText = "Actualizar Cambios";
@@ -395,6 +409,12 @@
         document.getElementById("btn-guardar").style.backgroundColor = ""; 
         document.getElementById("btn-cancelar").style.display = "none"; 
         document.getElementById("form-grupo").action = rutaCrear;
+
+        let selectCarrera = document.getElementById("select-carrera");
+        selectCarrera.style.pointerEvents = 'auto';
+        selectCarrera.style.backgroundColor = '';
+        selectCarrera.tabIndex = 0;
+        selectCarrera.removeAttribute('data-editando');
     }
 
     function ejecutarBusqueda() {
@@ -483,5 +503,115 @@
             setTimeout(() => inputFin.style.borderColor = '#ccc', 1000);
         }
     });
+
+    // LÓGICA DE CONFIRMACIÓN CON SWEETALERT2
+    const formAsignacion = document.getElementById('form-asignacion');
+    
+    if (formAsignacion) {
+        formAsignacion.addEventListener('submit', function(e) {
+            // 1. Detenemos el envío al servidor
+            e.preventDefault(); 
+
+            // 2. Extraemos los nombres visuales (no los IDs numéricos)
+            const selGrupo = document.getElementById('select-grupo-form');
+            const textoGrupo = selGrupo.options[selGrupo.selectedIndex].text;
+
+            const selEspacio = document.getElementById('select-espacio-form');
+            const textoEspacio = selEspacio.options[selEspacio.selectedIndex].text;
+
+            const horaInicio = document.getElementById('hora-inicio-form').value;
+            const horaFin = document.getElementById('hora-fin-form').value;
+
+            // 3. Capturamos los días seleccionados
+            let diasSeleccionados = [];
+            document.querySelectorAll('input[name="dias"]:checked').forEach(function(checkbox) {
+                diasSeleccionados.push(checkbox.value);
+            });
+
+            // Validación manual rápida de días
+            if(diasSeleccionados.length === 0) {
+                Swal.fire({
+                    title: 'Faltan Días',
+                    text: 'Debes seleccionar al menos un día de la semana para la asignación.',
+                    icon: 'warning',
+                    confirmButtonColor: '#17a2b8'
+                });
+                return;
+            }
+
+            // 4. Armamos la tarjeta de resumen en HTML
+            const resumenHTML = `
+                <div style="text-align: left; font-size: 14px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ccc; margin-top: 10px;">
+                    <p style="margin-bottom: 8px;"><b><i class="fas fa-users" style="color:#17a2b8; width:20px;"></i> Grupo:</b> ${textoGrupo}</p>
+                    <p style="margin-bottom: 8px;"><b><i class="fas fa-door-open" style="color:#17a2b8; width:20px;"></i> Salón:</b> ${textoEspacio}</p>
+                    <p style="margin-bottom: 8px;"><b><i class="fas fa-calendar-day" style="color:#17a2b8; width:20px;"></i> Días:</b> ${diasSeleccionados.join(', ')}</p>
+                    <p style="margin-bottom: 0;"><b><i class="far fa-clock" style="color:#17a2b8; width:20px;"></i> Horario:</b> ${horaInicio} a ${horaFin}</p>
+                </div>
+                <p style="margin-top: 15px; font-size: 15px; color: #555;">¿Estás seguro de registrar esta asignación en SIGEA?</p>
+            `;
+
+            // 5. Mostramos la alerta de confirmación
+            Swal.fire({
+                title: 'Confirmar Asignación',
+                html: resumenHTML,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#17a2b8', // Turquesa
+                cancelButtonColor: '#dc3545',  // Rojo de Bootstrap
+                confirmButtonText: '<i class="fas fa-check"></i> Confirmar',
+                cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+                reverseButtons: true // Pone el botón de confirmar a la derecha
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Si el usuario da clic en confirmar, enviamos el formulario
+                    formAsignacion.submit();
+                }
+            });
+        });
+    }
+
+    $(document).ready(function() {
+        // Convertimos el select de grupos en un buscador inteligente
+        $('#select-grupo-form').select2({
+            placeholder: "Escribe para buscar un grupo...",
+            width: '100%',
+            language: {
+                noResults: function() {
+                    return "No se encontraron coincidencias";
+                }
+            }
+        });
+    });
+
+
+    //AUTO-SELECCIÓN DEL CUATRIMESTRE ACTUAL
+    const selectPeriodo = document.getElementById('select-periodo-form');
+    
+    if (selectPeriodo) {
+        const fechaActual = new Date();
+        const mesActual = fechaActual.getMonth() + 1; // getMonth() devuelve 0-11, sumamos 1
+        const añoActual = fechaActual.getFullYear();
+        
+        let textoCuatrimestre = "";
+        
+        // Determinamos el cuatrimestre según el mes actual
+        if (mesActual >= 1 && mesActual <= 4) {
+            textoCuatrimestre = "Enero - Abril";
+        } else if (mesActual >= 5 && mesActual <= 8) {
+            textoCuatrimestre = "Mayo - Agosto";
+        } else {
+            textoCuatrimestre = "Septiembre - Diciembre";
+        }
+        
+        // Buscamos la opción en el select que coincida con el texto y el año
+        Array.from(selectPeriodo.options).forEach(opcion => {
+            const textoOpcion = opcion.text; // Ej: "Mayo - Agosto 2026"
+            if (textoOpcion.includes(textoCuatrimestre) && textoOpcion.includes(añoActual.toString())) {
+                selectPeriodo.value = opcion.value; // Seleccionamos la opción automáticamente
+            }
+        });
+    }
+
+
 </script>
 {% endblock %}

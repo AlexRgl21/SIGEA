@@ -61,7 +61,7 @@ def role_required(*roles):
 # SOLICITAR RECUPERACIÓN
 @auth_bp.route('/olvide-contrasena', methods=['GET', 'POST'])
 def olvide_contrasena():
-    error = None
+    error = request.args.get('error')
     if request.method == 'POST':
         correo = request.form.get('correo').strip()
 
@@ -77,6 +77,7 @@ def olvide_contrasena():
                 alfabeto = string.ascii_uppercase + string.digits
                 codigo = ''.join(secrets.choice(alfabeto) for i in range(6))
 
+                session.permanent = False
                 session['reset_correo'] = correo
                 session['reset_codigo'] = codigo
                 session['reset_expiracion'] = (datetime.now() + timedelta(minutes=10))
@@ -91,13 +92,36 @@ def olvide_contrasena():
             error = "Error de conexión con la base de datos."
     return render_template('olvide_contrasena.html', error=error)
 
+# REENVIAR CODIGO
+@auth_bp.route('/reenviar-codigo')
+def reenviar_codigo():
+    correo = session.get('reset_correo')
+    if not correo:
+        return redirect(url_for('auth.olvide_contrasena'))
+    
+    alfabeto = string.ascii_uppercase + string.digits
+    nuevo_codigo = ''.join(secrets.choice(alfabeto) for i in range (6))
+
+    session.permanent = False
+    session['reset_codigo'] = nuevo_codigo
+    session['reset_expiracion'] = (datetime.now() + timedelta(minutes=10))
+
+    if enviar_correo_codigo(correo, nuevo_codigo):
+        return redirect(url_for('auth.restablecer_contrasena', success ="Se ha enviado un nuevo código a tu correo."))
+    else:
+        return redirect(url_for('auth.restablecer_contrasena', error="Error al intentar reenviar el correo."))
+
+
+
 @auth_bp.route('/restablecer-contrasena', methods=['GET', 'POST'])
 def restablecer_contrasena():
 
     if 'reset_correo' not in session or 'reset_codigo' not in session:
         return redirect(url_for('auth.olvide_contrasena'))
         
-    error = None
+    error = request.args.get('error')
+    success = request.args.get('success')
+
     if request.method == 'POST':
         codigo_ingresado = request.form.get('codigo').strip().upper()
         nueva_contrasena = request.form.get('nueva_contrasena')
@@ -142,7 +166,7 @@ def restablecer_contrasena():
             else:
                 error = "Error al actualizar los datos. Inténtalo de nuevo."
                 
-    return render_template('restablecer_contrasena.html', error=error)
+    return render_template('restablecer_contrasena.html', error=error, success = success)
 # --- RUTA DE LOGIN ---
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
