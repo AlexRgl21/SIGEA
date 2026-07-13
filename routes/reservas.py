@@ -1,13 +1,12 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from database.conexion import get_db_connection
-from .auth import role_required 
-import datetime 
+from .auth import role_required # Importamos el decorador
+import datetime # <-- Agregamos la importación de datetime
 
 reservas_bp = Blueprint('reservas', __name__)
 
 @reservas_bp.route('/reservas')
-@role_required('ADMIN', 'COORDINADOR', 'MAESTRO') 
-
+@role_required('ADMIN', 'COORDINADOR', 'MAESTRO') # Todos pueden ver el estatus
 def vista_reserva():
     
     if 'id_usuario' not in session:
@@ -20,7 +19,7 @@ def vista_reserva():
     
     cursor = conn.cursor()
 
-    # Traer los espacios disponibles para el formulario
+    # 1. Traer los espacios disponibles para el formulario
     cursor.execute("""
         SELECT e.id_espacio, e.nombre AS espacio_nombre, ed.nombre AS edificio_nombre
         FROM Espacios e
@@ -34,10 +33,11 @@ def vista_reserva():
     rol_actual = session.get('role')
     id_usuario_actual = session.get('id_usuario')
     
+    # <-- AQUI ESTA LA MAGIA: Capturamos la fecha de hoy desde Python
     hoy = datetime.date.today() 
 
-    # LÓGICA DE VISTAS POR ROL
     if rol_actual == 'MAESTRO':
+        # El maestro ve sus reservas (Futuras o que sigan Pendientes)
         cursor.execute("""
             SELECT r.id_reserva, r.fecha, r.hora_inicio, r.hora_fin, r.motivo, r.estado,
                 u.nombre, u.apellidos,
@@ -48,9 +48,10 @@ def vista_reserva():
             JOIN Edificios ed ON e.id_edificio = ed.id_edificio
             WHERE r.id_usuario = ? AND (r.fecha >= ? OR r.estado = 'Pendiente')
             ORDER BY r.fecha ASC, r.hora_inicio ASC
-        """, (id_usuario_actual, hoy)) 
+        """, (id_usuario_actual, hoy)) # <-- Pasamos la variable 'hoy'
        
     else:
+        # Admin y Coordinador ven TODO lo futuro y TODAS las pendientes sin importar la fecha
         cursor.execute("""
             SELECT r.id_reserva, r.fecha, r.hora_inicio, r.hora_fin, r.motivo, r.estado,
                 u.nombre, u.apellidos,
@@ -61,51 +62,49 @@ def vista_reserva():
             JOIN Edificios ed ON e.id_edificio = ed.id_edificio
             WHERE r.fecha >= ? OR r.estado = 'Pendiente'
             ORDER BY r.fecha ASC, r.hora_inicio ASC
-        """, (hoy,))
+        """, (hoy,)) # <-- Pasamos la variable 'hoy'
 
     cols_res = [col[0] for col in cursor.description]
     todas_reservas = [dict(zip(cols_res, row)) for row in cursor.fetchall()]
-
-    conn.close()
     
     pendientes = [res for res in todas_reservas if str(res['estado']).strip().capitalize() == 'Pendiente']
     aprobadas = [res for res in todas_reservas if str(res['estado']).strip().capitalize() == 'Aprobada']
 
-    return render_template('reservas.html', pendientes=pendientes, aprobadas=aprobadas, espacios=espacios)
+    conn.close()
+
+    return render_template('reservas.html', pendientes=pendientes, 
+                                            aprobadas=aprobadas,
+                                            espacios=espacios)
 
 # CREAR RESERVA (SOLO ADMIN Y MAESTRO)
 @reservas_bp.route('/reservas/nueva', methods=['POST'])
-@role_required('ADMIN', 'MAESTRO') 
-
+@role_required('ADMIN', 'MAESTRO') # Protegido
 def crear_reserva():
     if 'id_usuario' not in session:
         return redirect(url_for('auth.login'))
-    
-    conn = get_db_connection()
-    if not conn:
-        flash("Error de conexión a la base de datos.", "danger")
-        return redirect(url_for('reservas.vista_reserva'))
 
-    id_usuario = session.get('id_usuario') 
+    id_usuario = session['id_usuario'] 
     id_espacio = request.form.get('id_espacio')
     fecha = request.form.get('fecha')
     hora_inicio = request.form.get('hora_inicio')
     hora_fin = request.form.get('hora_fin')
     motivo = request.form.get('motivo')
 
-    try:
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO Reservas (id_usuario, id_espacio, fecha, hora_inicio, hora_fin, motivo, estado)
-            VALUES (?, ?, ?, ?, ?, ?, 'Pendiente')
-        ''', (id_usuario, id_espacio, fecha, hora_inicio, hora_fin, motivo))
-        
-        conn.commit()
-        flash("Solicitud de reserva enviada correctamente a revisión.", "success")
-    except Exception as e:
-        flash(f"Error al guardar la reserva: {str(e)}", "danger")
-    finally:
-        conn.close()
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO Reservas (id_usuario, id_espacio, fecha, hora_inicio, hora_fin, motivo, estado)
+                VALUES (?, ?, ?, ?, ?, ?, 'Pendiente')
+            ''', (id_usuario, id_espacio, fecha, hora_inicio, hora_fin, motivo))
+            
+            conn.commit()
+            flash("Solicitud de reserva enviada correctamente a revisión.", "success")
+        except Exception as e:
+            flash(f"Error al guardar la reserva: {str(e)}", "error")
+        finally:
+            conn.close()
     
     return redirect(url_for('reservas.vista_reserva'))
 
@@ -114,71 +113,64 @@ def crear_reserva():
 @role_required('ADMIN', 'COORDINADOR') # Protegido
 def aceptar_reserva(id):
     conn = get_db_connection()
-    if not conn:
-        flash("Error de conexión a la base de datos.", "danger")
-        return redirect(url_for('reservas.vista_reserva'))
-    
-    try:
-        cursor = conn.cursor()
+    if conn:
+        try:
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT id_espacio, fecha, hora_inicio, hora_fin 
-            FROM Reservas 
-            WHERE id_reserva = ?
-        """, (id,))
-        reserva_pendiente = cursor.fetchone()
-        
-        if not reserva_pendiente:
-            flash("Error: No se encontró la solicitud de reserva.", "danger")
-            return redirect(url_for('reservas.vista_reserva'))
-        
-        id_espacio, fecha, hora_inicio, hora_fin = reserva_pendiente
+            cursor.execute("""
+                SELECT id_espacio, fecha, hora_inicio, hora_fin 
+                FROM Reservas 
+                WHERE id_reserva = ?
+            """, (id,))
+            reserva_pendiente = cursor.fetchone()
             
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM Reservas
-            WHERE id_espacio = ? 
-                AND fecha = ? 
-                AND estado = 'Aprobada'
-                AND hora_inicio < ? 
-                AND hora_fin > ?  
-        """, (id_espacio, fecha, hora_fin, hora_inicio))
-            
-        empalmes = cursor.fetchone()[0]
-            
-        if empalmes > 0:
-            flash("No se puede aprobar: El espacio ya cuenta con una reserva en ese horario.", "danger")
-        else:
-            cursor.execute("UPDATE Reservas SET estado = 'Aprobada' WHERE id_reserva = ?", (id,))
-            conn.commit()
-            flash("La reserva fue aprobada con éxito.", "success")
-            
-    except Exception as e:
-        conn.rollback()
-        flash(f"Error al aceptar la reserva: {str(e)}", "danger")
-    finally:
-        conn.close()
+            if reserva_pendiente:
+                id_espacio, fecha, hora_inicio, hora_fin = reserva_pendiente
+                
+                cursor.execute("""
+                    SELECT COUNT(*)
+                    FROM Reservas
+                    WHERE id_espacio = ? 
+                      AND fecha = ? 
+                      AND estado = 'Aprobada'
+                      AND hora_inicio < ? -- La nueva hora fin
+                      AND hora_fin > ?    -- La nueva hora inicio
+                """, (id_espacio, fecha, hora_fin, hora_inicio))
+                
+                empalmes = cursor.fetchone()[0]
+                
+                if empalmes > 0:
+                    flash("No se puede aprobar: El espacio ya cuenta con una reserva en ese horario.", "danger")
+                else:
+                    cursor.execute("UPDATE Reservas SET estado = 'Aprobada' WHERE id_reserva = ?", (id,))
+                    conn.commit()
+                    flash("La reserva fue aprobada con éxito.", "success")
+            else:
+                flash("Error: No se encontró la solicitud de reserva.", "danger")
+                
+        except Exception as e:
+            conn.rollback()
+            flash(f"Error al aceptar la reserva: {str(e)}", "danger")
+        finally:
+            conn.close()
             
     return redirect(url_for('reservas.vista_reserva'))
 
 # RECHAZAR RESERVA (SOLO ADMIN Y COORDINADOR)
 @reservas_bp.route('/reservas/rechazar/<int:id>', methods=['POST'])
-@role_required('ADMIN', 'COORDINADOR') 
-
+@role_required('ADMIN', 'COORDINADOR') # Protegido
 def rechazar_reserva(id):
     conn = get_db_connection()
-    if not conn:
-        flash("Error de conexión a la base de datos.", "danger")
-        return redirect(url_for('reservas.vista_reserva'))
-    try:
-        cursor = conn.cursor()
-        cursor.execute("UPDATE Reservas SET estado = 'Rechazada' WHERE id_reserva = ?", (id,))
-        conn.commit()
-        flash("La reserva fue rechazada y eliminada del panel.", "success")
-    except Exception as e:
-        conn.rollback()
-        flash(f"Error al rechazar la reserva: {str(e)}", "danger")
-    finally:
-        conn.close()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE Reservas SET estado = 'Rechazada' WHERE id_reserva = ?", (id,))
+            conn.commit()
+            flash("La reserva fue rechazada y eliminada del panel.", "success")
+        except Exception as e:
+            conn.rollback()
+            flash(f"Error al rechazar la reserva: {str(e)}", "danger")
+        finally:
+            conn.close()
             
     return redirect(url_for('reservas.vista_reserva'))
