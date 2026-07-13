@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>SIGEA | Restablecer Contraseña</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f6f9; font-family: sans-serif;">
-    <div style="background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center;">
-        <h2 style="color: #004a98; margin-bottom: 10px;">Restablecer Contraseña</h2>
-        <p style="color: #666; font-size: 14px; margin-bottom: 25px;">Hemos enviado un código a tu correo electrónico. Completa los campos para actualizar tu cuenta.</p>
+<body class="bg-auth">
+    <div class="auth-card">
+        <h2 style="color: #2AB7CA; margin-bottom: 10px;">Restablecer Contraseña</h2>
+        <p style="color: #666; font-size: 14px; margin-bottom: 25px;">Hemos enviado un código a tu correo electrónico. Ingrésalo para continuar.</p>
         
         {% if error %}
             <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; border: 1px solid #f5c6cb;">
@@ -15,26 +16,121 @@
             </div>
         {% endif %}
 
-        <form action="{{ url_for('auth.restablecer_contrasena') }}" method="POST">
-            <div style="margin-bottom: 15px; text-align: left;">
-                <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555;">CÓDIGO DE VERIFICACIÓN (6 CARACTERES):</label>
-                <input type="text" name="codigo" required maxlength="6" placeholder="A1B2C3" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; text-transform: uppercase; font-weight: bold; letter-spacing: 2px; text-align: center;">
-            </div>
-
-            <div style="margin-bottom: 15px; text-align: left;">
-                <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555;">NUEVA CONTRASEÑA:</label>
-                <input type="password" name="nueva_contrasena" required minlength="6" placeholder="Mínimo 6 caracteres" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;">
-            </div>
-
-            <div style="margin-bottom: 25px; text-align: left;">
-                <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555;">CONFIRMAR NUEVA CONTRASEÑA:</label>
-                <input type="password" name="confirmar_contrasena" required minlength="6" placeholder="Repite la contraseña" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;">
+        <form action="{{ url_for('auth.restablecer_contrasena') }}" method="POST" id="form-reset">
+            
+            <label class="form-label" style="text-align: center;">CÓDIGO DE VERIFICACIÓN (6 CARACTERES):</label>
+            <div class="codigo-container">
+                <input type="text" class="codigo-input" maxlength="1" required autofocus>
+                <input type="text" class="codigo-input" maxlength="1" required>
+                <input type="text" class="codigo-input" maxlength="1" required>
+                <input type="text" class="codigo-input" maxlength="1" required>
+                <input type="text" class="codigo-input" maxlength="1" required>
+                <input type="text" class="codigo-input" maxlength="1" required>
             </div>
             
-            <button type="submit" style="background: #28a745; color: white; width: 100%; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 15px;">
-                Actualizar Contraseña
-            </button>
+            <input type="hidden" name="codigo" id="codigo-oculto">
+
+            <div id="reenviar-container" style="margin-bottom: 20px; font-size: 13px; color: #666;">
+                ¿No recibiste el código? <a href="{{ url_for('auth.reenviar_codigo') }}" style="color: #2AB7CA; text-decoration: none; font-weight: bold;">Volver a enviarlo</a>
+            </div>
+            
+            <button type="button" id="btn-siguiente" class="btn-verificar">Siguiente</button>
+
+            <div id="paso-contrasenas" style="display: none; margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee;">
+                <label class="form-label">NUEVA CONTRASEÑA:</label>
+                <input type="password" name="nueva_contrasena" class="form-input" minlength="6" placeholder="Mínimo 6 caracteres">
+
+                <label class="form-label">CONFIRMAR NUEVA CONTRASEÑA:</label>
+                <input type="password" name="confirmar_contrasena" class="form-input" minlength="6" placeholder="Repite la contraseña">
+                
+                <button type="submit" class="btn-verificar">Actualizar Contraseña</button>
+            </div>
+
         </form>
+        
+        <div style="margin-top: 20px;">
+            <a href="{{ url_for('auth.login') }}" style="color: #666; text-decoration: none; font-size: 14px; font-weight: bold;">Cancelar y volver al Login</a>
+        </div>
     </div>
+
+    <script>
+        const inputs = document.querySelectorAll('.codigo-input');
+        const inputOculto = document.getElementById('codigo-oculto');
+        const form = document.getElementById('form-reset');
+        
+        // Elementos del diseño en dos pasos
+        const btnSiguiente = document.getElementById('btn-siguiente');
+        const pasoContrasenas = document.getElementById('paso-contrasenas');
+        const inputsContrasena = pasoContrasenas.querySelectorAll('input[type="password"]');
+
+        inputs.forEach((input, index) => {
+            // 1. Cuando el usuario escribe
+            input.addEventListener('input', (e) => {
+                e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                
+                if (e.target.value !== '' && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            }); 
+
+            // 2. Cuando presiona borrar (Backspace)
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+
+            // 3. Cuando pega (Ctrl+V) el código
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const datosPegados = e.clipboardData.getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                
+                if (datosPegados) {
+                    for (let i = 0; i < datosPegados.length; i++) {
+                        inputs[i].value = datosPegados[i];
+                    }
+                    if (datosPegados.length < 6) {
+                        inputs[datosPegados.length].focus();
+                    } else {
+                        inputs[5].focus();
+                    }
+                }
+            });
+        });
+
+        // 4. Lógica del botón "Siguiente"
+        btnSiguiente.addEventListener('click', () => {
+            let codigoCompleto = '';
+            inputs.forEach(input => codigoCompleto += input.value);
+            
+            if (codigoCompleto.length === 6) {
+                // Si están los 6 caracteres, ocultamos este botón y mostramos el paso 2
+                btnSiguiente.style.display = 'none';
+                pasoContrasenas.style.display = 'block';
+                pasoContrasenas.classList.add('revelar-suave');
+                
+                // Hacemos que las contraseñas ahora sí sean obligatorias (required)
+                inputsContrasena.forEach(inp => inp.setAttribute('required', 'true'));
+                
+                // Ponemos el cursor automáticamente en la nueva contraseña
+                inputsContrasena[0].focus();
+            } else {
+                // Pequeña sacudida o alerta visual si no ha llenado los 6
+                inputs.forEach(input => {
+                    if(input.value === '') {
+                        input.style.borderColor = '#dc3545';
+                        setTimeout(() => input.style.borderColor = '#e2e8f0', 1500);
+                    }
+                });
+            }
+        });
+
+        // 5. Antes de enviar a Python, juntamos los 6 cuadritos
+        form.addEventListener('submit', () => {
+            let codigoCompleto = '';
+            inputs.forEach(input => codigoCompleto += input.value);
+            inputOculto.value = codigoCompleto;
+        });
+    </script>
 </body>
 </html>
