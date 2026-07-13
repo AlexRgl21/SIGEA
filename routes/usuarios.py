@@ -120,10 +120,7 @@ def agregar_usuario():
             args=(correo, nombre, password_temporal)
         )
         hilo_correo.start()
-
         flash("Usuario registrado correctamente. El correo se siendo enviado.", "success")
-
-        correo_enviado = enviar_correo_bienvenida(correo, nombre, password_temporal)
      
     except Exception as e:
         conn.rollback()
@@ -164,6 +161,7 @@ def configurar_usuario(id):
         WHERE id_usuario = ?
     """, (id_rol, estado, id))
     conn.commit()
+    flash("Permisos y estado del usuario actualizados correctamente.", "success")
     cursor.close()
     conn.close()
         
@@ -190,6 +188,7 @@ def editar_usuario(id):
     """, (nombre, apellidos, correo, id))
     
     conn.commit()
+    flash("Datos del usuario modificados con éxito.", "success")
     cursor.close()
     conn.close()
         
