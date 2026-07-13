@@ -71,7 +71,13 @@
         <div class="card full-width-card">
             <div class="workspace-header">
                 <h3 class="widget-title" style="border: none; padding: 0; margin: 0;">Disponibilidad de Espacios</h3>
-                <div class="table-controls" style="margin-top: 0;">
+                
+                <div class="table-controls" style="margin-top: 0; display: flex; gap: 10px; align-items: center;">
+                    <select id="filtro-estado" class="search-bar" style="width: auto; padding: 8px; border-radius: 6px; border: 1px solid #ccc; outline: none; background: white;">
+                        <option value="todos">Todos los Estatus</option>
+                        <option value="libre">Solo Libres</option>
+                        <option value="ocupado">Solo Ocupados</option>
+                    </select>
                     <input type="text" id="buscador" class="search-bar" placeholder="Buscar por grupo (Ej. ISA)...">
                 </div>
             </div>
@@ -108,22 +114,38 @@
 {% block scripts %}
 <script>
     const buscador = document.getElementById('buscador');
+    const filtroEstado = document.getElementById('filtro-estado');
     const filas = document.querySelectorAll('.schedule-table .table-row');
 
-    buscador.addEventListener('keyup', function(evento){
-        let textoBuscado = evento.target.value.toLowerCase();
+    // NUEVA FUNCIÓN QUE COMBINA AMBOS FILTROS
+    function filtrarTabla() {
+        let textoBuscado = buscador.value.toLowerCase();
+        let estadoBuscado = filtroEstado.value.toLowerCase();
 
         filas.forEach(function(fila){
-            let columnaGrupo = fila.children[2];
-            let textoGrupo = columnaGrupo.textContent.toLowerCase();
+            // Evitamos que intente filtrar la fila de "No hay espacios activos"
+            if (fila.children.length < 5) return; 
 
-            if (textoGrupo.includes(textoBuscado)){
+            // Extraemos el texto del Grupo (columna 3) y del Estatus (columna 5)
+            let textoGrupo = fila.children[2].textContent.toLowerCase();
+            let textoEstado = fila.children[4].textContent.toLowerCase();
+
+            // Verificamos si coinciden
+            let coincideGrupo = textoGrupo.includes(textoBuscado);
+            let coincideEstado = (estadoBuscado === 'todos') || textoEstado.includes(estadoBuscado);
+
+            // Si ambas condiciones se cumplen, mostramos la fila
+            if (coincideGrupo && coincideEstado){
                 fila.style.display = 'grid';
             } 
             else {
                 fila.style.display = 'none';
             }
         });
-    });
+    }
+
+    // Ejecutamos la función cuando el usuario escribe o cambia el desplegable
+    buscador.addEventListener('keyup', filtrarTabla);
+    filtroEstado.addEventListener('change', filtrarTabla);
 </script>
 {% endblock %}

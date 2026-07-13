@@ -17,9 +17,8 @@
         <div class="header-actions">
             <div class="search-box">
                 <i class="fas fa-search"></i>
-                <input type="text" placeholder="Buscar folio o solicitante...">
+                <input type="text" id="buscador-reservas" onkeyup="filtrarReservas()" placeholder="Buscar folio o solicitante...">
             </div>
-            <!-- Botón Nueva Reserva: Solo Admin y Maestro -->
             {% if session.get('role') in ['ADMIN', 'MAESTRO'] %}
             <button class="btn-add" id="btn-toggle-reserva">
                 <i class="fas fa-plus"></i> Nueva Reserva
@@ -28,7 +27,6 @@
         </div>
     </div>
 
-    <!-- Formulario Nueva Reserva: Solo Admin y Maestro -->
     {% if session.get('role') in ['ADMIN', 'MAESTRO'] %}
     <div class="form-container" id="panel-nueva-reserva" style="display: none;">
         <h3>Registrar Solicitud Extraordinaria</h3>
@@ -98,7 +96,6 @@
                         <p><i class="fas fa-calendar-alt"></i> {{ res.fecha }} • {{ res.hora_inicio.strftime('%H:%M') }} - {{ res.hora_fin.strftime('%H:%M') }}</p>
                     </div>
                     
-                    <!-- Formulario de Aprobación/Rechazo: Solo Admin y Coordinador -->
                     {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                     <div class="card-actions" style="gap: 10px;">
                         <form action="{{ url_for('reservas.aceptar_reserva', id=res.id_reserva) }}" method="POST" style="display:inline; width: 100%;">
@@ -147,20 +144,62 @@
 
 {% block scripts %}
 <script>
-    const btnToggleReserva = document.getElementById('btn-toggle-reserva');
-    const panelReserva = document.getElementById('panel-nueva-reserva');
-    const formReserva = document.getElementById('form-reserva');
-    const btnCancelReserva = document.getElementById('btn-cancelar-reserva');
+    // ==========================================
+    // 1. SCRIPT DE BÚSQUEDA EN TIEMPO REAL
+    // ==========================================
+    function filtrarReservas() {
+        let input = document.getElementById('buscador-reservas').value.toLowerCase();
+        let tarjetas = document.querySelectorAll('.card'); // Selecciona todas las tarjetas del tablero
 
-    if(btnToggleReserva && panelReserva){
-        btnToggleReserva.addEventListener('click', () => {
-            panelReserva.style.display = panelReserva.style.display === 'none' ? 'block' : 'none';
-            formReserva.reset();
+        tarjetas.forEach(tarjeta => {
+            let texto = tarjeta.innerText.toLowerCase();
+            // Muestra u oculta la tarjeta si coincide con la búsqueda
+            tarjeta.style.display = texto.includes(input) ? '' : 'none';
         });
+    }
 
-        btnCancelReserva.addEventListener('click', () => {
-            panelReserva.style.display = 'none';
-            formReserva.reset();
+    // ==========================================
+    // 2. MOSTRAR / OCULTAR EL FORMULARIO
+    // ==========================================
+    const btnToggleReserva = document.getElementById('btn-toggle-reserva');
+    const panelNuevaReserva = document.getElementById('panel-nueva-reserva');
+    const btnCancelarReserva = document.getElementById('btn-cancelar-reserva');
+
+    if (btnToggleReserva && panelNuevaReserva) {
+        btnToggleReserva.addEventListener('click', function() {
+            panelNuevaReserva.style.display = panelNuevaReserva.style.display === 'none' ? 'block' : 'none';
+        });
+    }
+
+    if (btnCancelarReserva && panelNuevaReserva) {
+        btnCancelarReserva.addEventListener('click', function() {
+            panelNuevaReserva.style.display = 'none';
+        });
+    }
+
+    // ==========================================
+    // 3. SWEETALERT DE CONFIRMACIÓN DE RESERVA
+    // ==========================================
+    const formReserva = document.querySelector('form[action="{{ url_for("reservas.crear_reserva") }}"]');
+    
+    if (formReserva) {
+        formReserva.addEventListener('submit', function(e) {
+            e.preventDefault(); // Pausamos el envío para mostrar la alerta
+            
+            Swal.fire({
+                title: '¿Confirmar Solicitud?',
+                text: "Esta reserva será enviada al coordinador para su revisión.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#2AB7CA',
+                cancelButtonColor: '#E53E3E',
+                confirmButtonText: 'Sí, enviar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    formReserva.submit(); // Si el usuario acepta, enviamos los datos
+                }
+            });
         });
     }
 </script>
