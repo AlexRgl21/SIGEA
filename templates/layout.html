@@ -55,8 +55,6 @@
             </div>
 
             <div class="user-profile" style="display: flex; align-items: center; gap: 15px;">
-                <input type="text" id="input-busqueda" class="search-input" placeholder="Buscar..." onkeyup="ejecutarBusqueda()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; outline: none;">
-                
                 {% if session.get('role') %}
                 <div class="campana-container" id="btn-campana" 
                      data-cant="{{ cant_notis|default(0) }}" 
@@ -66,11 +64,7 @@
                     
                     <i class="fa-solid fa-bell" style="font-size: 20px; color: #4A5568;"></i>
                     
-<<<<<<< HEAD
-                    {% if cant_notis is defined and cant_notis > 0 %}
-=======
                     {% if cant_notis|default(0) > 0 %}
->>>>>>> ce611a0c81d7fd86c70d93b2a6b85f449790a598
                     <span class="badge-numero" style="position: absolute; top: -5px; right: -8px; background-color: #dc3545; color: white; border-radius: 50%; padding: 1px 5px; font-size: 10px; font-weight: bold; border: 2px solid white;">
                         {{ cant_notis }}
                     </span>
@@ -81,13 +75,8 @@
                             Notificaciones Recientes
                         </div>
                         <div style="max-height: 220px; overflow-y: auto;">
-<<<<<<< HEAD
-                            {% if cant_notis is defined and cant_notis > 0 %}
-                                {% for n in notis %}
-=======
                             {% if cant_notis|default(0) > 0 %}
                                 {% for n in notis|default([]) %}
->>>>>>> ce611a0c81d7fd86c70d93b2a6b85f449790a598
                                     <a href="{{ n.url }}" style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 15px; border-bottom: 1px solid #EDF2F7; font-size: 12px; color: #4A5568; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='#F7FAFC'" onmouseout="this.style.background='transparent'">
                                         <i class="fa-solid fa-circle-info" style="color: #2AB7CA; margin-top: 2px;"></i>
                                         <p style="margin: 0; line-height: 1.4;">{{ n.mensaje }}</p>

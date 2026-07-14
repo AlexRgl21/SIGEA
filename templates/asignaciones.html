@@ -163,7 +163,14 @@
                 {% endif %}
                 
                 <div class="calendar-container">
-                    <h3 class="section-title">Grupos Registrados</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 class="section-title" style="margin: 0; border: none; padding: 0;">Grupos Registrados</h3>
+                        
+                        <div class="search-box" style="display: flex; align-items: center; background: white; border: 1px solid #ccc; border-radius: 5px; padding: 5px 15px;">
+                            <i class="fas fa-search" style="color: #888; margin-right: 8px;"></i>
+                            <input type="text" id="input-busqueda" placeholder="Buscar grupo..." onkeyup="ejecutarBusqueda()" style="border: none; outline: none; width: 220px; font-size: 14px;">
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table class="grupos-table" style="width: 100%;">
                             <thead>
@@ -343,22 +350,17 @@
         evt.currentTarget.classList.add("active");
         localStorage.setItem("pestanaActiva_" + window.location.pathname, nombrePestana);
 
+        // --- JS SIMPLIFICADO ---
         let buscador = document.getElementById("input-busqueda");
         if (buscador) {
-            buscador.value = ""; 
-            if (nombrePestana === "vista-grupos") {
-                buscador.style.display = "inline-block"; 
-                if (typeof ejecutarBusqueda === "function") {
-                    ejecutarBusqueda(); 
-                }
-            } else if (nombrePestana === "vista-calendario") {
-                buscador.style.display = "none"; 
+            buscador.value = ""; // Limpiamos el texto
+            if (typeof ejecutarBusqueda === "function") {
+                ejecutarBusqueda(); // Reseteamos la tabla visualmente
             }
         }
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-        let buscador = document.getElementById("input-busqueda");
         let pestanaGuardada = localStorage.getItem("pestanaActiva_" + window.location.pathname);
         if (pestanaGuardada) {
             let btn = document.querySelector(`button[onclick*="${pestanaGuardada}"]`);
@@ -366,9 +368,6 @@
                 btn.click(); 
                 return; 
             }
-        }
-        if (buscador) {
-            buscador.style.display = "none";
         }
     });
 
