@@ -635,3 +635,39 @@ body {
 .btn-verificar:hover { 
     background: #219baf; 
 }
+
+/* PERFIL DE USUARIO Y BADGES DE ROLES (NAVBAR) */
+.perfil-usuario-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nombre-usuario {
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--azul-oscuro);
+}
+
+.badge-rol {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.80rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Colores dinámicos por rol */
+.badge-admin { 
+    background-color: #cfe2ff; 
+    color: #084298; 
+}
+.badge-coordinador { 
+    background-color: #d1e7dd; 
+    color: #0f5132; 
+}
+.badge-maestro { 
+    background-color: #f8d7da; 
+    color: #842029; 
+}
