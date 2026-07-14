@@ -92,7 +92,12 @@
                 </div>
                 {% endif %}
                 
-                <span class="user-name">{{ session.get('nombre_usuario', 'Usuario') }} ({{ session.get('role', '') }})</span>
+                <div class="perfil-usuario-nav">
+                    <span class="nombre-usuario">{{ session.get('nombre_usuario', 'Usuario') }}</span>
+                    <span class="badge-rol badge-{{ session.get('role', '') | lower }}">
+                        {{ session.get('role', '') | capitalize }}
+                    </span>
+                </div>
                 <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center; padding: 5px 10px; border-radius: 5px; background: #dc3545; color: white;">Salir</a>
             </div>
         </header>
