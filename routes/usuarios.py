@@ -6,8 +6,14 @@ import smtplib
 from email.message import EmailMessage
 from werkzeug.security import generate_password_hash
 import threading
+import os
 
 usuarios_bp = Blueprint('usuarios', __name__)
+
+DOMINIO_CORREO = os.getenv('DOMINIO_CORREO', 'upsrj.edu.mx')
+def correo_institucional(correo):
+    partes = (correo or '').strip().lower().split('@')
+    return len(partes) == 2 and partes[0] != '' and partes[1] == DOMINIO_CORREO
 
 def enviar_correo_bienvenida(correo_destino, nombre_usuario, password_temporal):
     correo_emisor = "cuentapruebasigea@gmail.com"
@@ -88,7 +94,12 @@ def lista_usuarios():
 def agregar_usuario():
     nombre = request.form['nombre']
     apellidos = request.form['apellidos']
-    correo = request.form['correo']
+    
+    correo = request.form['correo'].strip().lower()
+    if not correo_institucional(correo):
+        flash(f"Correo invalido. Solo se permiten correos @{DOMINIO_CORREO}.", "danger")
+        return redirect(url_for('usuarios.lista_usuarios'))
+    
     id_rol = request.form['id_rol']
     estado = 'Activo'
 
@@ -173,7 +184,11 @@ def editar_usuario(id):
     
     nombre = request.form.get('nombre')
     apellidos = request.form.get('apellidos')
-    correo = request.form.get('correo')
+    
+    correo = request.form['correo'].strip().lower()
+    if not correo_institucional(correo):
+        flash(f"Correo invalido. Solo se permiten correos @{DOMINIO_CORREO}.", "danger")
+        return redirect(url_for('usuarios.lista_usuarios'))
 
     conn = get_db_connection()
     if not conn:

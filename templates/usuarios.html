@@ -40,7 +40,7 @@
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="email" name="correo" placeholder="Correo electrónico" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="email" name="correo" placeholder="Correo electrónico" required pattern="[^@]+@upsrj\.edu\.mx" title="Usa el correo institucional @upsrj.edu.mx" style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
@@ -88,11 +88,11 @@
                     
                     <td>
                         {% if usuario.rol_nombre == 'Administrador' %}
-                            <span class="role-badge badge-admin">Administrador</span>
+                            <span class="badge-rol badge-admin">Administrador</span>
                         {% elif usuario.rol_nombre == 'Coordinador de Carrera' %}
-                            <span class="role-badge badge-coord">Coordinador de Carrera</span>
+                            <span class="badge-role badge-coordinador">Coordinador de Carrera</span>
                         {% else %}
-                            <span class="role-badge badge-docente">{{ usuario.rol_nombre }}</span>
+                            <span class="badge-role badge-docente">{{ usuario.rol_nombre }}</span>
                         {% endif %}
                     </td>
                     
