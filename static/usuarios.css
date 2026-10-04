@@ -115,7 +115,7 @@
 }
 
 /* Etiquetas/Badges de Roles */
-.role-badge {
+.badge-role {
     display: inline-block;
     padding: 6px 12px;
     border-radius: 6px;
@@ -124,9 +124,19 @@
     color: var(--texto-gris);
 }
 
-.badge-admin { background-color: #0f172a; }             /* Negro/Gris muy oscuro */
-.badge-coord { background-color: var(--verde-acua); }    /* Verde Acua */
-.badge-docente { background-color: #4abc4a; }           /* Verde Éxito */
+/* Colores dinámicos por rol */
+.badge-admin { 
+    background-color: #cfe2ff; 
+    color: #084298; 
+}
+.badge-coordinador { 
+    background-color: #d1e7dd; 
+    color: #0f5132; 
+}
+.badge-docente { 
+    background-color: #f8d7da; 
+    color: #842029; 
+}      
 
 /* Indicadores de Estado (Punto de color) */
 .status-indicator {
