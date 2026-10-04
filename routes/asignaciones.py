@@ -51,7 +51,8 @@ def vista_asignaciones():
         'ISA' : '#CF4444', #rojo
         'IAEV' : '#9854C4', #morado
         'ISW' : '#67A15F',
-        'ING' : "#F7F088" #amarillo
+        'ING' : "#F7F088", #amarillo
+        'PREPA' : "#FF7700"
     }
         
     eventos_calendario = []
@@ -151,6 +152,7 @@ def nueva_asignacion():
     return redirect(url_for('asignaciones.vista_asignaciones'))
 
 # AGREGAR GRUPO
+# AGREGAR GRUPO
 @asignaciones_bp.route('/asignaciones/agregar_grupo', methods=['POST'])
 @role_required('ADMIN', 'COORDINADOR') # Protegido
 def agregar_grupo():
@@ -163,14 +165,25 @@ def agregar_grupo():
     if conn:
         try:
             cursor = conn.cursor()
-    
-            cursor.execute("SELECT id_grupo FROM Grupos WHERE nombre_grupo = ?", (nombre_grupo,))
+            
+            cursor.execute("SELECT id_grupo, estatus FROM Grupos WHERE nombre_grupo = ?", (nombre_grupo,))
             grupo_existente = cursor.fetchone()
             
             if grupo_existente:
-                flash(f"El grupo '{nombre_grupo}' ya existe. Por favor, elige otro nombre.", "danger")
-                return redirect(url_for('asignaciones.vista_asignaciones')) # Ajusta el nombre de tu vista si es diferente
-
+                if grupo_existente[1] == 'Inactivo':
+                    cursor.execute("""
+                        UPDATE Grupos 
+                        SET estatus = 'Activo', generacion_inicio = ?, generacion_fin = ?, id_carrera = ?
+                        WHERE id_grupo = ?
+                    """, (generacion_inicio, generacion_fin, id_carrera, grupo_existente[0]))
+                    
+                    conn.commit()
+                    flash(f"El grupo '{nombre_grupo}' había sido eliminado previamente y fue reactivado con los nuevos datos.", "success")
+                    return redirect(url_for('asignaciones.vista_asignaciones'))
+                else:
+                    flash(f"El grupo '{nombre_grupo}' ya existe y está activo. Por favor, elige otro nombre.", "danger")
+                    return redirect(url_for('asignaciones.vista_asignaciones'))
+                
             cursor.execute("""
                 INSERT INTO Grupos (nombre_grupo, generacion_inicio, generacion_fin, id_carrera)
                 VALUES (?, ?, ?, ?)
