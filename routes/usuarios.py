@@ -16,8 +16,8 @@ def correo_institucional(correo):
     return len(partes) == 2 and partes[0] != '' and partes[1] == DOMINIO_CORREO
 
 def enviar_correo_bienvenida(correo_destino, nombre_usuario, password_temporal):
-    correo_emisor = "cuentapruebasigea@gmail.com"
-    password_emisor = "ndaz qtsz wxvv ejbq"
+    correo_emisor = os.getenv('GMAIL_USER')
+    password_emisor = os.getenv('GMAIL_PASS')
 
     msg = EmailMessage()
     msg['Subject'] = 'Bienvenido a SIGEA - Tus credenciales de acceso'

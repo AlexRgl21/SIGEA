@@ -8,10 +8,15 @@ from routes.reservas import reservas_bp
 from datetime import timedelta
 import datetime
 from database.conexion import get_db_connection
+import os 
+from dotenv import load_dotenv
+load_dotenv()
 
 # Inicializamos la aplicación de Flask
 app = Flask(__name__)
-app.secret_key = "una_clave_muy_secreta_para_sigea"
+app.secret_key = os.getenv('SECRET_KEY')
+if not app.secret_key:
+    raise RuntimeError("Falta SECRET_KEY en el .env")
 
 app.permanent_session_lifetime = timedelta(minutes=5) #contador para cerrar sesión
 
