@@ -15,6 +15,7 @@
         <div style="background:white; padding:20px; border-radius:8px; width:400px; margin: 10% auto;">
             <h3>Editar Edificio</h3>
             <form action="{{ url_for('gestion.editar_edificio') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="id_edificio" id="edit-edificio-id">
                 <div class="form-group"><label>Nombre</label><input type="text" name="nombre" id="edit-edificio-nombre" required></div>
                 <div class="form-group"><label>Código</label><input type="text" name="codigo" id="edit-edificio-codigo" required></div>
@@ -37,6 +38,7 @@
         <div style="background:white; padding:20px; border-radius:8px; width:400px; margin: 10% auto;">
             <h3>Editar Aula</h3>
             <form action="{{ url_for('gestion.editar_espacio') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="id_espacio" id="edit-aula-id">
                 <div class="form-group">
                     <label>Edificio</label>
@@ -98,6 +100,7 @@
             <div class="form-container" id="panel-nuevo-espacio" style="display: none;">
                 <h3>Registrar Nuevo Espacio</h3>
                 <form id="form-espacio" action="{{ url_for('gestion.agregar_espacio') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-row">
                         <div class="form-group">
                             <label>Edificio</label>

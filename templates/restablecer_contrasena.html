@@ -17,6 +17,7 @@
         {% endif %}
 
         <form action="{{ url_for('auth.restablecer_contrasena') }}" method="POST" id="form-reset">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <label class="form-label" style="text-align: center;">CÓDIGO DE VERIFICACIÓN (6 CARACTERES):</label>
             <div class="codigo-container">

@@ -60,6 +60,7 @@
                     <h3 class="section-title">Nueva Asignación Rápida</h3>
                     
                     <form id="form-asignacion" action="{{ url_for('asignaciones.nueva_asignacion') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="form-group">
                             <label>Grupo:</label>
                             <select name="id_grupo" id="select-grupo-form" required>
@@ -133,6 +134,7 @@
                 <div class="form-container">
                     <h3 class="section-title" id="form-titulo">Nuevo Grupo</h3>
                     <form id="form-grupo" action="{{ url_for('asignaciones.agregar_grupo') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="form-group">
                             <label>Nombre del Grupo (Ej. ITIID SM-01)</label>
                             <input type="text" id="input-nombre" name="nombre_grupo" placeholder="Ej. ISA-43" required>
@@ -206,6 +208,7 @@
                                         </button>
 
                                         <form action="{{ url_for('asignaciones.eliminar_grupo', id_grupo=grupo.id_grupo) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este grupo?');">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn-action-delete">
                                                 <i class="fas fa-trash"></i>
                                             </button>

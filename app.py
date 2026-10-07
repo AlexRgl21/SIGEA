@@ -1,4 +1,5 @@
-from flask import Flask, redirect, url_for, session
+from flask import Flask, redirect, url_for, session, flash
+from flask_wtf.csrf import CSRFProtect, CSRFError 
 from routes.auth import auth_bp
 from routes.panel import panel_bp
 from routes.usuarios import usuarios_bp
@@ -19,6 +20,14 @@ if not app.secret_key:
     raise RuntimeError("Falta SECRET_KEY en el .env")
 
 app.permanent_session_lifetime = timedelta(minutes=5) #contador para cerrar sesión
+
+app.config['WTF_CSRF_TIME_LIMIT'] = None
+csrf = CSRFProtect(app)
+
+@app.errorhandler(CSRFError)
+def csfr_error(e):
+    flash("Tu sesión o el formulario no es válido. Intenta de nuevo.", "danger")
+    return redirect(url_for('auth.login'))
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(panel_bp)
