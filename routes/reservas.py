@@ -75,38 +75,67 @@ def vista_reserva():
 
 # CREAR RESERVA (SOLO ADMIN Y MAESTRO)
 @reservas_bp.route('/reservas/nueva', methods=['POST'])
-@role_required('ADMIN', 'MAESTRO') 
+@role_required('COORDINADOR', 'ADMIN', 'MAESTRO') 
 
 def crear_reserva():
-    if 'id_usuario' not in session:
-        return redirect(url_for('auth.login'))
-    
+    id_usuario = session.get('id_usuario')
+    id_espacio = request.form.get('id_espacio')
+    fecha = request.form.get('fecha')
+    hora_inicio = request.form.get('hora_inicio')
+    hora_fin = request.form.get('hora_fin')
+    motivo = (request.form.get('motivo') or '').strip()
+
+    if not all([id_espacio, fecha, hora_inicio, hora_fin, motivo]):
+        flash("Completa todos los campos de la solicitud.", "danger")
+        return redirect(url_for('reservas.vista_reserva'))
+
+    try:
+        id_espacio = int(id_espacio)
+        fecha_obj = datetime.date.fromisoformat(fecha)
+        inicio = datetime.time.fromisoformat(hora_inicio)
+        fin = datetime.time.fromisoformat(hora_fin)
+    except ValueError:
+        flash("Hay datos con formato inválido en la solicitud.", "danger")
+        return redirect(url_for('reservas.vista_reserva'))
+
+    if fecha_obj < datetime.date.today():
+        flash("No puedes solicitar una fecha pasada.", "danger")
+        return redirect(url_for('reservas.vista_reserva'))
+    if fin <= inicio:
+        flash("La hora de fin debe ser posterior a la hora de inicio.", "danger")
+        return redirect(url_for('reservas.vista_reserva'))
+    if len(motivo) > 255:
+        flash("El motivo no puede pasar de 255 caracteres.", "danger")
+        return redirect(url_for('reservas.vista_reserva'))
+
     conn = get_db_connection()
     if not conn:
         flash("Error de conexión a la base de datos.", "danger")
         return redirect(url_for('reservas.vista_reserva'))
 
-    id_usuario = session.get('id_usuario') 
-    id_espacio = request.form.get('id_espacio')
-    fecha = request.form.get('fecha')
-    hora_inicio = request.form.get('hora_inicio')
-    hora_fin = request.form.get('hora_fin')
-    motivo = request.form.get('motivo')
-
     try:
         cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 1 FROM Espacios
+            WHERE id_espacio = ? AND estatus = 'Activo'
+              AND tipo IN ('laboratorio', 'sala de conferencia')
+        """, (id_espacio,))
+        if not cursor.fetchone():
+            flash("El espacio seleccionado no está disponible para reservas.", "danger")
+            return redirect(url_for('reservas.vista_reserva'))
+
         cursor.execute('''
             INSERT INTO Reservas (id_usuario, id_espacio, fecha, hora_inicio, hora_fin, motivo, estado)
             VALUES (?, ?, ?, ?, ?, ?, 'Pendiente')
         ''', (id_usuario, id_espacio, fecha, hora_inicio, hora_fin, motivo))
-        
         conn.commit()
         flash("Solicitud de reserva enviada correctamente a revisión.", "success")
     except Exception as e:
+        conn.rollback()
         flash(f"Error al guardar la reserva: {str(e)}", "danger")
     finally:
         conn.close()
-    
+
     return redirect(url_for('reservas.vista_reserva'))
 
 # APROBAR RESERVA (SOLO ADMIN Y COORDINADOR)

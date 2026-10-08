@@ -7,6 +7,7 @@ from email.message import EmailMessage
 from werkzeug.security import generate_password_hash
 import threading
 import os
+from .auth import role_required
 
 usuarios_bp = Blueprint('usuarios', __name__)
 
@@ -50,6 +51,7 @@ El equipo de SIGEA.
 
 # SOLICITAR TODOS LOS USUARIOS REGISTRADOS
 @usuarios_bp.route('/usuarios')
+@role_required('ADMIN', 'COORDINADOR')
 def lista_usuarios():
 
     #candado para mandarte al login despues del tiempo establecido
@@ -91,6 +93,7 @@ def lista_usuarios():
     
 # AGREGAR A UN NUEVO USUARIO
 @usuarios_bp.route('/usuarios/agregar', methods=['POST'])
+@role_required('ADMIN', 'COORDINADOR')
 def agregar_usuario():
     nombre = request.form['nombre']
     apellidos = request.form['apellidos']
@@ -144,6 +147,7 @@ def agregar_usuario():
 
 # Editar permisos de usuarios registrados
 @usuarios_bp.route('/usuarios/configurar/<int:id>', methods=['POST'])
+@role_required('ADMIN', 'COORDINADOR')
 def configurar_usuario(id):
 
     id_rol = request.form.get('id_rol')
@@ -180,6 +184,7 @@ def configurar_usuario(id):
 
 # EDITAR DATOS DE USUARIOS REGISTRADOS
 @usuarios_bp.route('/usuarios/editar/<int:id>', methods=['POST'])
+@role_required('ADMIN', 'COORDINADOR')
 def editar_usuario(id):
     
     nombre = request.form.get('nombre')

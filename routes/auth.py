@@ -56,6 +56,7 @@ def role_required(*roles):
                 session.clear() 
                 return redirect(url_for('auth.login', error="Acceso denegado o sesión expirada."))
             return f(*args, **kwargs)
+        decorated_function.roles = roles
         return decorated_function
     return decorator
 
