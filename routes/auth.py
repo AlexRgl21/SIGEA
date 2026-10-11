@@ -2,14 +2,16 @@ import string
 import secrets
 import smtplib
 from email.message import EmailMessage
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app
 from database.conexion import get_db_connection
 from werkzeug.security import check_password_hash, generate_password_hash
 import threading
 import os
 from dotenv import load_dotenv
+import hmac 
+import hashlib
 
 load_dotenv()
 
@@ -61,130 +63,279 @@ def role_required(*roles):
     return decorator
 
 
-# SOLICITAR RECUPERACIÓN
+# ---------------------------------------------------------------
+# RECUPERACIÓN DE CONTRASEÑA (código con hash, expiración e intentos en la BD)
+# ---------------------------------------------------------------
+CODIGO_LONGITUD = 6
+CODIGO_VIGENCIA_MIN = 10      # minutos de vida del código
+MAX_INTENTOS = 5              # intentos fallidos permitidos por código
+ESPERA_REENVIO_SEG = 60       # segundos mínimos entre un código y el siguiente
+MAX_ENVIOS_POR_HORA = 5       # códigos por usuario en una hora
+CAMBIO_VIGENCIA_MIN = 10      # minutos para elegir la contraseña una vez verificado el código
+LONGITUD_MINIMA_PASSWORD = 8
+
+MSG_ENVIO = ("Si el correo está registrado, te enviamos un código. "
+             "Revisa tu bandeja; si no llega, espera un minuto antes de pedir otro.")
+MSG_CODIGO_INVALIDO = ("El código es incorrecto, expiró o superaste el máximo de intentos. "
+                       "Solicita uno nuevo si lo necesitas.")
+
+
+def _ahora_utc():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _generar_codigo():
+    alfabeto = string.ascii_uppercase + string.digits
+    return ''.join(secrets.choice(alfabeto) for _ in range(CODIGO_LONGITUD))
+
+
+def _hash_codigo(id_usuario, codigo):
+    """HMAC-SHA256 con la SECRET_KEY: si alguien lee la tabla no puede sacar el código."""
+    clave = (os.getenv('SECRET_KEY') or '').encode()
+    return hmac.new(clave, f"{id_usuario}:{codigo}".encode(), hashlib.sha256).hexdigest()
+
+
+def _emitir_codigo(cursor, conn, id_usuario, correo, nombre):
+    """Crea y envía un código nuevo. Respeta la espera entre envíos y el tope por hora.
+    Si no puede enviar, no lo dice al usuario (para no revelar si la cuenta existe)."""
+    ahora = _ahora_utc()
+
+    cursor.execute("SELECT creado_en FROM CodigosRecuperacion "
+                   "WHERE id_usuario = ? ORDER BY creado_en DESC", (id_usuario,))
+    ultimo = cursor.fetchone()
+    if ultimo and (ahora - ultimo[0]).total_seconds() < ESPERA_REENVIO_SEG:
+        return False
+
+    cursor.execute("SELECT COUNT(*) FROM CodigosRecuperacion "
+                   "WHERE id_usuario = ? AND creado_en > ?",
+                   (id_usuario, ahora - timedelta(hours=1)))
+    if cursor.fetchone()[0] >= MAX_ENVIOS_POR_HORA:
+        return False
+
+    # Solo un código vigente a la vez: los anteriores quedan invalidados
+    cursor.execute("UPDATE CodigosRecuperacion SET usado = 1 "
+                   "WHERE id_usuario = ? AND usado = 0", (id_usuario,))
+
+    codigo = _generar_codigo()
+    cursor.execute(
+        "INSERT INTO CodigosRecuperacion (id_usuario, codigo_hash, creado_en, expira_en) "
+        "VALUES (?, ?, ?, ?)",
+        (id_usuario, _hash_codigo(id_usuario, codigo), ahora,
+         ahora + timedelta(minutes=CODIGO_VIGENCIA_MIN)))
+    conn.commit()
+
+    threading.Thread(target=enviar_correo_codigo, args=(correo, codigo, nombre)).start()
+    return True
+
+
+def _solicitar_codigo(correo):
+    """Busca la cuenta y, si existe y está activa, envía el código.
+    Devuelve False solo ante un fallo técnico (no por cuenta inexistente)."""
+    conn = get_db_connection()
+    if not conn:
+        return False
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id_usuario, nombre FROM Usuarios "
+                       "WHERE correo = ? AND estado = 'Activo'", (correo,))
+        usuario = cursor.fetchone()
+        if usuario:
+            _emitir_codigo(cursor, conn, usuario[0], correo, usuario[1])
+        return True
+    except Exception:
+        conn.rollback()
+        current_app.logger.exception("Error al generar el código de recuperación")
+        return False
+    finally:
+        conn.close()
+
+
+def _verificar_codigo(cursor, conn, correo, codigo):
+    """Devuelve (id_usuario, id_codigo) si el código es válido, o None.
+    Cada comprobación gasta un intento de forma atómica, así que no se puede
+    adivinar el código mandando peticiones en paralelo."""
+    cursor.execute("SELECT id_usuario FROM Usuarios "
+                   "WHERE correo = ? AND estado = 'Activo'", (correo,))
+    usuario = cursor.fetchone()
+    if not usuario:
+        return None
+    id_usuario = usuario[0]
+
+    cursor.execute("SELECT id_codigo, codigo_hash, expira_en FROM CodigosRecuperacion "
+                   "WHERE id_usuario = ? AND usado = 0 ORDER BY creado_en DESC",
+                   (id_usuario,))
+    fila = cursor.fetchone()
+    if not fila or fila[2] < _ahora_utc():
+        return None
+    id_codigo, codigo_hash = fila[0], fila[1]
+
+    cursor.execute("UPDATE CodigosRecuperacion SET intentos = intentos + 1 "
+                   "WHERE id_codigo = ? AND usado = 0 AND intentos < ?",
+                   (id_codigo, MAX_INTENTOS))
+    intento_gastado = cursor.rowcount
+    conn.commit()
+    if intento_gastado == 0:
+        return None
+
+    if not hmac.compare_digest(codigo_hash, _hash_codigo(id_usuario, codigo)):
+        # Si era el último intento, el código queda inutilizable
+        cursor.execute("UPDATE CodigosRecuperacion SET usado = 1 "
+                       "WHERE id_codigo = ? AND intentos >= ?", (id_codigo, MAX_INTENTOS))
+        conn.commit()
+        return None
+
+    return id_usuario, id_codigo
+
+
+def _verificacion_vigente(cursor, correo):
+    """Devuelve el id_usuario si ESTA sesión ya verificó un código que sigue vigente.
+    La marca viaja en la cookie firmada de la sesión, así que otro navegador que escriba
+    el mismo correo no puede saltarse la verificación."""
+    id_codigo = session.get('reset_verificado')
+    if not id_codigo:
+        return None
+    cursor.execute(
+        "SELECT c.id_usuario FROM CodigosRecuperacion c "
+        "JOIN Usuarios u ON u.id_usuario = c.id_usuario "
+        "WHERE c.id_codigo = ? AND c.usado = 0 AND c.expira_en > ? "
+        "AND u.correo = ? AND u.estado = 'Activo'",
+        (id_codigo, _ahora_utc(), correo))
+    fila = cursor.fetchone()
+    return fila[0] if fila else None
+
+
 @auth_bp.route('/olvide-contrasena', methods=['GET', 'POST'])
 def olvide_contrasena():
     error = request.args.get('error')
+
     if request.method == 'POST':
-        correo = request.form.get('correo').strip()
+        correo = (request.form.get('correo') or '').strip().lower()
+        if not correo:
+            return render_template('olvide_contrasena.html', error="Escribe tu correo electrónico.")
 
-        conn = get_db_connection()
-        if not conn:
-            return render_template('olvide_contrasena.html', error="Error de conexión con la base de datos.")
-            
-        try:
-            cursor = conn.cursor()
+        if not _solicitar_codigo(correo):
+            return render_template('olvide_contrasena.html',
+                                   error="No pudimos procesar tu solicitud. Inténtalo de nuevo.")
 
-            cursor.execute("SELECT id_usuario, nombre FROM Usuarios WHERE correo = ? AND estado = 'Activo'", (correo,))
-            usuario = cursor.fetchone()
-
-            if not usuario:
-                return render_template('olvide_contrasena.html', error = "El correo electrónico no se encuentra registrado o la cuenta esta inactiva.")
-            
-            alfabeto = string.ascii_uppercase + string.digits
-            codigo = ''.join(secrets.choice(alfabeto) for i in range(6))
-
-            session.permanent = False
-            session['reset_correo'] = correo
-            session['reset_nombre'] = usuario[1]
-            session['reset_codigo'] = codigo
-            session['reset_expiracion'] = (datetime.now() + timedelta(minutes=10))
-
-            hilo_correo = threading.Thread(
-                target=enviar_correo_codigo,
-                args=(correo, codigo, usuario[1])
-            )
-            hilo_correo.start()
-
-            return redirect(url_for('auth.restablecer_contrasena', success="Código enviado. Revisa tu bandeja de entrada."))
-        
-        except Exception as e:
-            return render_template('olvide_contrasena.html', error=f"Error en el servidor: {e}")
-        finally:
-            conn.close()
+        # En la sesión solo queda el correo escrito; el código nunca sale de la BD
+        session['reset_correo'] = correo
+        session.pop('reset_verificado', None)
+        return redirect(url_for('auth.restablecer_contrasena', success=MSG_ENVIO))
 
     return render_template('olvide_contrasena.html', error=error)
 
 
-# REENVIAR CODIGO
-@auth_bp.route('/reenviar-codigo')
+# REENVIAR CÓDIGO
+@auth_bp.route('/reenviar-codigo', methods=['POST'])
 def reenviar_codigo():
     correo = session.get('reset_correo')
-    nombre = session.get('reset_nombre', 'Usuario')
-
     if not correo:
         return redirect(url_for('auth.olvide_contrasena'))
-    
-    alfabeto = string.ascii_uppercase + string.digits
-    nuevo_codigo = ''.join(secrets.choice(alfabeto) for i in range (6))
 
-    session.permanent = False
-    session['reset_codigo'] = nuevo_codigo
-    session['reset_expiracion'] = (datetime.now() + timedelta(minutes=10))
-
-    hilo_correo = threading.Thread(
-        target=enviar_correo_codigo,
-        args=(correo, nuevo_codigo, nombre)
-    )
-    hilo_correo.start()
-    return redirect(url_for('auth.restablecer_contrasena', error="Error al intentar reenviar el correo."))
+    session.pop('reset_verificado', None)   # un código nuevo invalida la verificación anterior
+    if not _solicitar_codigo(correo):
+        return redirect(url_for('auth.restablecer_contrasena',
+                                error="No pudimos reenviar el código. Inténtalo de nuevo."))
+    return redirect(url_for('auth.restablecer_contrasena', success=MSG_ENVIO))
 
 
+# PASO 1: VERIFICAR EL CÓDIGO
+@auth_bp.route('/verificar-codigo', methods=['POST'])
+def verificar_codigo():
+    correo = session.get('reset_correo')
+    if not correo:
+        return redirect(url_for('auth.olvide_contrasena'))
 
+    codigo_ingresado = (request.form.get('codigo') or '').strip().upper()
+    if len(codigo_ingresado) != CODIGO_LONGITUD:
+        # Un código incompleto no gasta intentos
+        return render_template('restablecer_contrasena.html', paso=1,
+                               error=f"Escribe los {CODIGO_LONGITUD} caracteres del código.")
+
+    conn = get_db_connection()
+    if not conn:
+        return render_template('restablecer_contrasena.html', paso=1,
+                               error="Error de conexión. Inténtalo de nuevo.")
+    try:
+        cursor = conn.cursor()
+        resultado = _verificar_codigo(cursor, conn, correo, codigo_ingresado)
+        if resultado is None:
+            return render_template('restablecer_contrasena.html', paso=1, error=MSG_CODIGO_INVALIDO)
+
+        _, id_codigo = resultado
+        # Ventana nueva para elegir la contraseña
+        cursor.execute("UPDATE CodigosRecuperacion SET expira_en = ? WHERE id_codigo = ?",
+                       (_ahora_utc() + timedelta(minutes=CAMBIO_VIGENCIA_MIN), id_codigo))
+        conn.commit()
+
+        session['reset_verificado'] = id_codigo
+        return redirect(url_for('auth.restablecer_contrasena',
+                                success="Código verificado. Ahora elige tu nueva contraseña."))
+    except Exception:
+        conn.rollback()
+        current_app.logger.exception("Error al verificar el código de recuperación")
+        return render_template('restablecer_contrasena.html', paso=1,
+                               error="No pudimos verificar el código. Inténtalo de nuevo.")
+    finally:
+        conn.close()
+
+
+# PASO 2: ELEGIR LA NUEVA CONTRASEÑA (solo si el código ya fue verificado)
 @auth_bp.route('/restablecer-contrasena', methods=['GET', 'POST'])
 def restablecer_contrasena():
-
-    if 'reset_correo' not in session or 'reset_codigo' not in session:
+    correo = session.get('reset_correo')
+    if not correo:
         return redirect(url_for('auth.olvide_contrasena'))
-        
-    error = request.args.get('error')
-    success = request.args.get('success')
 
-    if request.method == 'POST':
-        codigo_ingresado = request.form.get('codigo').strip().upper()
-        nueva_contrasena = request.form.get('nueva_contrasena')
-        confirmar_contrasena = request.form.get('confirmar_contrasena')
-        
-        expiracion = session.get('reset_expiracion')
-        if expiracion:
-            fecha_expiracion = datetime.fromisoformat(expiracion) if isinstance(expiracion, str) else expiracion
-            fecha_expiracion_limpia = fecha_expiracion.replace(tzinfo=None)
-            
-            if datetime.now() > fecha_expiracion_limpia:
-                session.clear()
-                return redirect(url_for('auth.olvide_contrasena', error="El código de verificación ha expirado. Solicita uno nuevo."))
-            
-        if codigo_ingresado != session.get('reset_codigo'):
-            return render_template('restablecer_contrasena.html', error="El código de verificación introducido es incorrecto.")
-            
-        if nueva_contrasena != confirmar_contrasena:
-            return render_template('restablecer_contrasena.html', error="Las contraseñas no coinciden. Verifícalas.")
-            
-        password_hash = generate_password_hash(nueva_contrasena)
-        correo_usuario = session.get('reset_correo')
-            
-        conn = get_db_connection()
-        if not conn:
-            return render_template('restablecer_contrasena.html', error="Error al actualizar los datos. Inténtalo de nuevo.")
-            
-        try:
-            cursor = conn.cursor()
-            cursor.execute("UPDATE Usuarios SET contrasena = ? WHERE correo = ?", (password_hash, correo_usuario))
+    conn = get_db_connection()
+    if not conn:
+        return render_template('restablecer_contrasena.html', paso=1,
+                               error="Error de conexión. Inténtalo de nuevo.")
+    try:
+        cursor = conn.cursor()
+        id_usuario = _verificacion_vigente(cursor, correo)
+
+        if request.method == 'POST':
+            if id_usuario is None:
+                session.pop('reset_verificado', None)
+                return redirect(url_for('auth.restablecer_contrasena',
+                                        error="Primero verifica el código que te enviamos."))
+
+            nueva_contrasena = request.form.get('nueva_contrasena') or ''
+            confirmar_contrasena = request.form.get('confirmar_contrasena') or ''
+
+            if nueva_contrasena != confirmar_contrasena:
+                return render_template('restablecer_contrasena.html', paso=2,
+                                       error="Las contraseñas no coinciden. Verifícalas.")
+            if len(nueva_contrasena) < LONGITUD_MINIMA_PASSWORD:
+                return render_template('restablecer_contrasena.html', paso=2,
+                                       error=f"La contraseña debe tener al menos {LONGITUD_MINIMA_PASSWORD} caracteres.")
+
+            cursor.execute("UPDATE Usuarios SET contrasena = ? WHERE id_usuario = ?",
+                           (generate_password_hash(nueva_contrasena), id_usuario))
+            cursor.execute("UPDATE CodigosRecuperacion SET usado = 1 WHERE id_usuario = ?",
+                           (id_usuario,))
             conn.commit()
 
             session.pop('reset_correo', None)
-            session.pop('reset_codigo', None)
-            session.pop('reset_expiracion', None)
+            session.pop('reset_verificado', None)
+            return redirect(url_for('auth.login',
+                                    success="Contraseña restablecida con éxito. Ya puedes iniciar sesión."))
 
-            return redirect(url_for('auth.login', success="Contraseña restablecida con éxito. Ya puedes iniciar sesión."))
-        except Exception as e:
-            conn.rollback()
-            return render_template('restablecer_contrasena.html', error=f"Error en base de datos: {e}")
-        finally:
-            cursor.close()
-                            
-    return render_template('restablecer_contrasena.html', error=error, success = success)
-
+        # GET: muestra el paso que corresponde
+        if id_usuario is None:
+            session.pop('reset_verificado', None)
+        return render_template('restablecer_contrasena.html',
+                               paso=2 if id_usuario else 1,
+                               error=request.args.get('error'),
+                               success=request.args.get('success'))
+    except Exception:
+        conn.rollback()
+        current_app.logger.exception("Error en el restablecimiento de contraseña")
+        return render_template('restablecer_contrasena.html', paso=1,
+                               error="No pudimos completar la operación. Inténtalo de nuevo.")
+    finally:
+        conn.close()
 
 # RUTA DE LOGIN
 @auth_bp.route('/login', methods=['GET', 'POST'])

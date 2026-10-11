@@ -123,3 +123,18 @@ CREATE TABLE Bloqueos (
     CONSTRAINT FK_Bloqueos_Espacios
     FOREIGN KEY (id_espacio) REFERENCES Espacios(id_espacio)
 );
+
+CREATE TABLE CodigosRecuperacion (
+    id_codigo INT IDENTITY(1,1) PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    codigo_hash CHAR(64) NOT NULL,
+    creado_en DATETIME2 NOT NULL,
+    expira_en DATETIME2 NOT NULL,
+    intentos INT NOT NULL DEFAULT 0,
+    usado BIT NOT NULL DEFAULT 0,
+    CONSTRAINT FK_CodigosRecuperacion_Usuarios
+    FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario)
+);
+
+CREATE INDEX IX_CodigosRecuperacion_Usuario
+ON CodigosRecuperacion (id_usuario, creado_en DESC);
