@@ -356,7 +356,7 @@ def login():
             cursor.execute("SELECT id_usuario, nombre, estado, id_rol, contrasena FROM Usuarios WHERE correo = ?", (correo,))
             usuario = cursor.fetchone()
 
-            if not usuario or not (check_password_hash(usuario[4], contrasena_ingresada) or usuario[4] == contrasena_ingresada):
+            if not usuario or not check_password_hash(usuario[4], contrasena_ingresada):
                  return render_template('login.html', error="Correo o contraseña incorrectos.")
                  
             estado_usuario = usuario[2]
