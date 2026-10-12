@@ -80,8 +80,8 @@ MSG_CODIGO_INVALIDO = ("El código es incorrecto, expiró o superaste el máximo
                        "Solicita uno nuevo si lo necesitas.")
 
 
-def _ahora_utc():
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+def _ahora():
+    return datetime.now()
 
 
 def _generar_codigo():
@@ -98,7 +98,7 @@ def _hash_codigo(id_usuario, codigo):
 def _emitir_codigo(cursor, conn, id_usuario, correo, nombre):
     """Crea y envía un código nuevo. Respeta la espera entre envíos y el tope por hora.
     Si no puede enviar, no lo dice al usuario (para no revelar si la cuenta existe)."""
-    ahora = _ahora_utc()
+    ahora = _ahora()
 
     cursor.execute("SELECT creado_en FROM CodigosRecuperacion "
                    "WHERE id_usuario = ? ORDER BY creado_en DESC", (id_usuario,))
@@ -165,7 +165,7 @@ def _verificar_codigo(cursor, conn, correo, codigo):
                    "WHERE id_usuario = ? AND usado = 0 ORDER BY creado_en DESC",
                    (id_usuario,))
     fila = cursor.fetchone()
-    if not fila or fila[2] < _ahora_utc():
+    if not fila or fila[2] < _ahora():
         return None
     id_codigo, codigo_hash = fila[0], fila[1]
 
@@ -199,7 +199,7 @@ def _verificacion_vigente(cursor, correo):
         "JOIN Usuarios u ON u.id_usuario = c.id_usuario "
         "WHERE c.id_codigo = ? AND c.usado = 0 AND c.expira_en > ? "
         "AND u.correo = ? AND u.estado = 'Activo'",
-        (id_codigo, _ahora_utc(), correo))
+        (id_codigo, _ahora(), correo))
     fila = cursor.fetchone()
     return fila[0] if fila else None
 
@@ -265,7 +265,7 @@ def verificar_codigo():
         _, id_codigo = resultado
         # Ventana nueva para elegir la contraseña
         cursor.execute("UPDATE CodigosRecuperacion SET expira_en = ? WHERE id_codigo = ?",
-                       (_ahora_utc() + timedelta(minutes=CAMBIO_VIGENCIA_MIN), id_codigo))
+                       (_ahora() + timedelta(minutes=CAMBIO_VIGENCIA_MIN), id_codigo))
         conn.commit()
 
         session['reset_verificado'] = id_codigo
@@ -337,6 +337,54 @@ def restablecer_contrasena():
     finally:
         conn.close()
 
+# LOGIN (con límite de intentos fallidos) Y LOGOUT
+LOGIN_MAX_INTENTOS = 5        # fallos por correo dentro de la ventana
+LOGIN_MAX_INTENTOS_IP = 20    # fallos por IP dentro de la ventana
+LOGIN_VENTANA_MIN = 15        # ventana de conteo y duración del bloqueo
+
+# Hash de relleno: se compara cuando el correo no existe, para que el sistema
+# tarde lo mismo en responder exista o no la cuenta.
+_HASH_FALSO = generate_password_hash('relleno-que-no-es-una-contrasena')
+
+
+def _minutos_de_bloqueo(cursor, correo, ip):
+    """Devuelve los minutos de bloqueo que faltan (mínimo 1) si el correo o la IP
+    superaron su límite, o 0 si puede intentar. El bloqueo dura LOGIN_VENTANA_MIN
+    minutos contados desde el último fallo."""
+    ahora = _ahora()
+    desde = ahora - timedelta(minutes=LOGIN_VENTANA_MIN)
+    espera = 0
+
+    consultas = (
+        ("SELECT creado_en FROM LoginFallidos WHERE correo = ? AND creado_en > ? "
+         "ORDER BY creado_en DESC", correo, LOGIN_MAX_INTENTOS),
+        ("SELECT creado_en FROM LoginFallidos WHERE ip = ? AND creado_en > ? "
+         "ORDER BY creado_en DESC", ip, LOGIN_MAX_INTENTOS_IP),
+    )
+    for sql, valor, tope in consultas:
+        cursor.execute(sql, (valor, desde))
+        fechas = [fila[0] for fila in cursor.fetchall()]     # de la más reciente a la más antigua
+        if len(fechas) >= tope:
+            libre_en = fechas[0] + timedelta(minutes=LOGIN_VENTANA_MIN)
+            segundos = (libre_en - ahora).total_seconds()
+            espera = max(espera, max(1, int((segundos + 59) // 60)))
+    return espera
+
+
+def _registrar_fallo(cursor, conn, correo, ip):
+    ahora = _ahora()
+    cursor.execute("INSERT INTO LoginFallidos (correo, ip, creado_en) VALUES (?, ?, ?)",
+                   (correo, ip, ahora))
+    # Limpieza: los fallos de más de un día ya no sirven
+    cursor.execute("DELETE FROM LoginFallidos WHERE creado_en < ?", (ahora - timedelta(days=1),))
+    conn.commit()
+
+
+def _limpiar_fallos(cursor, conn, correo):
+    cursor.execute("DELETE FROM LoginFallidos WHERE correo = ?", (correo,))
+    conn.commit()
+
+
 # RUTA DE LOGIN
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -344,52 +392,73 @@ def login():
     success = request.args.get('success')
 
     if request.method == 'POST':
-        correo = request.form['correo']
-        contrasena_ingresada = request.form['contrasena']
+        correo = (request.form.get('correo') or '').strip().lower()[:100]
+        contrasena_ingresada = request.form.get('contrasena') or ''
+        ip = request.remote_addr or 'desconocida'
 
         conn = get_db_connection()
         if not conn:
             return render_template('login.html', error="Error al conectar con la base de datos.")
-        
+
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT id_usuario, nombre, estado, id_rol, contrasena FROM Usuarios WHERE correo = ?", (correo,))
+
+            # 1. Los intentos hechos durante el bloqueo no se cuentan
+            espera = _minutos_de_bloqueo(cursor, correo, ip)
+            if espera:
+                return render_template(
+                    'login.html',
+                    error=f"Demasiados intentos fallidos. Inténtalo de nuevo en {espera} minuto(s)."), 429
+
+            # 2. Validar credenciales
+            cursor.execute("SELECT id_usuario, nombre, estado, id_rol, contrasena "
+                           "FROM Usuarios WHERE correo = ?", (correo,))
             usuario = cursor.fetchone()
 
-            if not usuario or not check_password_hash(usuario[4], contrasena_ingresada):
-                 return render_template('login.html', error="Correo o contraseña incorrectos.")
-                 
-            estado_usuario = usuario[2]
-            if estado_usuario == 'Inactivo':
-                return render_template('login.html', error="Tu cuenta ha sido desactivada.") 
-            
+            if usuario:
+                contrasena_correcta = check_password_hash(usuario[4], contrasena_ingresada)
+            else:
+                check_password_hash(_HASH_FALSO, contrasena_ingresada)
+                contrasena_correcta = False
+
+            if not contrasena_correcta:
+                _registrar_fallo(cursor, conn, correo, ip)
+                return render_template('login.html', error="Correo o contraseña incorrectos.")
+
+            # 3. Contraseña correcta: se reinicia el conteo de fallos de ese correo
+            _limpiar_fallos(cursor, conn, correo)
+
+            if usuario[2] == 'Inactivo':
+                return render_template('login.html', error="Tu cuenta ha sido desactivada.")
+
+            id_rol = usuario[3]
+            roles = {1: 'ADMIN', 2: 'COORDINADOR', 3: 'MAESTRO'}
+            if id_rol not in roles:
+                return render_template('login.html', error="Tu usuario no tiene un rol válido asignado.")
+
             session.permanent = True
             session['id_usuario'] = usuario[0]
             session['nombre_usuario'] = usuario[1]
-                    
-            id_rol = usuario[3]
-            roles = {1: 'ADMIN', 2: 'COORDINADOR', 3: 'MAESTRO'}
-
-            if id_rol not in roles:
-                return render_template('login.html', error="Tu usuario no tiene un rol válido asignado.")
-                 
             session['role'] = roles[id_rol]
-            
+
             if session['role'] == 'MAESTRO':
                 return redirect(url_for('asignaciones.vista_asignaciones'))
-            
+
             return redirect(url_for('panel.inicio'))
-            
-        except Exception as e:
-            return render_template('login.html', error=f"Error interno: {e}")
+
+        except Exception:
+            conn.rollback()
+            current_app.logger.exception("Error en el inicio de sesión")
+            return render_template('login.html',
+                                error="No pudimos iniciar tu sesión. Inténtalo de nuevo.")
         finally:
             conn.close()
-                    
-    return render_template('login.html', error=error, success=success)
-                    
 
-# --- RUTA DE LOGOUT ---
-@auth_bp.route('/logout')
+    return render_template('login.html', error=error, success=success)
+
+
+# --- RUTA DE LOGOUT (solo POST, protegida con CSRF) ---
+@auth_bp.route('/logout', methods=['POST'])
 def logout():
     session.clear()
     return redirect(url_for('auth.login'))
