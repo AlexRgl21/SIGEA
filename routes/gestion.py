@@ -1,8 +1,10 @@
+import logging
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from database.conexion import get_db_connection
 from .auth import role_required
 
 gestion_bp = Blueprint('gestion', __name__)
+logger = logging.getLogger(__name__)
 
 colores_edificios = {
         'Edi - 1' : '#324F85',
@@ -76,9 +78,10 @@ def agregar_espacio():
         """, (nombre, capacidad, tipo, id_edificio))
         conn.commit()
         flash("Espacio agregado exitosamente al catálogo.", "success")
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        flash(f"Error al agregar el espacio: {str(e)}", "danger")
+        logger.exception("Error al agregar el espacio")
+        flash("Error al agregar el espacio. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
 
@@ -116,9 +119,10 @@ def editar_edificio():
             """, (estatus, id_edificio))
         conn.commit()
         flash("Edificio y sus espacios actualizados correctamente.", "success")
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        flash(f"Error al actualizar el edificio: {str(e)}", "danger")
+        logger.exception("Error al actualizar el edificio")
+        flash("Error al actualizar el edificio. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
     
@@ -150,9 +154,10 @@ def editar_espacio():
             """, (nombre, capacidad, tipo, estatus, id_edificio, id_espacio))
         conn.commit()
         flash("Información del espacio modificada con éxito.", "success")
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        flash(f"Error al actualizar el espacio: {str(e)}", "danger")
+        logger.exception("Error al actualizar el espacio")
+        flash("Error al actualizar el espacio. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
         
@@ -171,9 +176,10 @@ def eliminar_espacio(id):
         cursor.execute("DELETE FROM Espacios WHERE id_espacio = ?", (id,))
         conn.commit()
         flash("El espacio fue eliminado del sistema.", "success")
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        flash(f"Error al eliminar el espacio: {str(e)}", "danger")
+        logger.exception("Error al eliminar el espacio")
+        flash("Error al eliminar el espacio. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
     

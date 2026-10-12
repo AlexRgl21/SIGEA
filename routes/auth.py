@@ -1,3 +1,4 @@
+import logging
 import string
 import secrets
 import smtplib
@@ -16,6 +17,7 @@ import hashlib
 load_dotenv()
 
 auth_bp = Blueprint('auth', __name__)
+logger = logging.getLogger(__name__)
 
 def enviar_correo_codigo(correo_destino, codigo, nombre_usuario):
     correo_emisor = os.getenv('GMAIL_USER')
@@ -45,8 +47,8 @@ El equipo de SIGEA.
         server.send_message(msg)
         server.quit()
 
-    except Exception as e:
-        print(f"Error al enviar el correo de restablecimiento: {e}")
+    except Exception:
+        logger.exception("Error al enviar el correo de restablecimiento")
 
 # --- DECORADOR DE ROLES ---
 def role_required(*roles):

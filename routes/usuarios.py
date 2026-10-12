@@ -1,5 +1,7 @@
+import logging
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from database.conexion import get_db_connection
+import pyodbc
 import string
 import secrets
 import smtplib
@@ -9,7 +11,9 @@ import threading
 import os
 from .auth import role_required
 
+
 usuarios_bp = Blueprint('usuarios', __name__)
+logger = logging.getLogger(__name__)
 
 DOMINIO_CORREO = os.getenv('DOMINIO_CORREO', 'upsrj.edu.mx')
 def correo_institucional(correo):
@@ -46,8 +50,8 @@ El equipo de SIGEA.
         server.send_message(msg)
         server.quit()
 
-    except Exception as e:
-        print(f"Error asícrono al enviar el correo: {e}")
+    except Exception:
+        logger.exception("Error asíncrono al enviar el correo")
 
 # SOLICITAR TODOS LOS USUARIOS REGISTRADOS
 @usuarios_bp.route('/usuarios')
@@ -136,9 +140,13 @@ def agregar_usuario():
         hilo_correo.start()
         flash("Usuario registrado correctamente. El correo se siendo enviado.", "success")
      
-    except Exception as e:
+    except pyodbc.IntegrityError:
         conn.rollback()
-        flash(f"Error al registrar: {str(e)}", "danger")
+        flash("No se pudo registrar: el correo ya está registrado o algún dato no es válido.", "danger")
+    except Exception:
+        conn.rollback()
+        logger.exception("Error al registrar")
+        flash("Error al registrar. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         cursor.close()
         conn.close()

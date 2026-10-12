@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SIGEA | {{ titulo }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-auth">
+    <div class="auth-card">
+        <h2 style="color: #2AB7CA; margin-bottom: 10px;">{{ titulo }}</h2>
+        <p style="color: #666; font-size: 14px; margin-bottom: 25px;">{{ mensaje }}</p>
+        <a href="{{ url_for('auth.login') }}" class="btn-verificar" style="display: inline-block; text-decoration: none;">Volver al inicio</a>
+    </div>
+</body>
+</html>

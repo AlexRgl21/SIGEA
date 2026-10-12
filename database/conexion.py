@@ -1,6 +1,8 @@
+import logging
 import pyodbc
 import os 
 from dotenv import load_dotenv
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -22,11 +24,11 @@ def get_db_connection():
         )
 
         conn = pyodbc.connect(conexion_str)
-        print("Conexión exitosa a SIGEA")
+        logger.debug("Conexión exitosa a SIGEA")
         return conn
    
-    except pyodbc.Error as e:
-        print(f"Error al conectar con la base de datos: {e}")
+    except pyodbc.Error:
+        logger.exception("Error al conectar con la base de datos")
         return None
 
 

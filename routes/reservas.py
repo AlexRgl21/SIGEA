@@ -1,9 +1,11 @@
+import logging
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from database.conexion import get_db_connection
 from .auth import role_required 
 import datetime 
 
 reservas_bp = Blueprint('reservas', __name__)
+logger = logging.getLogger(__name__)
 
 @reservas_bp.route('/reservas')
 @role_required('ADMIN', 'COORDINADOR', 'MAESTRO') 
@@ -130,9 +132,10 @@ def crear_reserva():
         ''', (id_usuario, id_espacio, fecha, hora_inicio, hora_fin, motivo))
         conn.commit()
         flash("Solicitud de reserva enviada correctamente a revisión.", "success")
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        flash(f"Error al guardar la reserva: {str(e)}", "danger")
+        logger.exception("Error al guardar la reserva")
+        flash("Error al guardar la reserva. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
 
@@ -182,9 +185,10 @@ def aceptar_reserva(id):
             conn.commit()
             flash("La reserva fue aprobada con éxito.", "success")
             
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        flash(f"Error al aceptar la reserva: {str(e)}", "danger")
+        logger.exception("Error al aceptar la reserva")
+        flash("Error al aceptar la reserva. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
             
@@ -204,9 +208,10 @@ def rechazar_reserva(id):
         cursor.execute("UPDATE Reservas SET estado = 'Rechazada' WHERE id_reserva = ?", (id,))
         conn.commit()
         flash("La reserva fue rechazada y eliminada del panel.", "success")
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        flash(f"Error al rechazar la reserva: {str(e)}", "danger")
+        logger.exception("Error al rechazar la reserva")
+        flash("Error al rechazar la reserva. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
             
