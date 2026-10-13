@@ -1,13 +1,13 @@
 /* 1. VARIABLES DE COLOR Y RESET */
 :root {
     /* Paleta Principal */
-    --azul-oscuro: #acafb4;   /* Para la barra lateral y textos fuertes */
-    --verde-acua: #2AB7CA;    /* Verde acua de tu logo Syntax */
-    --rojo-salir: #E53E3E;    /* Botón de salir */
-    --blanco-fondo: #FFFFFF;  
-    --gris-fondo: #F4F7F6;    /* Fondo del área de trabajo */
+    --azul-oscuro: #007A78;   
+    --verde-acua: #00AEEF;    
+    --verde-claro: #62BD6B;   
     
-    /* Textos y Bordes */
+    /* Colores base */
+    --blanco-fondo: #FFFFFF;  
+    --gris-fondo: #F4F7F6;    
     --texto-gris: #4A5568;
     --texto-claro: #000000;   
     --gris-bordes: #EDF2F7;
@@ -27,55 +27,64 @@ body {
     min-height: 100vh;
 }
 
-/* 2. BARRA LATERAL (SIDEBAR) */
+/* 2. BARRA LATERAL (SIDEBAR) VERDE OSCURO */
 .sidebar {
     width: 260px;
     background-color: var(--azul-oscuro);
+    border-right: none;
     display: flex;
     flex-direction: column;
+    z-index: 10;
 }
 
 .logo-container {
-    padding: 40px 20px;
+    padding: 30px 20px;
     text-align: center;
 }
 
 .logo-container img {
-    max-width: 220px;
+    max-width: 160px;
+    filter: brightness(0) invert(1); /* Pinta el logo de blanco automáticamente */
+}
+
+.menu, .menu ul {
+    list-style: none !important;
+    padding: 0;
+    margin: 0;
 }
 
 .menu a {
     text-decoration: none;
-    color: var(--texto-claro);
+    color: var(--blanco-fondo); /* Texto blanco */
     display: block;
     padding: 12px 20px;
-    border-radius: 8px;
-    font-weight: 600; /* Un poco más de grosor para que destaque */
+    font-weight: 600; 
     transition: all 0.3s ease;
+    border-left: 4px solid transparent;
 }
 
-/* EFECTO HOVER: Cuando pasas el mouse por encima */
+/* EFECTO HOVER */
 .menu a:hover {
-    background-color: var(--blanco-fondo); /* Fondo blanco */
-    color: var(--verde-acua); /* Texto en verde acua */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Sombra muy suave */
-    transform: translateX(6px); /* Pequeño salto hacia la derecha */
+    background-color: rgba(255, 255, 255, 0.1); 
+    color: var(--verde-acua); 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    transform: translateX(6px); 
+}
+/* EFECTO ACTIVE */
+.menu li.active a, .menu a.active {
+    background-color: rgba(0, 0, 0, 0.15);
+    color: var(--verde-acua);
+    border-left: 4px solid var(--verde-acua);
+    transform: translateX(0); 
 }
 
-/* EFECTO ACTIVE: La sección donde te encuentras actualmente */
-.menu li.active a {
-    background-color: var(--verde-acua);
-    color: var(--blanco-fondo);
-    box-shadow: 0 4px 10px rgba(42, 183, 202, 0.3); /* Resplandor del color acua */
-    transform: translateX(0); /* Lo mantiene firme en su lugar */
-}
-
-/* 3. CONTENIDO PRINCIPAL Y BARRA SUPERIOR*/
+/* 3. CONTENIDO PRINCIPAL Y BARRA SUPERIOR */
 .main-content {
     flex: 1;
     display: flex;
     flex-direction: column;
     background-color: var(--gris-fondo);
+    padding-bottom: 60px; /* Espacio para el footer */
 }
 
 .top-bar {
@@ -139,16 +148,22 @@ body {
 }
 
 .btn-primary:hover {
-    opacity: 0.9;
+    background-color: #0095CC;
 }
 
-.btn-danger {
-    background-color: var(--rojo-salir);
+/* Botón salir en verde oscuro */
+.btn-danger, .btn-salir {
+    background-color: var(--azul-oscuro);
     color: white;
     border: none;
     padding: 8px 16px;
     border-radius: 6px;
     cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-danger:hover, .btn-salir:hover {
+    background-color: #005f5d;
 }
 
 .btn-outline {
@@ -168,7 +183,7 @@ body {
     color: var(--verde-acua);
 }
 
-/* 6. TABLA DE HORARIOS (CSS GRID) */
+/* 6. TABLA DE HORARIOS */
 .schedule-table {
     margin-top: 25px;
     width: 100%;
@@ -176,7 +191,6 @@ body {
 
 .table-header, .table-row {
     display: grid;
-    /* Ajustado a 5 columnas para coincidir con tu HTML */
     grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr;
     align-items: center;
     padding: 16px 10px;
@@ -214,12 +228,12 @@ body {
 .text-muted {
     color: var(--texto-claro);
 }
-/* Estilo para la etiqueta de la hora */
+
 .reserva-hora {
     font-size: 12px;
     font-weight: 600;
-    color: var(--azul-oscuro);
-    background-color: var(--gris-bordes);
+    color: var(--blanco-fondo);
+    background-color: var(--azul-oscuro);
     padding: 4px 10px;
     border-radius: 6px;
     letter-spacing: 0.5px;
@@ -235,20 +249,9 @@ body {
     text-align: center;
 }
 
-.badge-ocupado {
-    background-color: #FEFCBF;
-    color: #B7791F;
-}
-
-.badge-proximo {
-    background-color: #EBF8FF;
-    color: #2B6CB0;
-}
-
-.badge-disponible {
-    background-color: #F0FFF4;
-    color: #2F855A;
-}
+.badge-ocupado { background-color: var(--verde-acua); color: #ffffff; }
+.badge-proximo { background-color: #EBF8FF; color: #2B6CB0; }
+.badge-disponible { background-color: var(--verde-claro); color: #ffffff; }
 
 /* 8. BARRA DE BÚSQUEDA */
 .table-controls {
@@ -269,17 +272,16 @@ body {
 
 .search-bar:focus {
     border-color: var(--verde-acua);
-    box-shadow: 0 0 0 3px rgba(42, 183, 202, 0.15);
+    box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.15);
 }
 
-/* 9. DASHBOARD LAYOUT (PANEL PRINCIPAL) */
+/* 9. DASHBOARD LAYOUT */
 .dashboard-grid {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-/* KPIs (Tarjetas Superiores) */
 .kpi-container {
     display: flex;
     gap: 20px;
@@ -294,7 +296,15 @@ body {
     justify-content: center;
     border-top: 4px solid var(--verde-acua); 
     padding: 20px 10px;
+    background-color: var(--blanco-fondo);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
+
+/* Clases auxiliares para HTML */
+.borde-azul { border-top-color: var(--verde-acua) !important; }
+.borde-verde-claro { border-top-color: var(--verde-claro) !important; }
+.borde-verde-oscuro { border-top-color: var(--azul-oscuro) !important; }
 
 .kpi-title {
     font-size: 14px;
@@ -309,7 +319,6 @@ body {
     color: var(--azul-oscuro);
 }
 
-/* Widgets (Fila Central) */
 .widgets-container {
     display: flex;
     gap: 20px;
@@ -320,6 +329,10 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 200px;
+    background-color: var(--blanco-fondo);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .widget-title {
@@ -330,12 +343,13 @@ body {
     border-bottom: 1px solid var(--gris-bordes);
 }
 
-/* Lista del Widget "Reservas de Hoy" */
 .reservas-list {
     list-style: none;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding: 0;
+    margin: 0;
 }
 
 .reservas-list li {
@@ -352,12 +366,11 @@ body {
     padding-bottom: 0;
 }
 
-/* Gráfico Simulado de Barras */
 .chart-placeholder {
     display: flex;
     align-items: flex-end;
     justify-content: space-around;
-    height: 160px; /* Aumentamos la altura para hacer espacio al texto */
+    height: 160px;
     padding-top: 10px;
     padding-bottom: 10px;
 }
@@ -379,7 +392,7 @@ body {
 }
 
 .bar {
-    width: 100%; /* La barra ahora toma el ancho de su columna */
+    width: 100%;
     background-color: var(--verde-acua);
     border-radius: 4px 4px 0 0;
     opacity: 0.8;
@@ -388,7 +401,7 @@ body {
 
 .bar:hover {
     opacity: 1;
-    transform: scaleY(1.02); /* Pequeño efecto de crecimiento al pasar el mouse */
+    transform: scaleY(1.02);
     cursor: pointer;
 }
 
@@ -397,277 +410,68 @@ body {
     font-weight: 600;
     color: var(--texto-gris);
     margin-top: 8px;
+    text-align: center;
 }
 
-/* Ajustes adicionales para la cabecera de la tabla */
-.full-width-card .workspace-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* Encabezado de la lista de reservas */
 .reservas-header {
     font-size: 11px !important;
     font-weight: 700;
     color: var(--azul-oscuro);
     text-transform: uppercase;
-    border-bottom: 2px solid var(--gris-bordes) !important; /* Línea sólida en lugar de punteada */
+    border-bottom: 2px solid var(--gris-bordes) !important;
     padding-bottom: 6px !important;
     margin-bottom: 4px;
 }
 
-/* RESPONSIVO GLOBAL Y DASHBOARD */
-@media (max-width: 768px) {
-    body { 
-        flex-direction: column; 
-    }
-    
-    /* 1. SIDEBAR Y LOGO */
-    .sidebar { 
-        width: 100%; 
-        height: auto; 
-        display: block !important; 
-    }
-    .logo-container { 
-        padding: 15px 15px 5px 15px; 
-    }
-    
-    /* 2. MENÚ DE NAVEGACIÓN DESLIZABLE */
-    .menu {
-        display: block !important;
-        width: 100%;
-    }
-    .menu ul { 
-        display: flex !important; 
-        overflow-x: auto; /* Permite scroll horizontal */
-        white-space: nowrap; 
-        padding: 10px 15px; 
-        gap: 15px; 
-        list-style: none;
-        margin: 0;
-        border-bottom: 2px solid var(--verde-acua);
-    }
-    .menu li { 
-        margin: 0; 
-    }
-    .menu a { 
-        display: inline-block;
-        padding: 8px 12px;
-        font-size: 14px;
-    }
-    
-    /* 3. BARRA SUPERIOR */
-    .top-bar { 
-        height: auto; 
-        flex-direction: column; 
-        padding: 15px; 
-        gap: 10px; 
-        text-align: center; 
-    }
-    
-    /* 4. LAYOUT GLOBAL */
-    .workspace { 
-        padding: 15px; 
-        overflow-x: hidden; /* Evita que la pantalla baile hacia los lados */
-    }
-    .kpi-container, .widgets-container { 
-        flex-direction: column; 
-    }
-    
-    /* 5. RESCATE DE LA TABLA (Scroll Horizontal) */
-    /* Apuntamos a los contenedores que envuelven tablas o listas */
-    .schedule-table, .reservas-list, .table-container { 
-        display: block !important;
-        width: 100%;
-        overflow-x: auto !important; 
-        white-space: nowrap; /* Evita que el texto se aplaste */
-        padding-bottom: 10px; /* Espacio para la barra de scroll */
-    }
-    
-    .table-header, .table-row { 
-        min-width: 650px; 
-    } 
-}
-
-/* ESTILOS BASE DE LA ALERTA */
-.alerta-sigea {
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 6px;
-    position: relative;
-    font-family: Arial, sans-serif;
-}
-
-/* BOTON PARA CERRAR*/
-.cerrar-alerta {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    color: inherit;
-    font-size: 20px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.cerrar-alerta:hover {
-    color: #000;
-}
-
-/* Variaciones de color */
-.alerta-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.alerta-danger {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.alerta-info {
-    color: #0c5460;
-    background-color: #d1ecf1;
-    border-color: #bee5eb;
-}
-
-.alerta-warning {
-    color: #856404;
-    background-color: #fff3cd;
-    border-color: #ffeeba;
-}
-
-/* Fondo especial para las pantallas de login/recuperación */
-.bg-auth {
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    min-height: 100vh; 
-    background: #f4f6f9; 
-    font-family: sans-serif; 
-    margin: 0;
-}
-
-/* Tarjeta blanca central */
-.auth-card {
-    background: white; 
-    padding: 40px; 
-    border-radius: 8px; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-    width: 100%; 
-    max-width: 450px; 
-    text-align: center;
-}
-
-/* Contenedor de los 6 cuadros (OTP) */
-.codigo-container {
+/* FOOTER */
+.sigea-footer {
+    background-color: var(--azul-oscuro);
+    color: var(--blanco-fondo);
     display: flex;
     justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 25px;
-}
-
-/* Diseño individual de cada cuadro */
-.codigo-input {
-    width: 45px;
-    height: 55px;
-    font-size: 22px;
-    font-weight: bold;
-    text-align: center;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    outline: none;
-    background: #f8fafc;
-    color: #333;
-    text-transform: uppercase;
-    transition: all 0.2s ease;
-}
-
-/* Efecto al dar clic (Focus) en el cuadro */
-.codigo-input:focus {
-    border-color: #2AB7CA;
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(42, 183, 202, 0.15);
-}
-
-/* Etiquetas y campos de las contraseñas */
-.form-label {
-    display: block; 
-    font-size: 12px; 
-    font-weight: bold; 
-    margin-bottom: 5px; 
-    color: #555; 
-    text-align: left;
-}
-
-.form-input {
-    width: 100%; 
-    padding: 12px; 
-    border-radius: 6px; 
-    border: 1px solid #ccc; 
-    box-sizing: border-box; 
-    margin-bottom: 15px; 
-    transition: border-color 0.2s;
-}
-
-.form-input:focus {
-    border-color: #2AB7CA; 
-    outline: none;
-}
-
-/* Botón principal */
-.btn-verificar {
-    background: #2AB7CA; 
-    color: white; 
-    width: 100%; 
-    padding: 12px; 
-    border: none; 
-    border-radius: 6px; 
-    cursor: pointer; 
-    font-weight: bold; 
-    font-size: 15px; 
-    transition: background 0.2s; 
-    margin-top: 10px;
-}
-
-.btn-verificar:hover { 
-    background: #219baf; 
-}
-
-/* PERFIL DE USUARIO Y BADGES DE ROLES (NAVBAR) */
-.perfil-usuario-nav {
-    display: inline-flex;
     align-items: center;
-    gap: 10px;
+    padding: 12px 20px;
+    font-size: 0.85rem;
+    position: fixed;
+    bottom: 0;
+    width: calc(100% - 260px);
+    right: 0;
+    z-index: 1000;
 }
+.sigea-footer a { color: #ffffff; text-decoration: none; }
 
-.nombre-usuario {
-    font-weight: 500;
-    font-size: 1rem;
-    color: var(--azul-oscuro);
-}
+/* 10. AUTH, ALERTAS Y PERFIL */
+.alerta-sigea { padding: 15px; margin-bottom: 20px; border-radius: 6px; position: relative; font-family: Arial, sans-serif; }
+.cerrar-alerta { position: absolute; top: 10px; right: 15px; color: inherit; font-size: 20px; font-weight: bold; cursor: pointer; }
+.alerta-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.alerta-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+.alerta-info { color: #0c5460; background-color: #d1ecf1; border-color: #bee5eb; }
+.alerta-warning { color: #856404; background-color: #fff3cd; border-color: #ffeeba; }
 
-.badge-rol {
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.80rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
+.bg-auth { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f4f6f9; font-family: sans-serif; margin: 0; }
+.auth-card { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; }
+.codigo-container { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 25px; }
+.codigo-input { width: 45px; height: 55px; font-size: 22px; font-weight: bold; text-align: center; border: 2px solid #e2e8f0; border-radius: 8px; outline: none; background: #f8fafc; color: #333; text-transform: uppercase; transition: all 0.2s ease; }
+.codigo-input:focus { border-color: var(--verde-acua); background: #ffffff; box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.15); }
+.form-label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555; text-align: left; }
+.form-input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; margin-bottom: 15px; transition: border-color 0.2s; }
+.form-input:focus { border-color: var(--verde-acua); outline: none; }
+.btn-verificar { background: var(--verde-acua); color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px; transition: background 0.2s; margin-top: 10px; }
+.btn-verificar:hover { background: #0095CC; }
 
-/* Colores dinámicos por rol */
-.badge-admin { 
-    background-color: #cfe2ff; 
-    color: #084298; 
-}
-.badge-coordinador { 
-    background-color: #d1e7dd; 
-    color: #0f5132; 
-}
-.badge-maestro { 
-    background-color: #f8d7da; 
-    color: #842029; 
+.perfil-usuario-nav { display: inline-flex; align-items: center; gap: 10px; }
+.nombre-usuario { font-weight: 500; font-size: 1rem; color: var(--azul-oscuro); }
+.badge-rol { padding: 4px 12px; border-radius: 20px; font-size: 0.80rem; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.badge-admin { background-color: #cfe2ff; color: #084298; }
+.badge-coordinador { background-color: #d1e7dd; color: #0f5132; }
+.badge-maestro { background-color: #f8d7da; color: #842029; }
+
+/* RESPONSIVO */
+@media (max-width: 768px) {
+    body { flex-direction: column; }
+    .sidebar { width: 100%; min-height: auto; border-right: none; }
+    .sigea-footer { width: 100%; position: relative; flex-direction: column; gap: 10px; text-align: center; }
+    .menu ul { display: flex; overflow-x: auto; padding: 10px; }
+    .kpi-container, .widgets-container { flex-direction: column; }
+    .schedule-table { overflow-x: auto; display: block; }
 }

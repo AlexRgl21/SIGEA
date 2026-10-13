@@ -16,7 +16,7 @@
 <body>
     <aside class="sidebar">
         <div class="logo-container">
-            <img src="{{ url_for('static', filename='img/logo_sigea.png') }}" alt="Logo SIGEA" class="logo">
+            <img src="{{ url_for('static', filename='img/logo_up.png') }}" alt="SIGEA" style="width: 80px; margin: 20px auto; display: block;">
         </div>
 
         <nav class="menu">
@@ -62,7 +62,7 @@
                      data-notis="{% if cant_notis is defined and cant_notis > 0 %}{% for n in notis %}{{ n.mensaje }}{% endfor %}{% endif %}"
                      style="position: relative; cursor: pointer; display: flex; align-items: center; margin-right: 5px;">
                     
-                    <i class="fa-solid fa-bell" style="font-size: 20px; color: #4A5568;"></i>
+                    <i class="fa-solid fa-bell" style="font-size: 20px; color: #007A78;"></i>
                     
                     {% if cant_notis|default(0) > 0 %}
                     <span class="badge-numero" style="position: absolute; top: -5px; right: -8px; background-color: #dc3545; color: white; border-radius: 50%; padding: 1px 5px; font-size: 10px; font-weight: bold; border: 2px solid white;">
@@ -191,5 +191,17 @@
         }
     </script>
     {% block scripts %}{% endblock %}
-</body>
+
+</body><footer class="sigea-footer">
+    <div class="footer-left">
+        <!-- Logo en  para el footer -->
+        <img src="{{ url_for('static', filename='img/logo_up.png') }}" style="height: 25px; filter: brightness(0) invert(1);" alt="SIGEA">
+    </div>
+    <div class="footer-center">
+        &copy; 2026 SIGEA - SIGEA 2026 - ADastra
+    </div>
+    <div class="footer-right">
+        Versión 2.0 | Soporte Técnico
+    </div>
+</footer
 </html>
