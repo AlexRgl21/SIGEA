@@ -1,11 +1,12 @@
 import logging
-from flask import Blueprint, render_template, request, session, redirect, url_for, flash
-from database.conexion import get_db_connection
-from .auth import role_required 
-import datetime 
 import os
 import smtplib
 from email.message import EmailMessage
+import datetime
+
+from flask import Blueprint, render_template, request, session, redirect, url_for, flash
+from database.conexion import get_db_connection
+from .auth import role_required 
 
 # --- FUNCION PARA ENVIAR CORREOS ---
 def enviar_notificacion_reserva(correo_destino, asunto, contenido):
@@ -73,7 +74,7 @@ def vista_reserva():
             WHERE r.id_usuario = ? AND (r.fecha >= ? OR r.estado = 'Pendiente')
             ORDER BY r.fecha ASC, r.hora_inicio ASC
         """, (id_usuario_actual, hoy)) 
-       
+        
     else:
         cursor.execute("""
             SELECT r.id_reserva, r.fecha, r.hora_inicio, r.hora_fin, r.motivo, r.estado,
@@ -100,7 +101,6 @@ def vista_reserva():
 # CREAR RESERVA (SOLO ADMIN Y MAESTRO)
 @reservas_bp.route('/reservas/nueva', methods=['POST'])
 @role_required('COORDINADOR', 'ADMIN', 'MAESTRO') 
-
 def crear_reserva():
     id_usuario = session.get('id_usuario')
     id_espacio = request.form.get('id_espacio')
@@ -167,10 +167,11 @@ def crear_reserva():
         if correos_admins:
             asunto = "SIGEA - Nueva Solicitud de Reserva Especial"
             mensaje = f"Se ha registrado una nueva solicitud para el día {fecha}. Ingresa a SIGEA para revisarla."
-            # Enviamos el correo a la lista de admins
             enviar_notificacion_reserva(", ".join(correos_admins), asunto, mensaje)
 
     except Exception as e:
+        conn.rollback()
+        logger.exception("Error al guardar la reserva")
         flash(f"Error al guardar la reserva: {str(e)}", "danger")
     finally:
         conn.close()
@@ -189,9 +190,9 @@ def aceptar_reserva(id):
     try:
         cursor = conn.cursor()
 
-        # Obtenemos también el correo del maestro para notificarle
+        # Unimos las dos consultas: traemos estado de la reserva y los datos del maestro
         cursor.execute("""
-            SELECT r.id_espacio, r.fecha, r.hora_inicio, r.hora_fin, u.correo, u.nombre, e.nombre as espacio
+            SELECT r.id_espacio, r.fecha, r.hora_inicio, r.hora_fin, r.estado, u.correo, u.nombre, e.nombre as espacio
             FROM Reservas r
             JOIN Usuarios u ON r.id_usuario = u.id_usuario
             JOIN Espacios e ON r.id_espacio = e.id_espacio
@@ -202,17 +203,22 @@ def aceptar_reserva(id):
         if not reserva:
             flash("Error: No se encontró la solicitud de reserva.", "danger")
             return redirect(url_for('reservas.vista_reserva'))
-        
-        id_espacio, fecha, hora_inicio, hora_fin, correo_maestro, nombre_maestro, nombre_espacio = reserva_pendiente
-            
+
+        id_espacio, fecha, hora_inicio, hora_fin, estado, correo_maestro, nombre_maestro, nombre_espacio = reserva
+
+        # Solo se pueden aprobar solicitudes que sigan pendientes
+        if str(estado).strip().capitalize() != 'Pendiente':
+            flash("Esta solicitud ya fue atendida.", "danger")
+            return redirect(url_for('reservas.vista_reserva'))
+
         cursor.execute("""
             SELECT COUNT(*)
             FROM Reservas
             WHERE id_espacio = ?
-                AND fecha = ?
-                AND estado = 'Aprobada'
-                AND hora_inicio < ?
-                AND hora_fin > ?
+              AND fecha = ?
+              AND estado = 'Aprobada'
+              AND hora_inicio < ?
+              AND hora_fin > ?
         """, (id_espacio, fecha, hora_fin, hora_inicio))
 
         empalmes = cursor.fetchone()[0]
@@ -220,19 +226,23 @@ def aceptar_reserva(id):
         if empalmes > 0:
             flash("No se puede aprobar: El espacio ya cuenta con una reserva en ese horario.", "danger")
         else:
-            cursor.execute("UPDATE Reservas SET estado = 'Aprobada' WHERE id_reserva = ?", (id,))
-            conn.commit()
-            flash("La reserva fue aprobada con éxito.", "success")
-            
-            # --- NOTIFICAR AL MAESTRO ---
-            asunto = "SIGEA - Tu reserva ha sido Aprobada"
-            mensaje = f"Hola {nombre_maestro},\n\nTu solicitud para el espacio '{nombre_espacio}' el día {fecha} de {hora_inicio} a {hora_fin} ha sido APROBADA.\n\nSaludos."
-            enviar_notificacion_reserva(correo_maestro, asunto, mensaje)
-            
+            cursor.execute("UPDATE Reservas SET estado = 'Aprobada' "
+                           "WHERE id_reserva = ? AND estado = 'Pendiente'", (id,))
+            if cursor.rowcount == 0:
+                flash("Esta solicitud ya fue atendida.", "danger")
+            else:
+                conn.commit()
+                flash("La reserva fue aprobada con éxito.", "success")
+                
+                # --- NOTIFICAR AL MAESTRO ---
+                asunto = "SIGEA - Tu reserva ha sido Aprobada"
+                mensaje = f"Hola {nombre_maestro},\n\nTu solicitud para el espacio '{nombre_espacio}' el día {fecha} de {hora_inicio} a {hora_fin} ha sido APROBADA.\n\nSaludos."
+                enviar_notificacion_reserva(correo_maestro, asunto, mensaje)
+
     except Exception as e:
         conn.rollback()
         logger.exception("Error al aceptar la reserva")
-        flash("Error al aceptar la reserva. Inténtalo de nuevo o avisa al administrador.", "danger")
+        flash(f"Error al aceptar la reserva: {str(e)}", "danger")
     finally:
         conn.close()
 
@@ -241,7 +251,7 @@ def aceptar_reserva(id):
 
 # RECHAZAR RESERVA (SOLO ADMIN Y COORDINADOR)
 @reservas_bp.route('/reservas/rechazar/<int:id>', methods=['POST'])
-@role_required('ADMIN', 'COORDINADOR') 
+@role_required('ADMIN', 'COORDINADOR')
 def rechazar_reserva(id):
     conn = get_db_connection()
     if not conn:
@@ -260,21 +270,25 @@ def rechazar_reserva(id):
         """, (id,))
         datos_reserva = cursor.fetchone()
 
-        cursor.execute("UPDATE Reservas SET estado = 'Rechazada' WHERE id_reserva = ?", (id,))
-        conn.commit()
-        flash("La reserva fue rechazada y eliminada del panel.", "success")
-        
-        # --- NOTIFICAR AL MAESTRO ---
-        if datos_reserva:
-            correo_maestro, nombre_maestro, nombre_espacio, fecha = datos_reserva
-            asunto = "SIGEA - Tu reserva ha sido Rechazada"
-            mensaje = f"Hola {nombre_maestro},\n\nLamentablemente tu solicitud para el espacio '{nombre_espacio}' el día {fecha} ha sido RECHAZADA.\n\nContacta a coordinación para más detalles."
-            enviar_notificacion_reserva(correo_maestro, asunto, mensaje)
-
+        cursor.execute("UPDATE Reservas SET estado = 'Rechazada' "
+                       "WHERE id_reserva = ? AND estado = 'Pendiente'", (id,))
+        if cursor.rowcount == 0:
+            flash("Esta solicitud ya fue atendida o no existe.", "danger")
+        else:
+            conn.commit()
+            flash("La reserva fue rechazada y eliminada del panel.", "success")
+            
+            # --- NOTIFICAR AL MAESTRO ---
+            if datos_reserva:
+                correo_maestro, nombre_maestro, nombre_espacio, fecha = datos_reserva
+                asunto = "SIGEA - Tu reserva ha sido Rechazada"
+                mensaje = f"Hola {nombre_maestro},\n\nLamentablemente tu solicitud para el espacio '{nombre_espacio}' el día {fecha} ha sido RECHAZADA.\n\nContacta a coordinación para más detalles."
+                enviar_notificacion_reserva(correo_maestro, asunto, mensaje)
+                
     except Exception as e:
         conn.rollback()
         logger.exception("Error al rechazar la reserva")
-        flash("Error al rechazar la reserva. Inténtalo de nuevo o avisa al administrador.", "danger")
+        flash(f"Error al rechazar la reserva: {str(e)}", "danger")
     finally:
         conn.close()
 
