@@ -143,61 +143,70 @@ def crear_reserva():
 
 # APROBAR RESERVA (SOLO ADMIN Y COORDINADOR)
 @reservas_bp.route('/reservas/aceptar/<int:id>', methods=['POST'])
-@role_required('ADMIN', 'COORDINADOR') # Protegido
+@role_required('ADMIN', 'COORDINADOR')
 def aceptar_reserva(id):
     conn = get_db_connection()
     if not conn:
         flash("Error de conexión a la base de datos.", "danger")
         return redirect(url_for('reservas.vista_reserva'))
-    
+
     try:
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT id_espacio, fecha, hora_inicio, hora_fin 
-            FROM Reservas 
+            SELECT id_espacio, fecha, hora_inicio, hora_fin, estado
+            FROM Reservas
             WHERE id_reserva = ?
         """, (id,))
-        reserva_pendiente = cursor.fetchone()
-        
-        if not reserva_pendiente:
+        reserva = cursor.fetchone()
+
+        if not reserva:
             flash("Error: No se encontró la solicitud de reserva.", "danger")
             return redirect(url_for('reservas.vista_reserva'))
-        
-        id_espacio, fecha, hora_inicio, hora_fin = reserva_pendiente
-            
+
+        id_espacio, fecha, hora_inicio, hora_fin, estado = reserva
+
+        # Solo se pueden aprobar solicitudes que sigan pendientes
+        if str(estado).strip().capitalize() != 'Pendiente':
+            flash("Esta solicitud ya fue atendida.", "danger")
+            return redirect(url_for('reservas.vista_reserva'))
+
         cursor.execute("""
             SELECT COUNT(*)
             FROM Reservas
-            WHERE id_espacio = ? 
-                AND fecha = ? 
+            WHERE id_espacio = ?
+                AND fecha = ?
                 AND estado = 'Aprobada'
-                AND hora_inicio < ? 
-                AND hora_fin > ?  
+                AND hora_inicio < ?
+                AND hora_fin > ?
         """, (id_espacio, fecha, hora_fin, hora_inicio))
-            
+
         empalmes = cursor.fetchone()[0]
-            
+
         if empalmes > 0:
             flash("No se puede aprobar: El espacio ya cuenta con una reserva en ese horario.", "danger")
         else:
-            cursor.execute("UPDATE Reservas SET estado = 'Aprobada' WHERE id_reserva = ?", (id,))
-            conn.commit()
-            flash("La reserva fue aprobada con éxito.", "success")
-            
+            cursor.execute("UPDATE Reservas SET estado = 'Aprobada' "
+                           "WHERE id_reserva = ? AND estado = 'Pendiente'", (id,))
+            if cursor.rowcount == 0:
+                flash("Esta solicitud ya fue atendida.", "danger")
+            else:
+                conn.commit()
+                flash("La reserva fue aprobada con éxito.", "success")
+
     except Exception:
         conn.rollback()
         logger.exception("Error al aceptar la reserva")
         flash("Error al aceptar la reserva. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
-            
+
     return redirect(url_for('reservas.vista_reserva'))
+
 
 # RECHAZAR RESERVA (SOLO ADMIN Y COORDINADOR)
 @reservas_bp.route('/reservas/rechazar/<int:id>', methods=['POST'])
-@role_required('ADMIN', 'COORDINADOR') 
-
+@role_required('ADMIN', 'COORDINADOR')
 def rechazar_reserva(id):
     conn = get_db_connection()
     if not conn:
@@ -205,14 +214,18 @@ def rechazar_reserva(id):
         return redirect(url_for('reservas.vista_reserva'))
     try:
         cursor = conn.cursor()
-        cursor.execute("UPDATE Reservas SET estado = 'Rechazada' WHERE id_reserva = ?", (id,))
-        conn.commit()
-        flash("La reserva fue rechazada y eliminada del panel.", "success")
+        cursor.execute("UPDATE Reservas SET estado = 'Rechazada' "
+                       "WHERE id_reserva = ? AND estado = 'Pendiente'", (id,))
+        if cursor.rowcount == 0:
+            flash("Esta solicitud ya fue atendida o no existe.", "danger")
+        else:
+            conn.commit()
+            flash("La reserva fue rechazada.", "success")
     except Exception:
         conn.rollback()
         logger.exception("Error al rechazar la reserva")
         flash("Error al rechazar la reserva. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
-            
+
     return redirect(url_for('reservas.vista_reserva'))

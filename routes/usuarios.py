@@ -153,71 +153,102 @@ def agregar_usuario():
         
     return redirect(url_for('usuarios.lista_usuarios'))
 
+
+def puede_gestionar(cursor, id_objetivo):
+    """ADMIN gestiona a cualquiera; los demás roles, solo a docentes (id_rol 3)."""
+    if session.get('role') == 'ADMIN':
+        return True
+    cursor.execute("SELECT id_rol FROM Usuarios WHERE id_usuario = ?", (id_objetivo,))
+    fila = cursor.fetchone()
+    return bool(fila) and fila[0] == 3
+
+
 # Editar permisos de usuarios registrados
 @usuarios_bp.route('/usuarios/configurar/<int:id>', methods=['POST'])
 @role_required('ADMIN', 'COORDINADOR')
 def configurar_usuario(id):
-
     id_rol = request.form.get('id_rol')
     estado = request.form.get('estado')
 
-    if estado is None:
-        return f"<h3>¡El navegador sigue mandando los datos viejos!</h3> <p>Por favor, regresa a la página y presiona <b>Ctrl + F5</b>.</p>"
-    
-    if session.get('role') != 'ADMIN':
+    if estado not in ('Activo', 'Inactivo'):
+        flash("Los datos del formulario no son válidos. Recarga la página e inténtalo de nuevo.", "danger")
+        return redirect(url_for('usuarios.lista_usuarios'))
 
+    if session.get('role') != 'ADMIN':
         if str(id_rol) in ['1', '2']:
             flash("Alerta de seguridad: No tienes permisos para asignar este rol.", "danger")
             return redirect(url_for('usuarios.lista_usuarios'))
         id_rol = '3'
+    elif str(id_rol) not in ['1', '2', '3']:
+        flash("El rol seleccionado no es válido.", "danger")
+        return redirect(url_for('usuarios.lista_usuarios'))
 
     conn = get_db_connection()
-
     if not conn:
         flash("Error de conexión a la base de datos.", "danger")
         return redirect(url_for('usuarios.lista_usuarios'))
-    
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE Usuarios 
-        SET id_rol = ?, estado = ? 
-        WHERE id_usuario = ?
-    """, (id_rol, estado, id))
-    conn.commit()
-    flash("Permisos y estado del usuario actualizados correctamente.", "success")
-    cursor.close()
-    conn.close()
-        
+
+    try:
+        cursor = conn.cursor()
+        if not puede_gestionar(cursor, id):
+            flash("No tienes permisos para modificar a este usuario.", "danger")
+            return redirect(url_for('usuarios.lista_usuarios'))
+
+        cursor.execute("""
+            UPDATE Usuarios
+            SET id_rol = ?, estado = ?
+            WHERE id_usuario = ?
+        """, (id_rol, estado, id))
+        conn.commit()
+        flash("Permisos y estado del usuario actualizados correctamente.", "success")
+    except Exception:
+        conn.rollback()
+        logger.exception("Error al configurar el usuario")
+        flash("Error al configurar el usuario. Inténtalo de nuevo o avisa al administrador.", "danger")
+    finally:
+        conn.close()
+
     return redirect(url_for('usuarios.lista_usuarios'))
+
 
 # EDITAR DATOS DE USUARIOS REGISTRADOS
 @usuarios_bp.route('/usuarios/editar/<int:id>', methods=['POST'])
 @role_required('ADMIN', 'COORDINADOR')
 def editar_usuario(id):
-    
     nombre = request.form.get('nombre')
     apellidos = request.form.get('apellidos')
-    
-    correo = request.form['correo'].strip().lower()
+    correo = (request.form.get('correo') or '').strip().lower()
+
     if not correo_institucional(correo):
-        flash(f"Correo invalido. Solo se permiten correos @{DOMINIO_CORREO}.", "danger")
+        flash(f"Correo inválido. Solo se permiten correos @{DOMINIO_CORREO}.", "danger")
         return redirect(url_for('usuarios.lista_usuarios'))
 
     conn = get_db_connection()
     if not conn:
         flash("Error de conexión a la base de datos.", "danger")
-        return(url_for('usuarios.lista_usuarios'))
-    
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE Usuarios 
-        SET nombre = ?, apellidos = ?, correo = ? 
-        WHERE id_usuario = ?
-    """, (nombre, apellidos, correo, id))
-    
-    conn.commit()
-    flash("Datos del usuario modificados con éxito.", "success")
-    cursor.close()
-    conn.close()
-        
+        return redirect(url_for('usuarios.lista_usuarios'))
+
+    try:
+        cursor = conn.cursor()
+        if not puede_gestionar(cursor, id):
+            flash("No tienes permisos para modificar a este usuario.", "danger")
+            return redirect(url_for('usuarios.lista_usuarios'))
+
+        cursor.execute("""
+            UPDATE Usuarios
+            SET nombre = ?, apellidos = ?, correo = ?
+            WHERE id_usuario = ?
+        """, (nombre, apellidos, correo, id))
+        conn.commit()
+        flash("Datos del usuario modificados con éxito.", "success")
+    except pyodbc.IntegrityError:
+        conn.rollback()
+        flash("Ese correo ya está registrado en otro usuario.", "danger")
+    except Exception:
+        conn.rollback()
+        logger.exception("Error al editar el usuario")
+        flash("Error al editar el usuario. Inténtalo de nuevo o avisa al administrador.", "danger")
+    finally:
+        conn.close()
+
     return redirect(url_for('usuarios.lista_usuarios'))
