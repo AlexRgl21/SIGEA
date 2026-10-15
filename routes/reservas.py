@@ -1,6 +1,7 @@
 import logging
 import os
 import smtplib
+import threading
 from email.message import EmailMessage
 import datetime
 
@@ -8,26 +9,43 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from database.conexion import get_db_connection
 from .auth import role_required 
 
-# --- FUNCION PARA ENVIAR CORREOS ---
-def enviar_notificacion_reserva(correo_destino, asunto, contenido):
+# --- ENVÍO DE NOTIFICACIONES POR CORREO ---
+def _enviar_smtp(destinatarios, asunto, contenido):
     correo_emisor = os.getenv('GMAIL_USER')
     password_emisor = os.getenv('GMAIL_PASS')
+    if not correo_emisor or not password_emisor:
+        logger.error("Faltan GMAIL_USER o GMAIL_PASS: no se envió la notificación de reserva")
+        return
 
     msg = EmailMessage()
     msg['Subject'] = asunto
     msg['From'] = correo_emisor
-    msg['To'] = correo_destino 
+    if len(destinatarios) == 1:
+        msg['To'] = destinatarios[0]
+    else:
+        msg['To'] = correo_emisor                  # varios destinatarios: van en copia oculta,
+        msg['Bcc'] = ', '.join(destinatarios)      # así nadie ve los correos de los demás
     msg.set_content(contenido)
 
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(correo_emisor, password_emisor)
-        server.send_message(msg)
-        server.quit()
-        print(f"Notificación enviada con éxito a: {correo_destino}")
-    except Exception as e:
-        print(f"Error enviando notificación: {e}")
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as server:
+            server.starttls()
+            server.login(correo_emisor, password_emisor)
+            server.send_message(msg)
+        logger.info("Notificación de reserva enviada (%d destinatario(s))", len(destinatarios))
+    except Exception:
+        logger.exception("Error al enviar la notificación de reserva")
+
+
+def enviar_notificacion_reserva(destinatarios, asunto, contenido):
+    """Envía en segundo plano para no bloquear la petición. Acepta un correo o una lista."""
+    if isinstance(destinatarios, str):
+        destinatarios = [destinatarios]
+    destinatarios = [d for d in destinatarios if d]
+    if not destinatarios:
+        return
+    threading.Thread(target=_enviar_smtp, args=(destinatarios, asunto, contenido), daemon=True).start()
+
 
 reservas_bp = Blueprint('reservas', __name__)
 logger = logging.getLogger(__name__)
@@ -137,6 +155,7 @@ def crear_reserva():
         flash("Error de conexión a la base de datos.", "danger")
         return redirect(url_for('reservas.vista_reserva'))
 
+    correos_admins = []
     try:
         cursor = conn.cursor()
         cursor.execute("""
@@ -155,26 +174,25 @@ def crear_reserva():
         conn.commit()
         flash("Solicitud de reserva enviada correctamente a revisión.", "success")
         
-        # --- NOTIFICAR A ADMINISTRADORES/COORDINADORES ---
-        cursor.execute("""
-            SELECT u.correo 
-            FROM Usuarios u 
-            JOIN Roles r ON u.id_rol = r.id_rol 
-            WHERE r.nombre_rol IN ('Administrador', 'Coordinador') AND u.estado = 'Activo'
-        """)
-        correos_admins = [row[0] for row in cursor.fetchall()]
-        
-        if correos_admins:
-            asunto = "SIGEA - Nueva Solicitud de Reserva Especial"
-            mensaje = f"Se ha registrado una nueva solicitud para el día {fecha}. Ingresa a SIGEA para revisarla."
-            enviar_notificacion_reserva(", ".join(correos_admins), asunto, mensaje)
+        # Destinatarios de la notificación. Si esta consulta falla, la reserva ya quedó guardada.
+        try:
+            cursor.execute("SELECT correo FROM Usuarios WHERE id_rol IN (1, 2) AND estado = 'Activo'")
+            correos_admins = [fila[0] for fila in cursor.fetchall()]
+        except Exception:
+            logger.exception("No se pudo consultar a quién notificar la nueva reserva")
 
-    except Exception as e:
+    except Exception:
         conn.rollback()
         logger.exception("Error al guardar la reserva")
-        flash(f"Error al guardar la reserva: {str(e)}", "danger")
+        flash("Error al guardar la reserva. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
+
+    if correos_admins:
+        enviar_notificacion_reserva(
+            correos_admins,
+            "SIGEA - Nueva Solicitud de Reserva Especial",
+            f"Se ha registrado una nueva solicitud para el día {fecha}. Ingresa a SIGEA para revisarla.")
 
     return redirect(url_for('reservas.vista_reserva'))
 
@@ -182,6 +200,7 @@ def crear_reserva():
 @reservas_bp.route('/reservas/aceptar/<int:id>', methods=['POST'])
 @role_required('ADMIN', 'COORDINADOR')
 def aceptar_reserva(id):
+    notificar = None
     conn = get_db_connection()
     if not conn:
         flash("Error de conexión a la base de datos.", "danger")
@@ -233,18 +252,19 @@ def aceptar_reserva(id):
             else:
                 conn.commit()
                 flash("La reserva fue aprobada con éxito.", "success")
-                
-                # --- NOTIFICAR AL MAESTRO ---
-                asunto = "SIGEA - Tu reserva ha sido Aprobada"
-                mensaje = f"Hola {nombre_maestro},\n\nTu solicitud para el espacio '{nombre_espacio}' el día {fecha} de {hora_inicio} a {hora_fin} ha sido APROBADA.\n\nSaludos."
-                enviar_notificacion_reserva(correo_maestro, asunto, mensaje)
+                notificar = (correo_maestro,
+                             "SIGEA - Tu reserva ha sido Aprobada",
+                             f"Hola {nombre_maestro},\n\nTu solicitud para el espacio '{nombre_espacio}' el día {fecha} de {hora_inicio} a {hora_fin} ha sido APROBADA.\n\nSaludos.")
 
-    except Exception as e:
+    except Exception:
         conn.rollback()
         logger.exception("Error al aceptar la reserva")
-        flash(f"Error al aceptar la reserva: {str(e)}", "danger")
+        flash("Error al aceptar la reserva. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
+
+    if notificar:
+        enviar_notificacion_reserva(*notificar)
 
     return redirect(url_for('reservas.vista_reserva'))
 
@@ -253,6 +273,7 @@ def aceptar_reserva(id):
 @reservas_bp.route('/reservas/rechazar/<int:id>', methods=['POST'])
 @role_required('ADMIN', 'COORDINADOR')
 def rechazar_reserva(id):
+    notificar = None
     conn = get_db_connection()
     if not conn:
         flash("Error de conexión a la base de datos.", "danger")
@@ -277,19 +298,21 @@ def rechazar_reserva(id):
         else:
             conn.commit()
             flash("La reserva fue rechazada y eliminada del panel.", "success")
-            
-            # --- NOTIFICAR AL MAESTRO ---
+
             if datos_reserva:
                 correo_maestro, nombre_maestro, nombre_espacio, fecha = datos_reserva
-                asunto = "SIGEA - Tu reserva ha sido Rechazada"
-                mensaje = f"Hola {nombre_maestro},\n\nLamentablemente tu solicitud para el espacio '{nombre_espacio}' el día {fecha} ha sido RECHAZADA.\n\nContacta a coordinación para más detalles."
-                enviar_notificacion_reserva(correo_maestro, asunto, mensaje)
+                notificar = (correo_maestro,
+                             "SIGEA - Tu reserva ha sido Rechazada",
+                             f"Hola {nombre_maestro},\n\nLamentablemente tu solicitud para el espacio '{nombre_espacio}' el día {fecha} ha sido RECHAZADA.\n\nContacta a coordinación para más detalles.")
                 
-    except Exception as e:
+    except Exception:
         conn.rollback()
         logger.exception("Error al rechazar la reserva")
-        flash(f"Error al rechazar la reserva: {str(e)}", "danger")
+        flash("Error al rechazar la reserva. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
+
+    if notificar:
+        enviar_notificacion_reserva(*notificar)
 
     return redirect(url_for('reservas.vista_reserva'))
