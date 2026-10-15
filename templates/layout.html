@@ -35,11 +35,13 @@
                     <a href="{{ url_for('reservas.vista_reserva') }}">Reservas Especiales</a>
                 </li>
                 
-                {% if session.get('role') == 'ADMIN' %}
+                {% if session.get('role') == 'ADMIN', 'COORDINADOR' %}
                 <li class="{% if request.endpoint == 'usuarios.lista_usuarios' %}active{% endif %}">
                     <a href="{{ url_for('usuarios.lista_usuarios') }}">Usuarios</a>
                 </li>
-                
+                {% endif %}
+
+                {% if session.get('role') == 'ADMIN'%}
                 <li class="{% if request.endpoint == 'gestion.vista_gestion' %}active{% endif %}">
                     <a href="{{ url_for('gestion.vista_gestion') }}">Gestión de Infraestructura</a>
                 </li>
