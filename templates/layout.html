@@ -35,11 +35,13 @@
                     <a href="{{ url_for('reservas.vista_reserva') }}">Reservas Especiales</a>
                 </li>
                 
-                {% if session.get('role') == 'ADMIN' %}
+                {% if session.get('role') == 'ADMIN', 'COORDINADOR' %}
                 <li class="{% if request.endpoint == 'usuarios.lista_usuarios' %}active{% endif %}">
                     <a href="{{ url_for('usuarios.lista_usuarios') }}">Usuarios</a>
                 </li>
-                
+                {% endif %}
+
+                {% if session.get('role') == 'ADMIN'%}
                 <li class="{% if request.endpoint == 'gestion.vista_gestion' %}active{% endif %}">
                     <a href="{{ url_for('gestion.vista_gestion') }}">Gestión de Infraestructura</a>
                 </li>
@@ -98,7 +100,10 @@
                         {{ session.get('role', '') | capitalize }}
                     </span>
                 </div>
-                <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="text-decoration: none; text-align: center; padding: 5px 10px; border-radius: 5px; background: #dc3545; color: white;">Salir</a>
+                <form action="{{ url_for('auth.logout') }}" method="POST" id="form-logout" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-danger" style="font: inherit; border: none; cursor: pointer; text-align: center; padding: 5px 10px; border-radius: 5px; background: #dc3545; color: white; width: 100%;">Salir</button>
+                </form>
             </div>
         </header>
 
@@ -148,7 +153,7 @@
                     confirmButtonColor: '#2AB7CA',
                     allowOutsideClick: false
                 }).then(() => {
-                    window.location.href = "{{ url_for('auth.logout') }}";
+                    document.getElementById('form-logout').submit();
                 });
             }, 300000); 
         }

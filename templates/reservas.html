@@ -31,6 +31,7 @@
     <div class="form-container" id="panel-nueva-reserva" style="display: none;">
         <h3>Registrar Solicitud Extraordinaria</h3>
         <form id="form-reserva" action="{{ url_for('reservas.crear_reserva') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-row">
                 <div class="form-group">
                     <label>Solicitante</label>
@@ -99,9 +100,11 @@
                     {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                     <div class="card-actions" style="gap: 10px;">
                         <form action="{{ url_for('reservas.aceptar_reserva', id=res.id_reserva) }}" method="POST" style="display:inline; width: 100%;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="action-btn" style="border: 1px solid #28a745; color: #28a745; width: 100%;"><i class="fas fa-check"></i> Aprobar</button>
                         </form>
                         <form action="{{ url_for('reservas.rechazar_reserva', id=res.id_reserva) }}" method="POST" style="display:inline;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="action-btn" style="border: 1px solid #dc3545; color: #dc3545;" title="Rechazar"><i class="fas fa-times"></i></button>
                         </form>
                     </div>

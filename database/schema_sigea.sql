@@ -111,15 +111,28 @@ CREATE TABLE Reservas (
     FOREIGN KEY (id_espacio) REFERENCES Espacios(id_espacio)
 );
 
--- 11. BLOQUEOS (MANTENIMIENTO)
-CREATE TABLE Bloqueos (
-    id_bloqueo INT IDENTITY(1,1) PRIMARY KEY,
-    id_espacio INT NOT NULL,
-    fecha DATE NOT NULL,
-    hora_inicio TIME NOT NULL,
-    hora_fin TIME NOT NULL,
-    motivo VARCHAR(255),
 
-    CONSTRAINT FK_Bloqueos_Espacios
-    FOREIGN KEY (id_espacio) REFERENCES Espacios(id_espacio)
+CREATE TABLE CodigosRecuperacion (
+    id_codigo INT IDENTITY(1,1) PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    codigo_hash CHAR(64) NOT NULL,
+    creado_en DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    expira_en DATETIME2 NOT NULL DEFAULT DATEADD(minute, 15, SYSDATETIME()),
+    intentos INT NOT NULL DEFAULT 0,
+    usado BIT NOT NULL DEFAULT 0,
+    CONSTRAINT FK_CodigosRecuperacion_Usuarios
+    FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario)
 );
+
+CREATE INDEX IX_CodigosRecuperacion_Usuario
+ON CodigosRecuperacion (id_usuario, creado_en DESC);
+
+CREATE TABLE LoginFallidos (
+    id_intento INT IDENTITY(1,1) PRIMARY KEY,
+    correo VARCHAR(100) NOT NULL,
+    ip VARCHAR(45) NOT NULL,
+    creado_en DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+);
+
+CREATE INDEX IX_LoginFallidos_Correo ON LoginFallidos (correo, creado_en);
+CREATE INDEX IX_LoginFallidos_Ip ON LoginFallidos (ip, creado_en);

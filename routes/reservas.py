@@ -1,3 +1,4 @@
+import logging
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from database.conexion import get_db_connection
 from .auth import role_required 
@@ -28,6 +29,7 @@ def enviar_notificacion_reserva(correo_destino, asunto, contenido):
         print(f"Error enviando notificación: {e}")
 
 reservas_bp = Blueprint('reservas', __name__)
+logger = logging.getLogger(__name__)
 
 @reservas_bp.route('/reservas')
 @role_required('ADMIN', 'COORDINADOR', 'MAESTRO') 
@@ -97,30 +99,59 @@ def vista_reserva():
 
 # CREAR RESERVA (SOLO ADMIN Y MAESTRO)
 @reservas_bp.route('/reservas/nueva', methods=['POST'])
-@role_required('ADMIN', 'MAESTRO') 
+@role_required('COORDINADOR', 'ADMIN', 'MAESTRO') 
+
 def crear_reserva():
-    if 'id_usuario' not in session:
-        return redirect(url_for('auth.login'))
-    
+    id_usuario = session.get('id_usuario')
+    id_espacio = request.form.get('id_espacio')
+    fecha = request.form.get('fecha')
+    hora_inicio = request.form.get('hora_inicio')
+    hora_fin = request.form.get('hora_fin')
+    motivo = (request.form.get('motivo') or '').strip()
+
+    if not all([id_espacio, fecha, hora_inicio, hora_fin, motivo]):
+        flash("Completa todos los campos de la solicitud.", "danger")
+        return redirect(url_for('reservas.vista_reserva'))
+
+    try:
+        id_espacio = int(id_espacio)
+        fecha_obj = datetime.date.fromisoformat(fecha)
+        inicio = datetime.time.fromisoformat(hora_inicio)
+        fin = datetime.time.fromisoformat(hora_fin)
+    except ValueError:
+        flash("Hay datos con formato inválido en la solicitud.", "danger")
+        return redirect(url_for('reservas.vista_reserva'))
+
+    if fecha_obj < datetime.date.today():
+        flash("No puedes solicitar una fecha pasada.", "danger")
+        return redirect(url_for('reservas.vista_reserva'))
+    if fin <= inicio:
+        flash("La hora de fin debe ser posterior a la hora de inicio.", "danger")
+        return redirect(url_for('reservas.vista_reserva'))
+    if len(motivo) > 255:
+        flash("El motivo no puede pasar de 255 caracteres.", "danger")
+        return redirect(url_for('reservas.vista_reserva'))
+
     conn = get_db_connection()
     if not conn:
         flash("Error de conexión a la base de datos.", "danger")
         return redirect(url_for('reservas.vista_reserva'))
 
-    id_usuario = session.get('id_usuario') 
-    id_espacio = request.form.get('id_espacio')
-    fecha = request.form.get('fecha')
-    hora_inicio = request.form.get('hora_inicio')
-    hora_fin = request.form.get('hora_fin')
-    motivo = request.form.get('motivo')
-
     try:
         cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 1 FROM Espacios
+            WHERE id_espacio = ? AND estatus = 'Activo'
+              AND tipo IN ('laboratorio', 'sala de conferencia')
+        """, (id_espacio,))
+        if not cursor.fetchone():
+            flash("El espacio seleccionado no está disponible para reservas.", "danger")
+            return redirect(url_for('reservas.vista_reserva'))
+
         cursor.execute('''
             INSERT INTO Reservas (id_usuario, id_espacio, fecha, hora_inicio, hora_fin, motivo, estado)
             VALUES (?, ?, ?, ?, ?, ?, 'Pendiente')
         ''', (id_usuario, id_espacio, fecha, hora_inicio, hora_fin, motivo))
-        
         conn.commit()
         flash("Solicitud de reserva enviada correctamente a revisión.", "success")
         
@@ -143,18 +174,18 @@ def crear_reserva():
         flash(f"Error al guardar la reserva: {str(e)}", "danger")
     finally:
         conn.close()
-    
+
     return redirect(url_for('reservas.vista_reserva'))
 
 # APROBAR RESERVA (SOLO ADMIN Y COORDINADOR)
 @reservas_bp.route('/reservas/aceptar/<int:id>', methods=['POST'])
-@role_required('ADMIN', 'COORDINADOR') # Protegido
+@role_required('ADMIN', 'COORDINADOR')
 def aceptar_reserva(id):
     conn = get_db_connection()
     if not conn:
         flash("Error de conexión a la base de datos.", "danger")
         return redirect(url_for('reservas.vista_reserva'))
-    
+
     try:
         cursor = conn.cursor()
 
@@ -166,9 +197,9 @@ def aceptar_reserva(id):
             JOIN Espacios e ON r.id_espacio = e.id_espacio
             WHERE r.id_reserva = ?
         """, (id,))
-        reserva_pendiente = cursor.fetchone()
-        
-        if not reserva_pendiente:
+        reserva = cursor.fetchone()
+
+        if not reserva:
             flash("Error: No se encontró la solicitud de reserva.", "danger")
             return redirect(url_for('reservas.vista_reserva'))
         
@@ -177,15 +208,15 @@ def aceptar_reserva(id):
         cursor.execute("""
             SELECT COUNT(*)
             FROM Reservas
-            WHERE id_espacio = ? 
-                AND fecha = ? 
+            WHERE id_espacio = ?
+                AND fecha = ?
                 AND estado = 'Aprobada'
-                AND hora_inicio < ? 
-                AND hora_fin > ?  
+                AND hora_inicio < ?
+                AND hora_fin > ?
         """, (id_espacio, fecha, hora_fin, hora_inicio))
-            
+
         empalmes = cursor.fetchone()[0]
-            
+
         if empalmes > 0:
             flash("No se puede aprobar: El espacio ya cuenta con una reserva en ese horario.", "danger")
         else:
@@ -200,11 +231,13 @@ def aceptar_reserva(id):
             
     except Exception as e:
         conn.rollback()
-        flash(f"Error al aceptar la reserva: {str(e)}", "danger")
+        logger.exception("Error al aceptar la reserva")
+        flash("Error al aceptar la reserva. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
-            
+
     return redirect(url_for('reservas.vista_reserva'))
+
 
 # RECHAZAR RESERVA (SOLO ADMIN Y COORDINADOR)
 @reservas_bp.route('/reservas/rechazar/<int:id>', methods=['POST'])
@@ -240,8 +273,9 @@ def rechazar_reserva(id):
 
     except Exception as e:
         conn.rollback()
-        flash(f"Error al rechazar la reserva: {str(e)}", "danger")
+        logger.exception("Error al rechazar la reserva")
+        flash("Error al rechazar la reserva. Inténtalo de nuevo o avisa al administrador.", "danger")
     finally:
         conn.close()
-            
+
     return redirect(url_for('reservas.vista_reserva'))

@@ -1,4 +1,10 @@
-from flask import Flask, redirect, url_for, session
+import logging
+from flask import Flask, redirect, url_for, session, flash, render_template, request
+from werkzeug.exceptions import HTTPException
+from urllib.parse import urlparse
+import pyodbc
+from logging_config import configurar_logging
+from flask_wtf.csrf import CSRFProtect, CSRFError 
 from routes.auth import auth_bp
 from routes.panel import panel_bp
 from routes.usuarios import usuarios_bp
@@ -10,15 +16,25 @@ import datetime
 from database.conexion import get_db_connection
 import os 
 from dotenv import load_dotenv
+logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Inicializamos la aplicación de Flask
 app = Flask(__name__)
+configurar_logging()
 app.secret_key = os.getenv('SECRET_KEY')
 if not app.secret_key:
     raise RuntimeError("Falta SECRET_KEY en el .env")
 
 app.permanent_session_lifetime = timedelta(minutes=5) #contador para cerrar sesión
+
+app.config['WTF_CSRF_TIME_LIMIT'] = None
+csrf = CSRFProtect(app)
+
+@app.errorhandler(CSRFError)
+def csfr_error(e):
+    flash("Tu sesión o el formulario no es válido. Intenta de nuevo.", "danger")
+    return redirect(url_for('auth.login'))
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(panel_bp)
@@ -78,8 +94,8 @@ def inyectar_notificaciones():
                         })
                         
                 cantidad_notis = len(notificaciones)
-            except Exception as e:
-                print(f"Error en motor de notificaciones: {e}")
+            except Exception:
+                logger.exception("Error en motor de notificaciones")
             finally:
                 conn.close()
             
@@ -89,6 +105,32 @@ def inyectar_notificaciones():
 @app.route('/')
 def index():
     return redirect(url_for('auth.login'))
+
+@app.errorhandler(404)
+def pagina_no_encontrada(e):
+    return render_template('error.html', titulo="Página no encontrada",
+                           mensaje="La dirección que buscas no existe."), 404
+
+
+@app.errorhandler(pyodbc.IntegrityError)
+def error_de_integridad(e):
+    """Dato repetido o referencia inválida (por ejemplo, un correo que ya existe)."""
+    logger.warning("Violación de integridad en %s %s: %s", request.method, request.path, e)
+    flash("No se pudo guardar: ya existe un registro con esos datos (por ejemplo, un correo repetido).", "danger")
+    destino = request.referrer
+    if not destino or urlparse(destino).netloc != request.host:   # solo volvemos a páginas propias
+        destino = url_for('auth.login')
+    return redirect(destino)
+
+
+@app.errorhandler(Exception)
+def error_no_controlado(e):
+    if isinstance(e, HTTPException):
+        return e                       # 405, 400, etc. conservan su comportamiento normal
+    logger.exception("Error no controlado en %s %s", request.method, request.path)
+    return render_template('error.html', titulo="Algo salió mal",
+                           mensaje="Ocurrió un error inesperado y ya quedó registrado. "
+                                   "Inténtalo de nuevo en unos minutos."), 500
 
 if __name__ == '__main__':
     # debug=True hace que el servidor se reinicie automáticamente 

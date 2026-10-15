@@ -1,8 +1,10 @@
+import logging
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from database.conexion import get_db_connection
 from .auth import role_required # Importamos el decorador
 
 asignaciones_bp = Blueprint('asignaciones', __name__)
+logger = logging.getLogger(__name__)
 
 @asignaciones_bp.route('/asignaciones')
 @role_required('ADMIN', 'COORDINADOR', 'MAESTRO') # Todos pueden ver el calendario
@@ -142,9 +144,9 @@ def nueva_asignacion():
         conn.commit()
         flash("Horario asignado con éxito. No se detectaron empalmes.", "success")
 
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        print(f"Error crítico en asignación: {e}")
+        logger.exception("Error crítico en asignación")
         flash("Ocurrió un error interno al intentar guardar el horario.", "danger")
     finally:
         conn.close()
@@ -192,9 +194,10 @@ def agregar_grupo():
             conn.commit()
             flash("Grupo registrado exitosamente.", "success")
             
-        except Exception as e:
+        except Exception:
             conn.rollback()
-            flash(f"Error al guardar el grupo: {str(e)}", "danger")
+            logger.exception("Error al guardar el grupo")
+            flash("Error al guardar el grupo. Inténtalo de nuevo o avisa al administrador.", "danger")
         finally:
             conn.close()
 
@@ -211,8 +214,8 @@ def eliminar_grupo(id_grupo):
         cursor.execute("UPDATE Grupos SET estatus = 'Inactivo' WHERE id_grupo = ?", (id_grupo,))
         conn.commit()
         flash(f"El grupo ha sido eliminado.", "success")
-    except Exception as e:
-        print(f"Error al eliminar el grupo: {e}")
+    except Exception:
+        logger.exception("Error al eliminar el grupo")
         conn.rollback()
         flash(f"No se pudo eliminar el grupo. Intentalo de nuevo.", "danger")
     finally:
@@ -253,8 +256,8 @@ def editar_grupo(id_grupo):
 
         conn.commit()
         flash('El grupo fue actualizado correctamente.', 'success')
-    except Exception as e:
-        print(f"Error al actualizar el grupo {e}")
+    except Exception:
+        logger.exception("Error al actualizar el grupo")
         conn.rollback()
         flash(f"Error al intentar actualizar los datos del grupo.", "danger")
     finally:

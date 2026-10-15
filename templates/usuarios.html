@@ -34,6 +34,7 @@
             <h3 style="margin-top: 0; color: #333;">Añadir Nuevo Usuario</h3>
             
             <form action="{{ url_for('usuarios.agregar_usuario') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <input type="text" name="nombre" placeholder="Nombre(s)" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
                     <input type="text" name="apellidos" placeholder="Apellidos" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
@@ -125,6 +126,7 @@
                                 <h4 style="margin-top: 0; color: #333; border-bottom: 2px solid #004a98; padding-bottom: 8px;">Editar Datos Personales</h4>
                                 
                                 <form action="{{ url_for('usuarios.editar_usuario', id=usuario.id_usuario) }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     
                                     <div style="margin-bottom: 10px;">
                                         <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">NOMBRE(S):</label>
@@ -155,6 +157,7 @@
                                 <p style="font-size: 14px; color: #555; margin-bottom: 15px;">Usuario: <strong>{{ usuario.nombre_completo }}</strong></p>
                                 
                                 <form action="{{ url_for('usuarios.configurar_usuario', id=usuario.id_usuario) }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     
                                     <div style="margin-bottom: 15px;">
                                         <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">ROL DEL SISTEMA:</label>
