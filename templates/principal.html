@@ -42,7 +42,7 @@
                         <span class="reserva-hora">{{ reserva.hora_inicio.strftime('%H:%M') }} - {{ reserva.hora_fin.strftime('%H:%M') }}</span>
                     </li>
                     {% else %}
-                        <li style="text-align: center; color: #888; padding-top: 15px;">
+                        <li style="text-align: center; color: var(--texto-gris); padding-top: 15px;">
                             <span>No hay reservas aprobadas para el día de hoy.</span>
                         </li>
                     {% endfor %}
@@ -62,7 +62,7 @@
                         <span class="bar-label">{{ dato.edificio }}</span>
                     </div>
                     {% else %}
-                        <p style="width: 100%; text-align: center; color: #777;">No hay datos de ocupación para hoy</p>
+                        <p style="width: 100%; text-align: center; color: var(--texto-gris);">No hay datos de ocupación para hoy</p>
                     {% endfor %}
                 </div>
             </div>
@@ -73,7 +73,7 @@
                 <h3 class="widget-title" style="border: none; padding: 0; margin: 0;">Disponibilidad de Espacios</h3>
                 
                 <div class="table-controls" style="margin-top: 0; display: flex; gap: 10px; align-items: center;">
-                    <select id="filtro-estado" class="search-bar" style="width: auto; padding: 8px; border-radius: 6px; border: 1px solid #ccc; outline: none; background: white;">
+                    <select id="filtro-estado" class="search-bar">
                         <option value="todos">Todos los Estatus</option>
                         <option value="libre">Solo Libres</option>
                         <option value="ocupado">Solo Ocupados</option>
@@ -101,7 +101,7 @@
                 </div>
                 {% else %}
                 <div class="table-row" style="grid-template-columns: 1fr; text-align: center;">
-                    <div style="color: #777;">No hay espacios activos registrados.</div>
+                    <div style="color: var(--texto-gris);">No hay espacios activos registrados.</div>
                 </div>
                 {% endfor %}
             </div>
