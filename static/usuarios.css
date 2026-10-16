@@ -3,7 +3,7 @@
     padding: 24px;
     background-color: var(--blanco-fondo);
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    box-shadow: var(--sombra-card);
 }
 
 /* Fila de controles superiores */
@@ -26,13 +26,14 @@
     border: 1px solid var(--gris-bordes);
     border-radius: 8px;
     font-size: 14px;
-    color: var(--azul-oscuro);
+    color: var(--texto-gris);
     outline: none;
-    transition: border-color 0.3s;
+    transition: all 0.2s ease;
 }
 
 .search-input:focus {
     border-color: var(--verde-acua);
+    box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.15);
 }
 
 .filters-container {
@@ -66,7 +67,7 @@
 }
 
 .btn-primary:hover {
-    background-color: #2299a8;
+    background-color: #0095CC;
 }
 
 /* Tabla Responsiva y Estilos del Table */
@@ -82,7 +83,7 @@
 
 .users-table th {
     background-color: var(--gris-fondo);
-    color: var(--azul-oscuro);
+    color: var(--texto-claro);
     font-weight: 700;
     font-size: 13px;
     padding: 14px 16px;
@@ -105,7 +106,7 @@
 
 .user-name-cell .main-name {
     font-weight: 600;
-    color: var(--azul-oscuro);
+    color: var(--texto-claro);
 }
 
 .user-name-cell .sub-label {
@@ -133,10 +134,11 @@
     background-color: #d1e7dd; 
     color: #0f5132; 
 }
-.badge-docente { 
+.badge-docente,
+.badge-maestro { 
     background-color: #f8d7da; 
     color: #842029; 
-}      
+}
 
 /* Indicadores de Estado (Punto de color) */
 .status-indicator {
@@ -156,7 +158,7 @@
 }
 
 .status-active { color: #2e7d32; }
-.status-active::before { background-color: #4abc4a; }
+.status-active::before { background-color: var(--verde-claro); }
 
 .status-inactive { color: #757575; }
 .status-inactive::before { background-color: #9e9e9e; }
@@ -184,7 +186,7 @@
 
 .btn-action-config:hover {
     background-color: #e2e8f0;
-    transform: rotate(30deg); /* Animación divertida de engrane */
+    transform: rotate(30deg);
 }
 
 .btn-action-edit i, .btn-action-config i {
