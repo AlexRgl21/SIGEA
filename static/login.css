@@ -1,12 +1,12 @@
 /* VARIABLES */
 
 :root {
-    --azul-oscuro: #acafb4;
-    --verde-acua: #2AB7CA;
+    --azul-oscuro: #007A78;
+    --verde-acua: #00AEEF;
     --blanco: #FFFFFF;
-    --gris-fondo: #F4F7F6;
+    --gris-fondo: #F8FAFC;
     --texto-gris: #4A5568;
-    --gris-bordes: #E2E8F0;
+    --gris-bordes: #E8EDF2;
 }
 
 *{
@@ -39,15 +39,15 @@ body{
     width:100%;
     max-width:420px;
     padding:40px;
-    border-radius:16px;
-    box-shadow:0 10px 25px rgba(0,0,0,.08);
+    border-radius:12px;
+    box-shadow:0 2px 10px rgba(15,23,42,.06);
 }
 
 /*LOGO*/
 
 .logo-container{
     text-align:center;
-    margin-bottom:2a0px;
+    margin-bottom:20px;
 }
 
 .logo-container img{
@@ -56,7 +56,7 @@ body{
 
 h1{
     text-align:center;
-    color:var(--texto-gris);
+    color:var(--azul-oscuro);
     margin-bottom:10px;
 }
 
@@ -92,7 +92,7 @@ h1{
 
 .input-group input:focus{
     border-color:var(--verde-acua);
-    box-shadow:0 0 0 3px rgba(42,183,202,.15);
+    box-shadow:0 0 0 3px rgba(0,174,239,.15);
 }
 
 /* BOTON */
@@ -111,5 +111,5 @@ h1{
 }
 
 .btn-login:hover{
-    opacity:.9;
+    background:#0095CC;
 }
