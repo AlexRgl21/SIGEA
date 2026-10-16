@@ -7,7 +7,7 @@
 </head>
 <body class="bg-auth">
     <div class="auth-card">
-        <h2 style="color: #2AB7CA; margin-bottom: 10px;">Restablecer Contraseña</h2>
+        <h2 style="color: #007A78; margin-bottom: 10px;">Restablecer Contraseña</h2>
 
         {% if paso == 2 %}
             <p style="color: #666; font-size: 14px; margin-bottom: 25px;">Código verificado. Elige tu nueva contraseña.</p>
@@ -54,7 +54,7 @@
 
             <div id="reenviar-container" style="margin-bottom: 20px; font-size: 13px; color: #666;">
                 ¿No recibiste el código?
-                <button type="submit" formaction="{{ url_for('auth.reenviar_codigo') }}" formnovalidate style="background: none; border: none; padding: 0; color: #2AB7CA; font-weight: bold; font-size: 13px; cursor: pointer;">Volver a enviarlo</button>
+                <button type="submit" formaction="{{ url_for('auth.reenviar_codigo') }}" formnovalidate style="background: none; border: none; padding: 0; color: #00AEEF; font-weight: bold; font-size: 13px; cursor: pointer;">Volver a enviarlo</button>
             </div>
 
             <button type="submit" class="btn-verificar">Verificar código</button>
