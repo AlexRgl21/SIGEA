@@ -11,10 +11,10 @@
 .kanban-column {
     flex: 1;
     min-width: 320px;
-    background-color: #f8f9fc;
-    border-radius: 10px;
+    background-color: var(--gris-fondo);
+    border-radius: 12px;
     padding: 16px;
-    border: 1px solid #e3e6f0;
+    border: 1px solid var(--gris-bordes);
 }
 
 .column-header {
@@ -23,27 +23,27 @@
     align-items: center;
     margin-bottom: 20px;
     padding-bottom: 12px;
-    border-bottom: 2px solid #ccc;
+    border-bottom: 2px solid var(--gris-bordes);
 }
 
 .column-header h3 {
     font-size: 15px;
     margin: 0;
-    color: #333;
+    color: var(--texto-claro);
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.column-header.pendiente h3 i { color: #f6c23e; }
-.column-header.aprobada h3 i { color: #1cc88a; }
+.column-header.pendiente h3 i { color: #F5B72E; }
+.column-header.aprobada h3 i { color: #62BD6B; }
 
-.column-header.pendiente { border-bottom-color: #f6c23e; }
-.column-header.aprobada { border-bottom-color: #1cc88a; }
+.column-header.pendiente { border-bottom-color: #F5B72E; }
+.column-header.aprobada { border-bottom-color: #62BD6B; }
 
 .count-badge {
-    background-color: #eaecf4;
-    color: #5a5c69;
+    background-color: var(--gris-activo);
+    color: var(--texto-gris);
     font-size: 12px;
     font-weight: bold;
     padding: 4px 10px;
