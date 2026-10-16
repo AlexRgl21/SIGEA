@@ -99,7 +99,7 @@
                         </div>
                         
                         <div class="form-group">
-                            <label><i class="fas fa-calendar-day" style="color: #17a2b8; width: 20px;"></i> Días de la semana:</label>
+                            <label><i class="fas fa-calendar-day" style="color: #00AEEF; width: 20px;"></i> Días de la semana:</label>
                             <div class="dias-group">
                                 <label class="dia-pill"><input type="checkbox" name="dias" value="Lunes"><span>L</span></label>
                                 <label class="dia-pill"><input type="checkbox" name="dias" value="Martes"><span>M</span></label>
@@ -112,11 +112,11 @@
                         
                         <div class="form-group" style="display: flex; gap: 10px;">
                             <div style="flex: 1;">
-                                <label><i class="far fa-clock" style="color: #17a2b8; width: 15px;"></i> Inicio:</label>
+                                <label><i class="far fa-clock" style="color: #00AEEF; width: 15px;"></i> Inicio:</label>
                                 <input type="time" name="hora_inicio" id="hora-inicio-form" min="07:00" max="20:00" required>
                             </div>
                             <div style="flex: 1;">
-                                <label><i class="far fa-clock" style="color: #17a2b8; width: 15px;"></i> Fin:</label>
+                                <label><i class="far fa-clock" style="color: #00AEEF; width: 15px;"></i> Fin:</label>
                                 <input type="time" name="hora_fin" id="hora-fin-form" min="07:00" max="20:00" required>
                             </div>
                         </div>
@@ -197,7 +197,7 @@
                                     
                                     {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                                     <td style="display: flex; gap: 8px;">
-                                        <button type="button" class="btn-action-edit" style="border: 1px solid #004a98; color: #004a98; background: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"
+                                        <button type="button" class="btn-action-edit" style="border: 1px solid #007A78; color: #007A78; background: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"
                                                 data-id="{{ grupo.id_grupo }}"
                                                 data-nombre="{{ grupo.nombre_grupo }}"
                                                 data-inicio="{{ grupo.generacion_inicio }}"
@@ -397,7 +397,7 @@
 
         document.getElementById("form-titulo").innerText = "Editar Grupo: " + nombre;
         document.getElementById("btn-guardar").innerText = "Actualizar Cambios";
-        document.getElementById("btn-guardar").style.backgroundColor = "#004a98"; 
+        document.getElementById("btn-guardar").style.backgroundColor = "#007A78"; 
         document.getElementById("btn-cancelar").style.display = "block"; 
 
         document.getElementById("form-grupo").action = "/asignaciones/editar_grupo/" + id_grupo;
@@ -537,7 +537,7 @@
                     title: 'Faltan Días',
                     text: 'Debes seleccionar al menos un día de la semana para la asignación.',
                     icon: 'warning',
-                    confirmButtonColor: '#17a2b8'
+                    confirmButtonColor: '#00AEEF'
                 });
                 return;
             }
@@ -545,10 +545,10 @@
             // 4. Armamos la tarjeta de resumen en HTML
             const resumenHTML = `
                 <div style="text-align: left; font-size: 14px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ccc; margin-top: 10px;">
-                    <p style="margin-bottom: 8px;"><b><i class="fas fa-users" style="color:#17a2b8; width:20px;"></i> Grupo:</b> ${textoGrupo}</p>
-                    <p style="margin-bottom: 8px;"><b><i class="fas fa-door-open" style="color:#17a2b8; width:20px;"></i> Salón:</b> ${textoEspacio}</p>
-                    <p style="margin-bottom: 8px;"><b><i class="fas fa-calendar-day" style="color:#17a2b8; width:20px;"></i> Días:</b> ${diasSeleccionados.join(', ')}</p>
-                    <p style="margin-bottom: 0;"><b><i class="far fa-clock" style="color:#17a2b8; width:20px;"></i> Horario:</b> ${horaInicio} a ${horaFin}</p>
+                    <p style="margin-bottom: 8px;"><b><i class="fas fa-users" style="color:#00AEEF; width:20px;"></i> Grupo:</b> ${textoGrupo}</p>
+                    <p style="margin-bottom: 8px;"><b><i class="fas fa-door-open" style="color:#00AEEF; width:20px;"></i> Salón:</b> ${textoEspacio}</p>
+                    <p style="margin-bottom: 8px;"><b><i class="fas fa-calendar-day" style="color:#00AEEF; width:20px;"></i> Días:</b> ${diasSeleccionados.join(', ')}</p>
+                    <p style="margin-bottom: 0;"><b><i class="far fa-clock" style="color:#00AEEF; width:20px;"></i> Horario:</b> ${horaInicio} a ${horaFin}</p>
                 </div>
                 <p style="margin-top: 15px; font-size: 15px; color: #555;">¿Estás seguro de registrar esta asignación en SIGEA?</p>
             `;
@@ -559,7 +559,7 @@
                 html: resumenHTML,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#17a2b8', // Turquesa
+                confirmButtonColor: '#00AEEF', // Turquesa
                 cancelButtonColor: '#dc3545',  // Rojo de Bootstrap
                 confirmButtonText: '<i class="fas fa-check"></i> Confirmar',
                 cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
