@@ -1,266 +1,108 @@
 import logging
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from database.conexion import get_db_connection
-from .auth import role_required # Importamos el decorador
+
+from flask import Blueprint, render_template, request, redirect, url_for, flash
+
+import config
+from database.conexion import get_db
+from services import asignaciones as servicio
+from services.errores import ErrorNegocio
+from .decoradores import role_required
 
 asignaciones_bp = Blueprint('asignaciones', __name__)
 logger = logging.getLogger(__name__)
 
+DESTINO = 'asignaciones.vista_asignaciones'
+
+
+def _volver():
+    return redirect(url_for(DESTINO))
+
+
 @asignaciones_bp.route('/asignaciones')
-@role_required('ADMIN', 'COORDINADOR', 'MAESTRO') # Todos pueden ver el calendario
+@role_required(*config.TODOS_LOS_ROLES)           # todos pueden ver el calendario
 def vista_asignaciones():
-    
-    if 'id_usuario' not in session:
-        return redirect(url_for('auth.login'))
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    conn = get_db()
+    if not conn:
+        flash("Error de conexión a la base de datos.", "danger")
+        return render_template('asignaciones.html', carreras=[], grupos=[], espacios=[],
+                               periodos=[], edificios=[], eventos_calendario=[])
+    return render_template('asignaciones.html', **servicio.datos_vista(conn))
 
-    cursor.execute ("SELECT id_carrera, nombre_carrera, acronimo FROM Carreras")
-    carreras = cursor.fetchall()
 
-    cursor.execute("""
-        SELECT g.id_grupo, g.nombre_grupo, g.generacion_inicio, g.generacion_fin, c.acronimo, g.id_carrera
-        FROM Grupos g
-        INNER JOIN Carreras c ON g.id_carrera = c.id_carrera
-        WHERE g.estatus = 'Activo' 
-    """)
-    grupos = cursor.fetchall()
-
-    cursor.execute("SELECT id_espacio, nombre, id_edificio FROM Espacios WHERE estatus = 'Activo' AND tipo = 'Aula Clásica'")
-    espacios = cursor.fetchall()
-
-    cursor.execute("SELECT id_periodo, nombre FROM Periodos WHERE activo = 1")
-    periodos = cursor.fetchall()
-
-    cursor.execute("""
-        SELECT g.nombre_grupo, h.dia_semana, h.hora_inicio, h.hora_fin, a.id_espacio, e.id_edificio, c.acronimo
-        FROM Horarios h
-        JOIN Asignaciones a ON h.id_asignacion = a.id_asignacion
-        JOIN Grupos g ON a.id_grupo = g.id_grupo
-        JOIN Espacios e ON a.id_espacio = e.id_espacio
-        JOIN Carreras c ON g.id_carrera = c.id_carrera
-    """)
-    horarios_db = cursor.fetchall()
-
-    mapa_dias = {'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6}
-
-    colores_carrera = {
-        'ITIID': '#67A15F', #verde olivo
-        'IRC' : '#C8C7C5' ,#gris
-        'LTF' : '#436DA8', #azul
-        'IMI' : '#D67A38', #naranja
-        'ISA' : '#CF4444', #rojo
-        'IAEV' : '#9854C4', #morado
-        'ISW' : '#67A15F',
-        'ING' : "#F7F088", #amarillo
-        'PREPA' : "#FF7700"
-    }
-        
-    eventos_calendario = []
-    for h in horarios_db:
-        nombre_grupo = h[0]
-        dia_bd = str(h[1]).strip()
-        dia_num = mapa_dias.get(dia_bd)
-
-        if dia_num is None:
-            continue
-
-        hora_inicio_str = str(h[2])[:5]
-        hora_fin_str = str(h[3])[:5]
-        id_espacio = h[4]
-        
-        acronimo_actual = str(h[6]).strip() if h[6] else ''
-        color_asignado = colores_carrera.get(acronimo_actual, '#004a98') 
-
-        evento = {
-            'title': nombre_grupo,
-            'startTime': hora_inicio_str,
-            'endTime': hora_fin_str,
-            'daysOfWeek': [dia_num], 
-            'color': color_asignado,  
-            'extendedProps': {
-                'id_espacio': id_espacio
-            }
-    }
-        
-        eventos_calendario.append(evento)
-    
-    cursor.execute("SELECT id_edificio, nombre FROM Edificios")
-    edificios = cursor.fetchall()
-
-    conn.close()
-
-    return render_template('asignaciones.html', carreras=carreras, grupos=grupos, espacios=espacios, periodos=periodos, edificios=edificios, eventos_calendario=eventos_calendario)
-
-# AGREGAR ASIGNACION
 @asignaciones_bp.route('/asignaciones/nueva_asignacion', methods=['POST'])
-@role_required('ADMIN', 'COORDINADOR') # Protegido
+@role_required(*config.ROLES_ADMINISTRATIVOS)
 def nueva_asignacion():
-    id_grupo = int(request.form.get('id_grupo'))
-    id_espacio = int(request.form.get('id_espacio'))
-    id_periodo = int(request.form.get('id_periodo')) 
-    hora_inicio = request.form.get('hora_inicio')
-    hora_fin = request.form.get('hora_fin')
-    dias = request.form.getlist('dias') 
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
+    conn = get_db()
+    if not conn:
+        flash("Error de conexión a la base de datos.", "danger")
+        return _volver()
     try:
-        for dia in dias:
-            cursor.execute("""
-                SELECT a.id_grupo, h.hora_inicio, h.hora_fin
-                FROM Horarios h
-                JOIN Asignaciones a ON h.id_asignacion = a.id_asignacion
-                WHERE a.id_espacio = ? 
-                  AND a.id_periodo = ?
-                  AND h.dia_semana = ?
-                  AND (h.hora_fin > CAST(? AS TIME) AND h.hora_inicio < CAST(? AS TIME))
-            """, (id_espacio, id_periodo, dia, hora_inicio, hora_fin))
-            
-            choque = cursor.fetchone()
-            
-            if choque:
-                hora_c_inicio = choque[1].strftime('%H:%M')
-                hora_c_fin = choque[2].strftime('%H:%M')
-                flash(f"Choque detectado el {dia}: El salón ya está ocupado de {hora_c_inicio} a {hora_c_fin}.", "danger")
-                return redirect(url_for('asignaciones.vista_asignaciones'))
-
-        cursor.execute("""
-            INSERT INTO Asignaciones (id_grupo, id_espacio, id_periodo)
-            OUTPUT INSERTED.id_asignacion
-            VALUES (?, ?, ?)
-        """, (id_grupo, id_espacio, id_periodo))
-        
-        id_nueva_asignacion = cursor.fetchone()[0]
-
-        for dia in dias:
-            cursor.execute('''
-                INSERT INTO Horarios (id_asignacion, dia_semana, hora_inicio, hora_fin)
-                VALUES (?, ?, CAST(? AS TIME), CAST(? AS TIME))
-            ''', (id_nueva_asignacion, dia, hora_inicio, hora_fin))
-            
-        conn.commit()
+        servicio.crear_asignacion(
+            conn,
+            request.form.get('id_grupo'), request.form.get('id_espacio'),
+            request.form.get('id_periodo'),
+            request.form.get('hora_inicio'), request.form.get('hora_fin'),
+            request.form.getlist('dias'))
         flash("Horario asignado con éxito. No se detectaron empalmes.", "success")
-
+    except ErrorNegocio as e:
+        flash(e.mensaje, "danger")
     except Exception:
-        conn.rollback()
         logger.exception("Error crítico en asignación")
         flash("Ocurrió un error interno al intentar guardar el horario.", "danger")
-    finally:
-        conn.close()
+    return _volver()
 
-    return redirect(url_for('asignaciones.vista_asignaciones'))
 
-# AGREGAR GRUPO
-# AGREGAR GRUPO
 @asignaciones_bp.route('/asignaciones/agregar_grupo', methods=['POST'])
-@role_required('ADMIN', 'COORDINADOR') # Protegido
+@role_required(*config.ROLES_ADMINISTRATIVOS)
 def agregar_grupo():
-    nombre_grupo = request.form.get('nombre_grupo')
-    generacion_inicio = request.form.get('generacion_inicio')
-    generacion_fin = request.form.get('generacion_fin')
-    id_carrera = request.form.get('id_carrera')
-
-    conn = get_db_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            
-            cursor.execute("SELECT id_grupo, estatus FROM Grupos WHERE nombre_grupo = ?", (nombre_grupo,))
-            grupo_existente = cursor.fetchone()
-            
-            if grupo_existente:
-                if grupo_existente[1] == 'Inactivo':
-                    cursor.execute("""
-                        UPDATE Grupos 
-                        SET estatus = 'Activo', generacion_inicio = ?, generacion_fin = ?, id_carrera = ?
-                        WHERE id_grupo = ?
-                    """, (generacion_inicio, generacion_fin, id_carrera, grupo_existente[0]))
-                    
-                    conn.commit()
-                    flash(f"El grupo '{nombre_grupo}' había sido eliminado previamente y fue reactivado con los nuevos datos.", "success")
-                    return redirect(url_for('asignaciones.vista_asignaciones'))
-                else:
-                    flash(f"El grupo '{nombre_grupo}' ya existe y está activo. Por favor, elige otro nombre.", "danger")
-                    return redirect(url_for('asignaciones.vista_asignaciones'))
-                
-            cursor.execute("""
-                INSERT INTO Grupos (nombre_grupo, generacion_inicio, generacion_fin, id_carrera)
-                VALUES (?, ?, ?, ?)
-            """, (nombre_grupo, generacion_inicio, generacion_fin, id_carrera))
-            
-            conn.commit()
-            flash("Grupo registrado exitosamente.", "success")
-            
-        except Exception:
-            conn.rollback()
-            logger.exception("Error al guardar el grupo")
-            flash("Error al guardar el grupo. Inténtalo de nuevo o avisa al administrador.", "danger")
-        finally:
-            conn.close()
-
-    return redirect(url_for('asignaciones.vista_asignaciones'))
-
-# ELIMINAR GRUPO
-@asignaciones_bp.route('/asignaciones/eliminar_grupo/<int:id_grupo>', methods=['POST'])
-@role_required('ADMIN', 'COORDINADOR') # Protegido
-def eliminar_grupo(id_grupo):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
+    conn = get_db()
+    if not conn:
+        flash("Error de conexión a la base de datos.", "danger")
+        return _volver()
     try:
-        cursor.execute("UPDATE Grupos SET estatus = 'Inactivo' WHERE id_grupo = ?", (id_grupo,))
-        conn.commit()
-        flash(f"El grupo ha sido eliminado.", "success")
+        f = request.form
+        mensaje = servicio.agregar_grupo(conn, f.get('nombre_grupo'), f.get('generacion_inicio'),
+                                         f.get('generacion_fin'), f.get('id_carrera'))
+        flash(mensaje, "success")
+    except ErrorNegocio as e:
+        flash(e.mensaje, "danger")
+    except Exception:
+        logger.exception("Error al guardar el grupo")
+        flash("Error al guardar el grupo. Inténtalo de nuevo o avisa al administrador.", "danger")
+    return _volver()
+
+
+@asignaciones_bp.route('/asignaciones/eliminar_grupo/<int:id_grupo>', methods=['POST'])
+@role_required(*config.ROLES_ADMINISTRATIVOS)
+def eliminar_grupo(id_grupo):
+    conn = get_db()
+    if not conn:
+        flash("Error de conexión a la base de datos.", "danger")
+        return _volver()
+    try:
+        servicio.desactivar_grupo(conn, id_grupo)
+        flash("El grupo ha sido eliminado.", "success")
     except Exception:
         logger.exception("Error al eliminar el grupo")
-        conn.rollback()
-        flash(f"No se pudo eliminar el grupo. Intentalo de nuevo.", "danger")
-    finally:
-        conn.close()
+        flash("No se pudo eliminar el grupo. Inténtalo de nuevo.", "danger")
+    return _volver()
 
-    return redirect(url_for('asignaciones.vista_asignaciones'))
 
-# EDITAR GRUPO
 @asignaciones_bp.route('/asignaciones/editar_grupo/<int:id_grupo>', methods=['POST'])
-@role_required('ADMIN', 'COORDINADOR') # Protegido
+@role_required(*config.ROLES_ADMINISTRATIVOS)
 def editar_grupo(id_grupo):
-    nombre_grupo = request.form.get('nombre_grupo')
-    generacion_inicio = request.form.get('generacion_inicio')
-    generacion_fin = request.form.get('generacion_fin')
-    id_carrera = request.form.get('id_carrera')
-
-    if not generacion_fin or generacion_fin.strip() == "":
-        generacion_fin = None
-    else:
-        generacion_fin = int(generacion_fin)
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
+    conn = get_db()
+    if not conn:
+        flash("Error de conexión a la base de datos.", "danger")
+        return _volver()
     try:
-        cursor.execute("SELECT id_grupo FROM Grupos WHERE nombre_grupo = ? AND id_grupo != ?", (nombre_grupo, id_grupo))
-        grupo_existente = cursor.fetchone()
-
-        if grupo_existente:
-            flash(f"El grupo '{nombre_grupo}' ya existe. Por favor, elige otro nombre.", "warning")
-            return redirect(url_for('asignaciones.vista_asignaciones'))
-
-        cursor.execute("""
-            UPDATE Grupos
-            SET nombre_grupo = ?, generacion_inicio = ?, generacion_fin = ?, id_carrera = ?
-            WHERE id_grupo = ? 
-        """, (nombre_grupo, int(generacion_inicio), generacion_fin, int(id_carrera), id_grupo))
-
-        conn.commit()
-        flash('El grupo fue actualizado correctamente.', 'success')
+        f = request.form
+        servicio.actualizar_grupo(conn, id_grupo, f.get('nombre_grupo'), f.get('generacion_inicio'),
+                                  f.get('generacion_fin'), f.get('id_carrera'))
+        flash("El grupo fue actualizado correctamente.", "success")
+    except ErrorNegocio as e:
+        flash(e.mensaje, "warning")
     except Exception:
         logger.exception("Error al actualizar el grupo")
-        conn.rollback()
-        flash(f"Error al intentar actualizar los datos del grupo.", "danger")
-    finally:
-        conn.close()
-
-    return redirect(url_for('asignaciones.vista_asignaciones'))
+        flash("Error al intentar actualizar los datos del grupo.", "danger")
+    return _volver()
