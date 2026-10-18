@@ -525,3 +525,14 @@ body {
     .kpi-container, .widgets-container { flex-direction: column; }
     .schedule-table { overflow-x: auto; display: block; }
 }
+
+
+/* Campana de notificaciones: leídas / sin leer */
+.noti-item {
+    display: flex; align-items: flex-start; gap: 10px; padding: 10px 15px;
+    border-bottom: 1px solid #EDF2F7; font-size: 12px; color: #4A5568;
+    text-decoration: none; transition: background 0.2s;
+}
+.noti-item:hover { background: #F7FAFC; }
+.noti-item--nueva { background: #EBF8FF; color: #2D3748; font-weight: 600; }
+.noti-item--nueva:hover { background: #E1F2FD; }
