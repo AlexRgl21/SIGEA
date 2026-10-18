@@ -1,254 +1,84 @@
 import logging
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from database.conexion import get_db_connection
-import pyodbc
-import string
-import secrets
-import smtplib
-from email.message import EmailMessage
-from werkzeug.security import generate_password_hash
-import threading
-import os
-from .auth import role_required
 
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+
+import config
+from database.conexion import get_db
+from services import usuarios as servicio
+from services.errores import ErrorNegocio
+from .decoradores import role_required
 
 usuarios_bp = Blueprint('usuarios', __name__)
 logger = logging.getLogger(__name__)
 
-DOMINIO_CORREO = os.getenv('DOMINIO_CORREO', 'upsrj.edu.mx')
-def correo_institucional(correo):
-    partes = (correo or '').strip().lower().split('@')
-    return len(partes) == 2 and partes[0] != '' and partes[1] == DOMINIO_CORREO
+DESTINO = 'usuarios.lista_usuarios'
 
-def enviar_correo_bienvenida(correo_destino, nombre_usuario, password_temporal):
-    correo_emisor = os.getenv('GMAIL_USER')
-    password_emisor = os.getenv('GMAIL_PASS')
 
-    msg = EmailMessage()
-    msg['Subject'] = 'Bienvenido a SIGEA - Tus credenciales de acceso'
-    msg['From'] = correo_emisor
-    msg['To'] = correo_destino
-    
-    contenido = f""" Hola {nombre_usuario}, 
-Has sido registrado exitosamente en el Sistema Integral de Gestión de Espacios Académicos (SIGEA).
+def _sin_conexion():
+    flash("Error de conexión a la base de datos.", "danger")
+    return redirect(url_for(DESTINO))
 
-Tus credenciales de acceso son:
-Usuario / Correo: {correo_destino}
-Contraseña Temporal: {password_temporal}
 
-Te recomendamos iniciar sesión lo antes posible. 
-
-Saludos, 
-El equipo de SIGEA. 
-"""
-
-    msg.set_content(contenido)
-
-    try:
-        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        server.login(correo_emisor, password_emisor)
-        server.send_message(msg)
-        server.quit()
-
-    except Exception:
-        logger.exception("Error asíncrono al enviar el correo")
-
-# SOLICITAR TODOS LOS USUARIOS REGISTRADOS
 @usuarios_bp.route('/usuarios')
-@role_required('ADMIN', 'COORDINADOR')
+@role_required(*config.ROLES_ADMINISTRATIVOS)
 def lista_usuarios():
-
-    #candado para mandarte al login despues del tiempo establecido
-    if 'id_usuario' not in session:
-        return redirect(url_for('auth.login'))
-    
-    conn = get_db_connection()
-
+    conn = get_db()
     if not conn:
-        return render_template('usuarios.html', usuarios = [], error = "Sin conexión a la base de datos")
-    
-    cursor = conn.cursor()
+        return render_template('usuarios.html', usuarios=[], error="Sin conexión a la base de datos")
+    return render_template('usuarios.html', usuarios=servicio.listar(conn))
 
-    consulta = """
-        SELECT 
-            id_usuario,
-            nombre, 
-            apellidos,
-            nombre + ' ' + apellidos AS nombre_completo,
-            correo,
-            estado,
-            CASE 
-                WHEN id_rol = 1 THEN 'Administrador'
-                WHEN id_rol = 2 THEN 'Coordinador de Carrera' 
-                WHEN id_rol = 3 THEN 'Docente' 
-            END AS rol_nombre
-        FROM Usuarios
-    """
 
-    cursor.execute(consulta)
-    filas = cursor.fetchall()
-    columnas = [columna[0] for columna in cursor.description]
-
-    usuarios_db = [dict(zip(columnas, fila)) for fila in filas]
-
-    conn.close()
-    return render_template('usuarios.html', usuarios=usuarios_db)
-
-    
-# AGREGAR A UN NUEVO USUARIO
 @usuarios_bp.route('/usuarios/agregar', methods=['POST'])
-@role_required('ADMIN', 'COORDINADOR')
+@role_required(*config.ROLES_ADMINISTRATIVOS)
 def agregar_usuario():
-    nombre = request.form['nombre']
-    apellidos = request.form['apellidos']
-    
-    correo = request.form['correo'].strip().lower()
-    if not correo_institucional(correo):
-        flash(f"Correo invalido. Solo se permiten correos @{DOMINIO_CORREO}.", "danger")
-        return redirect(url_for('usuarios.lista_usuarios'))
-    
-    id_rol = request.form['id_rol']
-    estado = 'Activo'
-
-    if session.get('role') != 'ADMIN':
-        id_rol = '3'
-
-    alfabeto = string.ascii_letters + string.digits
-    password_temporal = ''.join(secrets.choice(alfabeto) for i in range(8))
-    password_hash = generate_password_hash(password_temporal)
-
-    conn = get_db_connection()
+    conn = get_db()
     if not conn:
-        flash("Error de conexión con la base de datos.", "danger")
-        return redirect(url_for('usuarios.lista_usuarios'))
-    
+        return _sin_conexion()
     try:
-        cursor = conn.cursor()
-
-        consulta = """
-            INSERT INTO Usuarios (nombre, apellidos, correo, contrasena, id_rol, estado)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """
-
-        cursor.execute(consulta, (nombre, apellidos, correo, password_hash, id_rol, estado))
-        conn.commit()
-
-        hilo_correo = threading.Thread(
-            target=enviar_correo_bienvenida,
-            args=(correo, nombre, password_temporal)
-        )
-        hilo_correo.start()
-        flash("Usuario registrado correctamente. El correo se siendo enviado.", "success")
-     
-    except pyodbc.IntegrityError:
-        conn.rollback()
-        flash("No se pudo registrar: el correo ya está registrado o algún dato no es válido.", "danger")
+        servicio.crear(conn, session.get('role'),
+                       request.form['nombre'], request.form['apellidos'],
+                       request.form['correo'], request.form.get('id_rol'))
+        flash("Usuario registrado correctamente. El correo se está enviando.", "success")
+    except ErrorNegocio as e:
+        flash(e.mensaje, "danger")
     except Exception:
-        conn.rollback()
         logger.exception("Error al registrar")
         flash("Error al registrar. Inténtalo de nuevo o avisa al administrador.", "danger")
-    finally:
-        cursor.close()
-        conn.close()
-        
-    return redirect(url_for('usuarios.lista_usuarios'))
+    return redirect(url_for(DESTINO))
 
 
-def puede_gestionar(cursor, id_objetivo):
-    """ADMIN gestiona a cualquiera; los demás roles, solo a docentes (id_rol 3)."""
-    if session.get('role') == 'ADMIN':
-        return True
-    cursor.execute("SELECT id_rol FROM Usuarios WHERE id_usuario = ?", (id_objetivo,))
-    fila = cursor.fetchone()
-    return bool(fila) and fila[0] == 3
-
-
-# Editar permisos de usuarios registrados
 @usuarios_bp.route('/usuarios/configurar/<int:id>', methods=['POST'])
-@role_required('ADMIN', 'COORDINADOR')
+@role_required(*config.ROLES_ADMINISTRATIVOS)
 def configurar_usuario(id):
-    id_rol = request.form.get('id_rol')
-    estado = request.form.get('estado')
-
-    if estado not in ('Activo', 'Inactivo'):
-        flash("Los datos del formulario no son válidos. Recarga la página e inténtalo de nuevo.", "danger")
-        return redirect(url_for('usuarios.lista_usuarios'))
-
-    if session.get('role') != 'ADMIN':
-        if str(id_rol) in ['1', '2']:
-            flash("Alerta de seguridad: No tienes permisos para asignar este rol.", "danger")
-            return redirect(url_for('usuarios.lista_usuarios'))
-        id_rol = '3'
-    elif str(id_rol) not in ['1', '2', '3']:
-        flash("El rol seleccionado no es válido.", "danger")
-        return redirect(url_for('usuarios.lista_usuarios'))
-
-    conn = get_db_connection()
+    conn = get_db()
     if not conn:
-        flash("Error de conexión a la base de datos.", "danger")
-        return redirect(url_for('usuarios.lista_usuarios'))
-
+        return _sin_conexion()
     try:
-        cursor = conn.cursor()
-        if not puede_gestionar(cursor, id):
-            flash("No tienes permisos para modificar a este usuario.", "danger")
-            return redirect(url_for('usuarios.lista_usuarios'))
-
-        cursor.execute("""
-            UPDATE Usuarios
-            SET id_rol = ?, estado = ?
-            WHERE id_usuario = ?
-        """, (id_rol, estado, id))
-        conn.commit()
+        servicio.configurar(conn, session.get('role'), id,
+                            request.form.get('id_rol'), request.form.get('estado'))
         flash("Permisos y estado del usuario actualizados correctamente.", "success")
+    except ErrorNegocio as e:
+        flash(e.mensaje, "danger")
     except Exception:
-        conn.rollback()
         logger.exception("Error al configurar el usuario")
         flash("Error al configurar el usuario. Inténtalo de nuevo o avisa al administrador.", "danger")
-    finally:
-        conn.close()
-
-    return redirect(url_for('usuarios.lista_usuarios'))
+    return redirect(url_for(DESTINO))
 
 
-# EDITAR DATOS DE USUARIOS REGISTRADOS
 @usuarios_bp.route('/usuarios/editar/<int:id>', methods=['POST'])
-@role_required('ADMIN', 'COORDINADOR')
+@role_required(*config.ROLES_ADMINISTRATIVOS)
 def editar_usuario(id):
-    nombre = request.form.get('nombre')
-    apellidos = request.form.get('apellidos')
-    correo = (request.form.get('correo') or '').strip().lower()
-
-    if not correo_institucional(correo):
-        flash(f"Correo inválido. Solo se permiten correos @{DOMINIO_CORREO}.", "danger")
-        return redirect(url_for('usuarios.lista_usuarios'))
-
-    conn = get_db_connection()
+    conn = get_db()
     if not conn:
-        flash("Error de conexión a la base de datos.", "danger")
-        return redirect(url_for('usuarios.lista_usuarios'))
-
+        return _sin_conexion()
     try:
-        cursor = conn.cursor()
-        if not puede_gestionar(cursor, id):
-            flash("No tienes permisos para modificar a este usuario.", "danger")
-            return redirect(url_for('usuarios.lista_usuarios'))
-
-        cursor.execute("""
-            UPDATE Usuarios
-            SET nombre = ?, apellidos = ?, correo = ?
-            WHERE id_usuario = ?
-        """, (nombre, apellidos, correo, id))
-        conn.commit()
+        servicio.editar(conn, session.get('role'), id,
+                        request.form.get('nombre'), request.form.get('apellidos'),
+                        request.form.get('correo'))
         flash("Datos del usuario modificados con éxito.", "success")
-    except pyodbc.IntegrityError:
-        conn.rollback()
-        flash("Ese correo ya está registrado en otro usuario.", "danger")
+    except ErrorNegocio as e:
+        flash(e.mensaje, "danger")
     except Exception:
-        conn.rollback()
         logger.exception("Error al editar el usuario")
         flash("Error al editar el usuario. Inténtalo de nuevo o avisa al administrador.", "danger")
-    finally:
-        conn.close()
-
-    return redirect(url_for('usuarios.lista_usuarios'))
+    return redirect(url_for(DESTINO))
