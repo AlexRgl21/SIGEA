@@ -10,17 +10,21 @@ CREATE TABLE Usuarios (
     nombre VARCHAR(100) NOT NULL,
     apellidos VARCHAR(100) NOT NULL,
     correo VARCHAR(100) NOT NULL UNIQUE,
-    contrasena VARCHAR(255) NOT NULL,
+    contrasena VARCHAR(255) NULL,
     id_rol INT NOT NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'Activo',
     CONSTRAINT FK_Usuarios_Roles
-    FOREIGN KEY (id_rol) REFERENCES Roles(id_rol)
+    FOREIGN KEY (id_rol) REFERENCES Roles(id_rol),
+    CONSTRAINT CK_Usuarios_CorreoInstitucional 
+    CHECK (correo LIKE '%_upsrj.edu.mx' AND NOT correo LIKE '%@%@')
 );
 
 -- 3. EDIFICIOS
 CREATE TABLE Edificios (
     id_edificio INT IDENTITY(1,1) PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    codigo VARCHAR(20) NOT NULL UNIQUE
+    codigo VARCHAR(20) NOT NULL UNIQUE,
+    estatus VARCHAR(20) NULL DEFAULT 'Activo'
 );
 
 -- 4. ESPACIOS (SALONES / LABS / SALAS)
@@ -52,7 +56,8 @@ CREATE TABLE Grupos (
     id_carrera INT NOT NULL,
     estatus VARCHAR(20) DEFAULT 'Activo',
     CONSTRAINT FK_Grupos_Carreras
-    FOREIGN KEY (id_carrera) REFERENCES Carreras(id_carrera)
+    FOREIGN KEY (id_carrera) REFERENCES Carreras(id_carrera),
+    CONSTRAINT UQ_NombreGrupo UNIQUE (nombre_grupo)
 );
 
 -- 7. PERIODOS (CUATRIMESTRES)
@@ -111,7 +116,7 @@ CREATE TABLE Reservas (
     FOREIGN KEY (id_espacio) REFERENCES Espacios(id_espacio)
 );
 
-
+-- 11. CODIGOS DE RECUPERACION
 CREATE TABLE CodigosRecuperacion (
     id_codigo INT IDENTITY(1,1) PRIMARY KEY,
     id_usuario INT NOT NULL,
@@ -127,6 +132,7 @@ CREATE TABLE CodigosRecuperacion (
 CREATE INDEX IX_CodigosRecuperacion_Usuario
 ON CodigosRecuperacion (id_usuario, creado_en DESC);
 
+-- 12. LOGIN FALLIDOS
 CREATE TABLE LoginFallidos (
     id_intento INT IDENTITY(1,1) PRIMARY KEY,
     correo VARCHAR(100) NOT NULL,
@@ -136,3 +142,16 @@ CREATE TABLE LoginFallidos (
 
 CREATE INDEX IX_LoginFallidos_Correo ON LoginFallidos (correo, creado_en);
 CREATE INDEX IX_LoginFallidos_Ip ON LoginFallidos (ip, creado_en);
+
+-- 13. NOTIFICACIONES LEIDAS
+-- Estado de "leído" de la campana de notificaciones (guardado por usuario).
+CREATE TABLE NotificacionesLeidas (
+    id_usuario INT NOT NULL,
+    id_reserva INT NOT NULL,
+    tipo       VARCHAR(20) NOT NULL,             -- 'SOLICITUD' (admin/coordinador) o 'RESPUESTA' (maestro)
+    leida_en   DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    CONSTRAINT PK_NotificacionesLeidas PRIMARY KEY (id_usuario, id_reserva, tipo),
+    CONSTRAINT FK_NotifLeidas_Usuarios FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario),
+    CONSTRAINT FK_NotifLeidas_Reservas FOREIGN KEY (id_reserva) REFERENCES Reservas(id_reserva)
+        ON DELETE CASCADE
+);
