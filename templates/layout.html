@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SIGEA{% endblock %}</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -13,7 +14,7 @@
     {% block custom_head %}{% endblock %}
     {% block custom_css %}{% endblock %}
 </head>
-<body>
+<body{% if session.get('id_usuario') %} data-sesion-total="{{ sesion_total_seg }}" data-sesion-aviso="{{ sesion_aviso_seg }}" data-sesion-ping="{{ sesion_ping_seg }}" data-url-extender="{{ url_for('auth.extender_sesion') }}"{% endif %}>
     <aside class="sidebar">
         <div class="logo-container">
             <img src="{{ url_for('static', filename='img/logo_up.png') }}" alt="SIGEA">
@@ -73,14 +74,13 @@
 
             <div class="user-profile" style="display: flex; align-items: center; gap: 15px;">
                 {% if session.get('role') %}
-                <div class="campana-container" id="btn-campana" 
-                     data-cant="{{ cant_notis|default(0) }}" 
-                     data-user="{{ session.get('id_usuario', '') }}" 
-                     data-notis="{% if cant_notis is defined and cant_notis > 0 %}{% for n in notis %}{{ n.mensaje }}{% endfor %}{% endif %}"
-                     style="position: relative; cursor: pointer; display: flex; align-items: center; margin-right: 5px;">
-                    
+                <div class="campana-container" id="btn-campana"
+                    data-sin-leer="{{ cant_notis|default(0) }}"
+                    data-url-leer="{{ url_for('notificaciones.marcar_leidas') }}"
+                    style="position: relative; cursor: pointer; display: flex; align-items: center; margin-right: 5px;">
+
                     <i class="fa-solid fa-bell" style="font-size: 20px; color: #007A78;"></i>
-                    
+
                     {% if cant_notis|default(0) > 0 %}
                     <span class="badge-numero" style="position: absolute; top: -5px; right: -8px; background-color: #dc3545; color: white; border-radius: 50%; padding: 1px 5px; font-size: 10px; font-weight: bold; border: 2px solid white;">
                         {{ cant_notis }}
@@ -92,18 +92,16 @@
                             Notificaciones Recientes
                         </div>
                         <div style="max-height: 220px; overflow-y: auto;">
-                            {% if cant_notis|default(0) > 0 %}
-                                {% for n in notis|default([]) %}
-                                    <a href="{{ n.url }}" style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 15px; border-bottom: 1px solid #EDF2F7; font-size: 12px; color: #4A5568; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='#F7FAFC'" onmouseout="this.style.background='transparent'">
-                                        <i class="fa-solid fa-circle-info" style="color: #00AEEF; margin-top: 2px;"></i>
-                                        <p style="margin: 0; line-height: 1.4;">{{ n.mensaje }}</p>
-                                    </a>
-                                {% endfor %}
+                            {% for n in notis|default([]) %}
+                                <a href="{{ n.url }}" class="noti-item{% if not n.leida %} noti-item--nueva{% endif %}">
+                                    <i class="fa-solid fa-circle-info" style="color: #00AEEF; margin-top: 2px;"></i>
+                                    <p style="margin: 0; line-height: 1.4;">{{ n.mensaje }}</p>
+                                </a>
                             {% else %}
                                 <div style="padding: 15px; text-align: center; color: #A0AEC0; font-size: 12px;">
-                                    No tienes notificaciones nuevas
+                                    No tienes notificaciones
                                 </div>
-                            {% endif %}
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -117,6 +115,7 @@
                 </div>
                 <form action="{{ url_for('auth.logout') }}" method="POST" id="form-logout" style="margin: 0;" novalidate>
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="motivo" id="logout-motivo" value="">
                     <button type="submit" form="form-logout" formnovalidate class="btn-salir">Salir</button>
                 </form>
             </div>
@@ -146,70 +145,18 @@
     </main>
 
     <script>
-        // SCRIPT DEL BUSCADOR GLOBAL
-        function ejecutarBusqueda() {
-            let input = document.getElementById('input-busqueda').value.toLowerCase();
-            let tarjetas = document.querySelectorAll('.reserva-card, .salon-card'); 
-            tarjetas.forEach(tarjeta => {
-                let texto = tarjeta.innerText.toLowerCase();
-                tarjeta.style.display = texto.includes(input) ? 'block' : 'none';
-            });
-        }
-
-        // SCRIPT DE INACTIVIDAD CON SWEETALERT2
-        let tiempoInactividad;
-        function reiniciarTemporizador() {
-            clearTimeout(tiempoInactividad);
-            tiempoInactividad = setTimeout(() => {
-                Swal.fire({
-                    title: 'Sesión Expirada',
-                    text: 'Tu sesión se cerró por seguridad al no detectar movimiento.',
-                    icon: 'warning',
-                    confirmButtonColor: '#00AEEF',
-                    allowOutsideClick: false
-                }).then(() => {
-                    document.getElementById('form-logout').submit();
-                });
-            }, 300000); 
-        }
-
-        window.onload = window.onmousemove = window.onkeypress = window.onclick = window.onscroll = reiniciarTemporizador;
-
-        // SCRIPT DE LA CAMPANA (Versión limpia sin errores de VS Code)
-        const btnCampana = document.getElementById('btn-campana');
-        const dropdownNotis = document.getElementById('dropdown-notis');
-        const badgeNumero = document.querySelector('.badge-numero');
-        
-        if (btnCampana && dropdownNotis) {
-            // Leemos las variables desde el HTML
-            const cantNotis = parseInt(btnCampana.getAttribute('data-cant')) || 0;
-            const idUsuario = btnCampana.getAttribute('data-user');
-            const notisActuales = btnCampana.getAttribute('data-notis');
-            const claveStorage = 'notis_vistas_' + idUsuario;
-
-            if (cantNotis > 0) {
-                let notisVistas = localStorage.getItem(claveStorage);
-                if (badgeNumero && notisActuales === notisVistas) {
-                    badgeNumero.style.display = 'none';
-                }
-            }
-
-            btnCampana.addEventListener('click', function(e) {
-                if (cantNotis > 0) {
-                    localStorage.setItem(claveStorage, notisActuales);
-                    if(badgeNumero) badgeNumero.style.display = 'none';
-                }
-                dropdownNotis.style.display = (dropdownNotis.style.display === 'none' || dropdownNotis.style.display === '') ? 'block' : 'none';
-                e.stopPropagation(); 
-            });
-
-            document.addEventListener('click', function(e) {
-                if (!btnCampana.contains(e.target)) {
-                    dropdownNotis.style.display = 'none';
-                }
-            });
-        }
+    // SCRIPT DEL BUSCADOR GLOBAL
+    function ejecutarBusqueda() {
+        let input = document.getElementById('input-busqueda').value.toLowerCase();
+        let tarjetas = document.querySelectorAll('.reserva-card, .salon-card');
+        tarjetas.forEach(tarjeta => {
+            let texto = tarjeta.innerText.toLowerCase();
+            tarjeta.style.display = texto.includes(input) ? 'block' : 'none';
+        });
+    }
     </script>
+    <!-- Aviso de expiración de sesión y campana de notificaciones -->
+    <script src="{{ url_for('static', filename='js/sigea.js') }}"></script>
     {% block scripts %}{% endblock %}
 
     <footer class="sigea-footer">
