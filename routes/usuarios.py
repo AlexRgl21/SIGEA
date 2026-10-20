@@ -23,9 +23,16 @@ def _sin_conexion():
 @role_required(*config.ROLES_ADMINISTRATIVOS)
 def lista_usuarios():
     conn = get_db()
+    
+    # Leer la página actual de la URL (por defecto la 1)
+    page = request.args.get('page', 1, type=int)
+    if page < 1:
+        page = 1
+
     if not conn:
-        return render_template('usuarios.html', usuarios=[], error="Sin conexión a la base de datos")
-    return render_template('usuarios.html', usuarios=servicio.listar(conn))
+        return render_template('usuarios.html', usuarios=[], error="Sin conexión a la base de datos", page=1, total_pages=1)
+        
+    return render_template('usuarios.html', **servicio.listar(conn, page=page))
 
 
 @usuarios_bp.route('/usuarios/agregar', methods=['POST'])

@@ -22,11 +22,20 @@ def _volver():
 @role_required(*config.TODOS_LOS_ROLES)           # todos pueden ver el calendario
 def vista_asignaciones():
     conn = get_db()
+    
+    # 1. Paginación: Leer la página actual de la URL
+    page = request.args.get('page', 1, type=int)
+    if page < 1:
+        page = 1
+        
     if not conn:
         flash("Error de conexión a la base de datos.", "danger")
         return render_template('asignaciones.html', carreras=[], grupos=[], espacios=[],
-                               periodos=[], edificios=[], eventos_calendario=[])
-    return render_template('asignaciones.html', **servicio.datos_vista(conn))
+                               periodos=[], edificios=[], eventos_calendario=[], page=1, total_pages=1)
+                               
+    # Le pasamos la página al servicio de datos_vista
+    datos = servicio.datos_vista(conn, page)
+    return render_template('asignaciones.html', **datos)
 
 
 @asignaciones_bp.route('/asignaciones/nueva_asignacion', methods=['POST'])

@@ -536,3 +536,42 @@ body {
 .noti-item:hover { background: #F7FAFC; }
 .noti-item--nueva { background: #EBF8FF; color: #2D3748; font-weight: 600; }
 .noti-item--nueva:hover { background: #E1F2FD; }
+
+/* Estilos de Paginación SIGEA */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.page-btn {
+    padding: 8px 14px;
+    border: 1px solid #007A78;
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: #007A78;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.page-btn:hover:not(.disabled) {
+    background-color: #00AEEF;
+    border-color: #00AEEF;
+    color: #ffffff;
+}
+
+.page-btn.active {
+    background-color: #007A78;
+    color: #ffffff;
+    border-color: #007A78;
+}
+
+.page-btn.disabled {
+    border-color: #cccccc;
+    color: #999999;
+    cursor: not-allowed;
+    background-color: #f5f5f5;
+}

@@ -1,4 +1,5 @@
 # Cálculo de los indicadores del panel principal
+import math
 from datetime import datetime
 
 import config
@@ -24,13 +25,16 @@ def armar_tabla_disponibilidad(espacios, clases_ahora, clases_proximas):
     return tabla
 
 
-def calcular_panel(conn, ahora=None):
-
+def calcular_panel(conn, page=1, ahora=None):
     ahora = ahora or datetime.now()
     hora_actual = ahora.strftime('%H:%M:%S')
     hoy = ahora.date()
     dia_hoy = nombre_dia(hoy)
     cursor = conn.cursor()
+
+    # Parámetros de paginación (10 registros por página)
+    per_page = 10
+    offset = (page - 1) * per_page
 
     cursor.execute("""
         SELECT COUNT(*),
@@ -88,13 +92,26 @@ def calcular_panel(conn, ahora=None):
                       'porcentaje': int((f[2] / f[1] * 100) if f[1] > 0 else 0)}
                      for f in cursor.fetchall()]
 
+    # --- PAGINACIÓN DE LA TABLA DE DISPONIBILIDAD ---
+    # 1. Contamos el total de salones activos para calcular las páginas
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM Espacios e
+        JOIN Edificios ed ON e.id_edificio = ed.id_edificio
+        WHERE e.estatus = 'Activo' AND e.nombre LIKE 'Salón%'
+    """)
+    total_filas = cursor.fetchone()[0] or 0
+    total_pages = math.ceil(total_filas / per_page) if total_filas > 0 else 1
+
+    # 2. Obtenemos solo los 10 salones correspondientes a la página actual
     cursor.execute("""
         SELECT e.id_espacio, e.nombre AS espacio, ed.nombre AS edificio
         FROM Espacios e
         JOIN Edificios ed ON e.id_edificio = ed.id_edificio
         WHERE e.estatus = 'Activo' AND e.nombre LIKE 'Salón%'
         ORDER BY ed.nombre, CAST(SUBSTRING(e.nombre, 7, LEN(e.nombre)) AS INT)
-    """)
+        OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+    """, (offset, per_page))
     todos_espacios = [tuple(f) for f in cursor.fetchall()]
 
     cursor.execute("""
@@ -126,4 +143,5 @@ def calcular_panel(conn, ahora=None):
         total_espacios=total_espacios, bloqueados=bloqueados, reservas_hoy=reservas_hoy,
         datos_grafica=datos_grafica, dia_hoy=dia_hoy, ocupados=ocupados, libres=libres,
         tabla_disponibilidad=armar_tabla_disponibilidad(todos_espacios, clases_ahora, clases_proximas),
+        page=page, total_pages=total_pages
     )
