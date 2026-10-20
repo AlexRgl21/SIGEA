@@ -174,6 +174,30 @@
                 <p style="color: #888; grid-column: 1 / -1; text-align: center; padding: 20px;">No hay aulas registradas en el sistema.</p>
                 {% endfor %}
             </div>
+
+            <!-- CONTROLES DE PAGINACIÓN PARA AULAS -->
+            {% if total_pages > 1 %}
+            <div class="pagination-container" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; display: flex; justify-content: center; gap: 5px;">
+                {% if page > 1 %}
+                    <a href="{{ url_for('gestion.vista_gestion', page=page-1) }}#vista-aulas" class="page-btn" onclick="guardarPestanaAula()">&laquo; Anterior</a>
+                {% else %}
+                    <span class="page-btn disabled">&laquo; Anterior</span>
+                {% endif %}
+
+                {% for p in range(1, total_pages + 1) %}
+                    <a href="{{ url_for('gestion.vista_gestion', page=p) }}#vista-aulas" 
+                       class="page-btn {% if p == page %}active{% endif %}" onclick="guardarPestanaAula()">
+                        {{ p }}
+                    </a>
+                {% endfor %}
+
+                {% if page < total_pages %}
+                    <a href="{{ url_for('gestion.vista_gestion', page=page+1) }}#vista-aulas" class="page-btn" onclick="guardarPestanaAula()">Siguiente &raquo;</a>
+                {% else %}
+                    <span class="page-btn disabled">Siguiente &raquo;</span>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
 
         <div id="vista-edificios" class="tab-content active">
@@ -223,14 +247,16 @@
 {% block scripts %}
 <script>
     // LÓGICA DE LAS PESTAÑAS (TABS)
-
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
 
-    const tabGuardada = localStorage.getItem('tabActiva_Sigea') || 'vista-edificios';
+    // Damos prioridad al hash en la URL (#vista-aulas) si venimos de cambiar de página
+    let tabGuardada = localStorage.getItem('tabActiva_Sigea') || 'vista-edificios';
+    if (window.location.hash) {
+        tabGuardada = window.location.hash.substring(1);
+    }
 
     function activarTab(targetId) {
-        // Apagamos todo
         tabBtns.forEach(b => b.classList.remove('active'));
         tabContents.forEach(c => c.classList.remove('active'));
 
@@ -240,19 +266,21 @@
         if (btn && content) {
             btn.classList.add('active');
             content.classList.add('active');
-            
             localStorage.setItem('tabActiva_Sigea', targetId);
         }
     }
 
     activarTab(tabGuardada);
 
-    // Cuando el usuario da clic, ejecutamos la función
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             activarTab(btn.getAttribute('data-target'));
         });
     });
+
+    function guardarPestanaAula() {
+        localStorage.setItem('tabActiva_Sigea', 'vista-aulas');
+    }
 
     // MANEJO VISUAL DEL FORMULARIO DE AULAS
     const btnToggleAulas = document.getElementById('btn-toggle-form');
@@ -300,7 +328,6 @@
 
     if (inputBusqueda){
         inputBusqueda.addEventListener('input', function(){
-            
             const textoBuscado = this.value.toLowerCase().trim();
             const tarjetasAulas = document.querySelectorAll('#vista-aulas .card');
 
@@ -309,8 +336,8 @@
                 const elementoDetalles = tarjeta.querySelector('.card-details');
 
                 if (elementoTitulo && elementoDetalles) {
-                        const titulo = elementoTitulo.textContent.toLowerCase();
-                        const detalles = elementoDetalles.textContent.toLowerCase();
+                    const titulo = elementoTitulo.textContent.toLowerCase();
+                    const detalles = elementoDetalles.textContent.toLowerCase();
 
                     if (textoBuscado === "" || titulo.includes(textoBuscado) || detalles.includes(textoBuscado)){
                         tarjeta.style.display = '';

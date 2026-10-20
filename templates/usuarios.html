@@ -126,7 +126,7 @@
                                 <h4 style="margin-top: 0; color: #333; border-bottom: 2px solid #007A78; padding-bottom: 8px;">Editar Datos Personales</h4>
                                 
                                 <form action="{{ url_for('usuarios.editar_usuario', id=usuario.id_usuario) }}" method="POST">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     
                                     <div style="margin-bottom: 10px;">
                                         <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">NOMBRE(S):</label>
@@ -157,7 +157,7 @@
                                 <p style="font-size: 14px; color: #555; margin-bottom: 15px;">Usuario: <strong>{{ usuario.nombre_completo }}</strong></p>
                                 
                                 <form action="{{ url_for('usuarios.configurar_usuario', id=usuario.id_usuario) }}" method="POST">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     
                                     <div style="margin-bottom: 15px;">
                                         <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">ROL DEL SISTEMA:</label>
@@ -189,10 +189,37 @@
                         </div>
                     </td>
                 </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px;">No hay usuarios registrados.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+
+    <!-- CONTROLES DE PAGINACIÓN -->
+    {% if total_pages > 1 %}
+    <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+        {% if page > 1 %}
+            <a href="{{ url_for('usuarios.lista_usuarios', page=page-1) }}" class="page-btn">&laquo; Anterior</a>
+        {% else %}
+            <span class="page-btn disabled">&laquo; Anterior</span>
+        {% endif %}
+
+        {% for p in range(1, total_pages + 1) %}
+            <a href="{{ url_for('usuarios.lista_usuarios', page=p) }}" class="page-btn {% if p == page %}active{% endif %}">
+                {{ p }}
+            </a>
+        {% endfor %}
+
+        {% if page < total_pages %}
+            <a href="{{ url_for('usuarios.lista_usuarios', page=page+1) }}" class="page-btn">Siguiente &raquo;</a>
+        {% else %}
+            <span class="page-btn disabled">Siguiente &raquo;</span>
+        {% endif %}
+    </div>
+    {% endif %}
 </section>
 {% endblock %}
 

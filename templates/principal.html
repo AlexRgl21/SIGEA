@@ -105,6 +105,31 @@
                 </div>
                 {% endfor %}
             </div>
+
+            <!-- CONTROLES DE PAGINACIÓN -->
+            {% if total_pages > 1 %}
+            <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                {% if page > 1 %}
+                    <a href="{{ url_for('panel.inicio', page=page-1) }}" class="page-btn">&laquo; Anterior</a>
+                {% else %}
+                    <span class="page-btn disabled">&laquo; Anterior</span>
+                {% endif %}
+
+                {% for p in range(1, total_pages + 1) %}
+                    <a href="{{ url_for('panel.inicio', page=p) }}" 
+                       class="page-btn {% if p == page %}active{% endif %}">
+                        {{ p }}
+                    </a>
+                {% endfor %}
+
+                {% if page < total_pages %}
+                    <a href="{{ url_for('panel.inicio', page=page+1) }}" class="page-btn">Siguiente &raquo;</a>
+                {% else %}
+                    <span class="page-btn disabled">Siguiente &raquo;</span>
+                {% endif %}
+            </div>
+            {% endif %}
+
         </div>
 
     </div>
@@ -117,24 +142,19 @@
     const filtroEstado = document.getElementById('filtro-estado');
     const filas = document.querySelectorAll('.schedule-table .table-row');
 
-    // NUEVA FUNCIÓN QUE COMBINA AMBOS FILTROS
     function filtrarTabla() {
         let textoBuscado = buscador.value.toLowerCase();
         let estadoBuscado = filtroEstado.value.toLowerCase();
 
         filas.forEach(function(fila){
-            // Evitamos que intente filtrar la fila de "No hay espacios activos"
             if (fila.children.length < 5) return; 
 
-            // Extraemos el texto del Grupo (columna 3) y del Estatus (columna 5)
             let textoGrupo = fila.children[2].textContent.toLowerCase();
             let textoEstado = fila.children[4].textContent.toLowerCase();
 
-            // Verificamos si coinciden
             let coincideGrupo = textoGrupo.includes(textoBuscado);
             let coincideEstado = (estadoBuscado === 'todos') || textoEstado.includes(estadoBuscado);
 
-            // Si ambas condiciones se cumplen, mostramos la fila
             if (coincideGrupo && coincideEstado){
                 fila.style.display = 'grid';
             } 
@@ -144,7 +164,6 @@
         });
     }
 
-    // Ejecutamos la función cuando el usuario escribe o cambia el desplegable
     buscador.addEventListener('keyup', filtrarTabla);
     filtroEstado.addEventListener('change', filtrarTabla);
 </script>

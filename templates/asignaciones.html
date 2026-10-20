@@ -10,12 +10,12 @@
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
 {% endblock %}
 
 {% block custom_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='asignaciones.css') }}">
 {% endblock %}
+
 {% block content %}
     <section class="workspace">
         <div class="tabs-container">
@@ -131,7 +131,8 @@
             <div class="workspace-split">
                 
                 {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
-                <div class="form-container">
+                <!-- FORMULARIO OCULTO POR DEFECTO -->
+                <div class="form-container" id="panel-nuevo-grupo" style="display: none;">
                     <h3 class="section-title" id="form-titulo">Nuevo Grupo</h3>
                     <form id="form-grupo" action="{{ url_for('asignaciones.agregar_grupo') }}" method="POST">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -168,11 +169,18 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <h3 class="section-title" style="margin: 0; border: none; padding: 0;">Grupos Registrados</h3>
                         
-                        <div class="search-box" style="display: flex; align-items: center; background: white; border: 1px solid #ccc; border-radius: 5px; padding: 5px 15px;">
-                            <i class="fas fa-search" style="color: #888; margin-right: 8px;"></i>
-                            <input type="text" id="input-busqueda" placeholder="Buscar grupo..." onkeyup="ejecutarBusqueda()" style="border: none; outline: none; width: 220px; font-size: 14px;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
+                            <button type="button" id="btn-toggle-grupo" class="btn-submit" style="padding: 8px 15px; margin: 0; font-size: 14px; background-color: #00AEEF; cursor: pointer; border: none; border-radius: 5px; color: white; height: 38px;">+ Nuevo Grupo</button>
+                            {% endif %}
+                            
+                            <div class="search-box" style="display: flex; align-items: center; background: white; border: 1px solid #ccc; border-radius: 5px; padding: 5px 15px; height: 38px;">
+                                <i class="fas fa-search" style="color: #888; margin-right: 8px;"></i>
+                                <input type="text" id="input-busqueda" placeholder="Buscar grupo..." onkeyup="ejecutarBusqueda()" style="border: none; outline: none; width: 200px; font-size: 14px;">
+                            </div>
                         </div>
                     </div>
+
                     <div class="table-responsive">
                         <table class="grupos-table" style="width: 100%;">
                             <thead>
@@ -218,13 +226,37 @@
                                 </tr>
                                 {% else %}
                                 <tr>
-                                    <!-- Ajustamos el colspan dinámicamente -->
                                     <td colspan="{% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}4{% else %}3{% endif %}" style="text-align: center; padding: 20px;">No hay grupos registrados todavía.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- CONTROLES DE PAGINACIÓN -->
+                    {% if total_pages > 1 %}
+                    <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                        {% if page > 1 %}
+                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=page-1) }}#vista-grupos" class="page-btn" onclick="abrirPestana(event, 'vista-grupos')">&laquo; Anterior</a>
+                        {% else %}
+                            <span class="page-btn disabled">&laquo; Anterior</span>
+                        {% endif %}
+
+                        {% for p in range(1, total_pages + 1) %}
+                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=p) }}#vista-grupos" 
+                               class="page-btn {% if p == page %}active{% endif %}" onclick="abrirPestana(event, 'vista-grupos')">
+                                {{ p }}
+                            </a>
+                        {% endfor %}
+
+                        {% if page < total_pages %}
+                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=page+1) }}#vista-grupos" class="page-btn" onclick="abrirPestana(event, 'vista-grupos')">Siguiente &raquo;</a>
+                        {% else %}
+                            <span class="page-btn disabled">Siguiente &raquo;</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
                 </div>
             </div>
         </div>
@@ -232,7 +264,6 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Dejo tus scripts JS exactamente iguales a como me los enviaste para no romper tu lógica visual -->
 <script type="application/json" id="eventos-data">
     {{ eventos_calendario | tojson | safe }}
 </script>
@@ -266,7 +297,7 @@
             if (idEdificioSeleccionado === 'todos' || idEdificioOpcion == idEdificioSeleccionado) {
                 opcion.style.display = '';       
                 opcion.hidden = false;
-                opcion.disabled = false;         
+                opcion.disabled = false;        
             } else {
                 opcion.style.display = 'none';   
                 opcion.hidden = true;            
@@ -305,26 +336,37 @@
         }
     }
 
+    // LÓGICA PARA DESPLEGAR / OCULTAR EL FORMULARIO DE NUEVO GRUPO
+    const btnToggleGrupo = document.getElementById('btn-toggle-grupo');
+    const panelNuevoGrupo = document.getElementById('panel-nuevo-grupo');
+
+    if (btnToggleGrupo && panelNuevoGrupo) {
+        btnToggleGrupo.addEventListener('click', function() {
+            if (panelNuevoGrupo.style.display === "none" || panelNuevoGrupo.style.display === "") {
+                panelNuevoGrupo.style.display = "block";
+                panelNuevoGrupo.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                panelNuevoGrupo.style.display = "none";
+            }
+        });
+    }
+
     function filtrarSalonesFormulario() {
         let selectEdificio = document.getElementById('select-edificio-form');
         let selectEspacio = document.getElementById('select-espacio-form');
         let idEdificioSeleccionado = selectEdificio.value;
 
-        // Reiniciamos el select de salones
         selectEspacio.value = ""; 
 
-        // Si eligen la opción vacía, bloqueamos el select de salones
         if (idEdificioSeleccionado === "") {
             selectEspacio.disabled = true;
             return;
         }
 
-        // Si ya eligieron edificio, desbloqueamos
         selectEspacio.disabled = false; 
 
-        // Recorremos todos los salones y ocultamos los que no son de este edificio
         Array.from(selectEspacio.options).forEach(opcion => {
-            if (opcion.value === "") return; // Ignorar el "Seleccione el salón..."
+            if (opcion.value === "") return; 
 
             let idEdificioOpcion = opcion.getAttribute('data-edificio');
             
@@ -350,25 +392,35 @@
             botones[i].classList.remove("active");
         }
         document.getElementById(nombrePestana).classList.add("active");
-        evt.currentTarget.classList.add("active");
+        
+        if(evt && evt.currentTarget && evt.currentTarget.classList) {
+             evt.currentTarget.classList.add("active");
+        } else {
+             let btn = document.querySelector(`button[onclick*="${nombrePestana}"]`);
+             if(btn) btn.classList.add("active");
+        }
+        
         localStorage.setItem("pestanaActiva_" + window.location.pathname, nombrePestana);
 
-        // --- JS SIMPLIFICADO ---
         let buscador = document.getElementById("input-busqueda");
         if (buscador) {
-            buscador.value = ""; // Limpiamos el texto
+            buscador.value = ""; 
             if (typeof ejecutarBusqueda === "function") {
-                ejecutarBusqueda(); // Reseteamos la tabla visualmente
+                ejecutarBusqueda(); 
             }
         }
     }
 
     document.addEventListener("DOMContentLoaded", function() {
         let pestanaGuardada = localStorage.getItem("pestanaActiva_" + window.location.pathname);
+        if (window.location.hash) {
+            pestanaGuardada = window.location.hash.substring(1); 
+        }
+        
         if (pestanaGuardada) {
             let btn = document.querySelector(`button[onclick*="${pestanaGuardada}"]`);
             if (btn) {
-                btn.click(); 
+                abrirPestana(null, pestanaGuardada);
                 return; 
             }
         }
@@ -399,6 +451,11 @@
         document.getElementById("btn-guardar").innerText = "Actualizar Cambios";
         document.getElementById("btn-guardar").style.backgroundColor = "#007A78"; 
         document.getElementById("btn-cancelar").style.display = "block"; 
+
+        // Desplegar automáticamente el formulario si está oculto al darle en editar
+        if (panelNuevoGrupo) {
+            panelNuevoGrupo.style.display = "block";
+        }
 
         document.getElementById("form-grupo").action = "/asignaciones/editar_grupo/" + id_grupo;
         document.getElementById("form-grupo").scrollIntoView({ behavior: 'smooth' });
@@ -454,68 +511,57 @@
         'PREPA' : 'Prepa'
     };
 
-    inputGrupo.addEventListener('input', function(e) {
-        const textoEscrito = e.target.value.toUpperCase();
-        let encontroCarrera = false;
+    if (inputGrupo && selectCarrera) {
+        inputGrupo.addEventListener('input', function(e) {
+            const textoEscrito = e.target.value.toUpperCase();
+            let encontroCarrera = false;
 
-        // Revisamos si el texto escrito contiene alguna de nuestras siglas
-        for (const [siglas, palabraClave] of Object.entries(diccionarioCarreras)) {
-            
-            if (textoEscrito.includes(siglas)) {
-                encontroCarrera = true;
-                
-                // Si hay coincidencia, recorremos las opciones
-                for (let i = 0; i < selectCarrera.options.length; i++) {
-                    const opcion = selectCarrera.options[i];
-                    
-                    if (opcion.text.toUpperCase().includes(palabraClave.toUpperCase())) {
-                        selectCarrera.value = opcion.value; 
-                        
-                        // Desactivamos los clics y lo pintamos de gris para que parezca bloqueado
-                        selectCarrera.style.pointerEvents = 'none';
-                        selectCarrera.style.backgroundColor = '#e9ecef';
-                        break; 
+            for (const [siglas, palabraClave] of Object.entries(diccionarioCarreras)) {
+                if (textoEscrito.includes(siglas)) {
+                    encontroCarrera = true;
+                    for (let i = 0; i < selectCarrera.options.length; i++) {
+                        const opcion = selectCarrera.options[i];
+                        if (opcion.text.toUpperCase().includes(palabraClave.toUpperCase())) {
+                            selectCarrera.value = opcion.value; 
+                            selectCarrera.style.pointerEvents = 'none';
+                            selectCarrera.style.backgroundColor = '#e9ecef';
+                            break; 
+                        }
                     }
+                    break; 
                 }
-                break; 
             }
-        }
-        
-        // Si borran el texto o escriben algo que no coincide con las siglas
-        if (!encontroCarrera) {
-            // Quitamos el bloqueo para que puedan elegir manualmente si es necesario
-            selectCarrera.style.pointerEvents = 'auto';
-            selectCarrera.style.backgroundColor = '';
             
-            if (textoEscrito === '') {
-                selectCarrera.value = '';
+            if (!encontroCarrera) {
+                selectCarrera.style.pointerEvents = 'auto';
+                selectCarrera.style.backgroundColor = '';
+                if (textoEscrito === '') {
+                    selectCarrera.value = '';
+                }
             }
-        }
-    });
+        });
+    }
 
-    //  VALIDACIÓN DE AÑOS DE GENERACIÓN 
     const inputInicio = document.getElementById('input-inicio');
     const inputFin = document.getElementById('input-fin');
 
-    inputInicio.addEventListener('change', function() {
-        inputFin.min = this.value;
-        
-        if (inputFin.value && parseInt(inputFin.value) < parseInt(this.value)) {
-            inputFin.value = '';
-            inputFin.style.borderColor = 'red';
-            setTimeout(() => inputFin.style.borderColor = '#ccc', 1000);
-        }
-    });
+    if (inputInicio && inputFin) {
+        inputInicio.addEventListener('change', function() {
+            inputFin.min = this.value;
+            if (inputFin.value && parseInt(inputFin.value) < parseInt(this.value)) {
+                inputFin.value = '';
+                inputFin.style.borderColor = 'red';
+                setTimeout(() => inputFin.style.borderColor = '#ccc', 1000);
+            }
+        });
+    }
 
-    // LÓGICA DE CONFIRMACIÓN CON SWEETALERT2
     const formAsignacion = document.getElementById('form-asignacion');
     
     if (formAsignacion) {
         formAsignacion.addEventListener('submit', function(e) {
-            // 1. Detenemos el envío al servidor
             e.preventDefault(); 
 
-            // 2. Extraemos los nombres visuales (no los IDs numéricos)
             const selGrupo = document.getElementById('select-grupo-form');
             const textoGrupo = selGrupo.options[selGrupo.selectedIndex].text;
 
@@ -525,13 +571,11 @@
             const horaInicio = document.getElementById('hora-inicio-form').value;
             const horaFin = document.getElementById('hora-fin-form').value;
 
-            // 3. Capturamos los días seleccionados
             let diasSeleccionados = [];
             document.querySelectorAll('input[name="dias"]:checked').forEach(function(checkbox) {
                 diasSeleccionados.push(checkbox.value);
             });
 
-            // Validación manual rápida de días
             if(diasSeleccionados.length === 0) {
                 Swal.fire({
                     title: 'Faltan Días',
@@ -542,7 +586,6 @@
                 return;
             }
 
-            // 4. Armamos la tarjeta de resumen en HTML
             const resumenHTML = `
                 <div style="text-align: left; font-size: 14px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ccc; margin-top: 10px;">
                     <p style="margin-bottom: 8px;"><b><i class="fas fa-users" style="color:#00AEEF; width:20px;"></i> Grupo:</b> ${textoGrupo}</p>
@@ -553,29 +596,25 @@
                 <p style="margin-top: 15px; font-size: 15px; color: #555;">¿Estás seguro de registrar esta asignación en SIGEA?</p>
             `;
 
-            // 5. Mostramos la alerta de confirmación
             Swal.fire({
                 title: 'Confirmar Asignación',
                 html: resumenHTML,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#00AEEF', // Turquesa
-                cancelButtonColor: '#dc3545',  // Rojo de Bootstrap
+                confirmButtonColor: '#00AEEF',
+                cancelButtonColor: '#dc3545',
                 confirmButtonText: '<i class="fas fa-check"></i> Confirmar',
                 cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
-                reverseButtons: true // Pone el botón de confirmar a la derecha
+                reverseButtons: true 
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Si el usuario da clic en confirmar, enviamos el formulario
                     formAsignacion.submit();
                 }
             });
         });
     }
 
-    $(document).ready(function() {
-        // Convertimos el select de grupos en un buscador inteligente
-        $('#select-grupo-form').select2({
+    $(document).ready(function() {$('#select-grupo-form').select2({
             placeholder: "Escribe para buscar un grupo...",
             width: '100%',
             language: {
@@ -586,18 +625,15 @@
         });
     });
 
-
-    //AUTO-SELECCIÓN DEL CUATRIMESTRE ACTUAL
     const selectPeriodo = document.getElementById('select-periodo-form');
     
     if (selectPeriodo) {
         const fechaActual = new Date();
-        const mesActual = fechaActual.getMonth() + 1; // getMonth() devuelve 0-11, sumamos 1
+        const mesActual = fechaActual.getMonth() + 1; 
         const añoActual = fechaActual.getFullYear();
         
         let textoCuatrimestre = "";
         
-        // Determinamos el cuatrimestre según el mes actual
         if (mesActual >= 1 && mesActual <= 4) {
             textoCuatrimestre = "Enero - Abril";
         } else if (mesActual >= 5 && mesActual <= 8) {
@@ -606,15 +642,12 @@
             textoCuatrimestre = "Septiembre - Diciembre";
         }
         
-        // Buscamos la opción en el select que coincida con el texto y el año
         Array.from(selectPeriodo.options).forEach(opcion => {
-            const textoOpcion = opcion.text; // Ej: "Mayo - Agosto 2026"
+            const textoOpcion = opcion.text; 
             if (textoOpcion.includes(textoCuatrimestre) && textoOpcion.includes(añoActual.toString())) {
-                selectPeriodo.value = opcion.value; // Seleccionamos la opción automáticamente
+                selectPeriodo.value = opcion.value; 
             }
         });
     }
-
-
 </script>
 {% endblock %}
