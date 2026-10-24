@@ -288,3 +288,33 @@
     .form-row { flex-direction: column; gap: 15px; }
     
 }
+
+
+/* PERIODOS (CUATRIMESTRES) */
+.periodo-ayuda { margin: 0 0 15px; color: #666; font-size: 14px; }
+
+.periodos-tabla-wrap { overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.periodos-tabla { width: 100%; border-collapse: collapse; }
+.periodos-tabla th { text-align: left; padding: 12px 16px; font-size: 13px; color: #555; background: #f7f9fb; border-bottom: 1px solid #e6e9ed; }
+.periodos-tabla td { padding: 12px 16px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+.periodos-tabla tbody tr:last-child td { border-bottom: none; }
+.periodos-vacio { text-align: center; color: #888; padding: 24px !important; }
+
+.estado-periodo { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+.estado-en-curso { background: #e8f5e9; color: #2e7d32; }
+.estado-programado { background: #e3f2fd; color: #1565c0; }
+.estado-finalizado { background: #eceff1; color: #607d8b; }
+.periodo-dias { display: block; margin-top: 3px; color: #888; font-size: 12px; }
+
+.periodo-acciones { display: flex; gap: 8px; align-items: center; }
+.periodo-acciones form { margin: 0; }
+.periodo-acciones .action-btn { padding: 6px 12px; white-space: nowrap; }
+.periodo-acciones .btn-delete { flex: none; }
+
+@media (max-width: 768px) {
+    .periodos-tabla thead { display: none; }
+    .periodos-tabla, .periodos-tabla tbody, .periodos-tabla tr, .periodos-tabla td { display: block; width: 100%; box-sizing: border-box; }
+    .periodos-tabla tr { border-bottom: 1px solid #e6e9ed; padding: 8px 0; }
+    .periodos-tabla td { border: none; padding: 6px 16px; }
+    .periodos-tabla td::before { content: attr(data-label) ": "; font-weight: bold; color: #555; }
+}

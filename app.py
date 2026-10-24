@@ -20,7 +20,7 @@ from routes.gestion import gestion_bp
 from routes.asignaciones import asignaciones_bp
 from routes.reservas import reservas_bp
 from routes.notificaciones import notificaciones_bp
-from services import notificaciones
+from services import notificaciones, periodos
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,13 @@ def create_app():
             asignaciones_bp, reservas_bp, notificaciones_bp):
         app.register_blueprint(bp)
 
+    # VENCIMIENTO DE PERIODOS: inactiva los periodos pasados de fecha y borra sus asignaciones
+    @app.before_request
+    def revisar_periodos_vencidos():
+        if request.endpoint in (None, 'static'):
+            return
+        periodos.revisar_si_toca(get_db)
+    
     # CAMPANA DE NOTIFICACIONES + DATOS GLOBALES PARA LAS PLANTILLAS
     @app.context_processor
     def inyectar_globales():

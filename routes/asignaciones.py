@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 import config
 from database.conexion import get_db
 from services import asignaciones as servicio
+from services import periodos as servicio_periodos
 from services.errores import ErrorNegocio
 from .decoradores import role_required
 
@@ -32,7 +33,8 @@ def vista_asignaciones():
         flash("Error de conexión a la base de datos.", "danger")
         return render_template('asignaciones.html', carreras=[], grupos=[], espacios=[],
                                periodos=[], edificios=[], eventos_calendario=[], page=1, total_pages=1)
-                               
+    
+    servicio_periodos.cerrar_vencidos_seguro(conn)                           
     # Le pasamos la página al servicio de datos_vista
     datos = servicio.datos_vista(conn, page)
     return render_template('asignaciones.html', **datos)

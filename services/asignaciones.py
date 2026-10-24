@@ -90,6 +90,8 @@ def datos_vista(conn, page=1):
         JOIN Grupos g ON a.id_grupo = g.id_grupo
         JOIN Espacios e ON a.id_espacio = e.id_espacio
         JOIN Carreras c ON g.id_carrera = c.id_carrera
+        JOIN Periodos p ON a.id_periodo = p.id_periodo
+        WHERE p.activo = 1
     """)
     horarios_db = cursor.fetchall()
 

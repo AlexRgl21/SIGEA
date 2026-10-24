@@ -71,6 +71,23 @@
                 </div>
             </form>
         </div>
+
+        <div id="modal-editar-periodo" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+            <div style="background:white; padding:20px; border-radius:8px; width:400px; max-width:92%; margin: 10% auto;">
+                <h3>Editar Periodo</h3>
+                <form action="{{ url_for('gestion.editar_periodo') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="id_periodo" id="edit-periodo-id">
+                    <div class="form-group"><label>Nombre</label><input type="text" name="nombre" id="edit-periodo-nombre" maxlength="100" required></div>
+                    <div class="form-group"><label>Fecha de inicio</label><input type="date" name="fecha_inicio" id="edit-periodo-inicio" required></div>
+                    <div class="form-group"><label>Fecha de fin</label><input type="date" name="fecha_fin" id="edit-periodo-fin" required></div>
+                    <div class="form-actions" style="margin-top: 20px; justify-content: flex-end;">
+                        <button type="button" class="btn-cancel" onclick="document.getElementById('modal-editar-periodo').style.display='none'">Cancelar</button>
+                        <button type="submit" class="btn-save">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
     {% endif %}
 
@@ -236,6 +253,107 @@
             </div>
         </div>
 
+        <div id="vista-periodos" class="tab-content">
+            <div class="section-header">
+                <h2>Periodos / Cuatrimestres</h2>
+                <div class="header-actions">
+                    <button class="btn-add" id="btn-toggle-periodo">
+                        <i class="fas fa-plus"></i> Nuevo Periodo
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-container" id="panel-nuevo-periodo" style="display: none;">
+                <h3>Registrar Nuevo Periodo</h3>
+                <p class="periodo-ayuda">
+                    Al pasar la fecha de fin, el periodo se inactiva y se borran sus asignaciones de horario.
+                </p>
+                <form id="form-periodo" action="{{ url_for('gestion.crear_periodo') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <input type="text" name="nombre" placeholder="Ej. Mayo - Agosto 2026" maxlength="100" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fecha de inicio</label>
+                            <input type="date" name="fecha_inicio" id="nuevo-periodo-inicio" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de fin</label>
+                            <input type="date" name="fecha_fin" id="nuevo-periodo-fin" required>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" id="btn-cancelar-periodo">Cancelar</button>
+                        <button type="submit" class="btn-save"><i class="fas fa-save"></i> Guardar</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="periodos-tabla-wrap">
+                <table class="periodos-tabla">
+                    <thead>
+                        <tr>
+                            <th>Periodo</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th>Estado</th>
+                            <th>Asignaciones</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in periodos %}
+                        <tr>
+                            <td data-label="Periodo"><strong>{{ p.nombre }}</strong></td>
+                            <td data-label="Inicio">{{ p.fecha_inicio.strftime('%d/%m/%Y') }}</td>
+                            <td data-label="Fin">{{ p.fecha_fin.strftime('%d/%m/%Y') }}</td>
+                            <td data-label="Estado">
+                                <span class="estado-periodo estado-{{ p.estado | replace(' ', '-') | lower }}">{{ p.estado }}</span>
+                                {% if p.activo and p.dias_restantes is not none %}
+                                    <small class="periodo-dias">
+                                        {% if p.dias_restantes == 0 %}último día
+                                        {% elif p.dias_restantes == 1 %}queda 1 día
+                                        {% else %}quedan {{ p.dias_restantes }} días{% endif %}
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td data-label="Asignaciones">{{ p.asignaciones }}</td>
+                            <td data-label="Acciones">
+                                {% if p.activo %}
+                                <div class="periodo-acciones">
+                                    <button type="button" class="action-btn btn-edit btn-edit-periodo"
+                                            data-id="{{ p.id_periodo }}"
+                                            data-nombre="{{ p.nombre }}"
+                                            data-inicio="{{ p.fecha_inicio.isoformat() }}"
+                                            data-fin="{{ p.fecha_fin.isoformat() }}">
+                                        <i class="fas fa-pencil-alt"></i> Editar
+                                    </button>
+                                    <form action="{{ url_for('gestion.finalizar_periodo', id_periodo=p.id_periodo) }}" method="POST"
+                                          class="form-finalizar-periodo"
+                                          data-nombre="{{ p.nombre }}" data-asignaciones="{{ p.asignaciones }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="action-btn btn-delete" title="Finalizar ahora">
+                                            <i class="fas fa-flag-checkered"></i> Finalizar
+                                        </button>
+                                    </form>
+                                </div>
+                                {% else %}
+                                    <span class="periodo-dias">Solo consulta</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="periodos-vacio">No hay periodos registrados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </section>
 {% endblock %}
 
@@ -256,6 +374,58 @@
             document.getElementById('form-espacio').reset();
         });
     }
+
+        // PERIODOS: formulario de alta
+    const btnTogglePeriodo = document.getElementById('btn-toggle-periodo');
+    const panelPeriodo = document.getElementById('panel-nuevo-periodo');
+    if (btnTogglePeriodo && panelPeriodo) {
+        btnTogglePeriodo.addEventListener('click', () => {
+            panelPeriodo.style.display = panelPeriodo.style.display === 'none' ? 'block' : 'none';
+        });
+        document.getElementById('btn-cancelar-periodo').addEventListener('click', () => {
+            panelPeriodo.style.display = 'none';
+            document.getElementById('form-periodo').reset();
+        });
+    }
+
+    // PERIODOS: la fecha de fin no puede ser menor que la de inicio
+    function ligarFechas(idInicio, idFin) {
+        const ini = document.getElementById(idInicio), fin = document.getElementById(idFin);
+        if (!ini || !fin) return;
+        const sincronizar = () => { fin.min = ini.value || ''; };
+        ini.addEventListener('change', sincronizar);
+        sincronizar();
+    }
+    ligarFechas('nuevo-periodo-inicio', 'nuevo-periodo-fin');
+    ligarFechas('edit-periodo-inicio', 'edit-periodo-fin');
+
+    // PERIODOS: editar
+    const modalPeriodo = document.getElementById('modal-editar-periodo');
+    if (modalPeriodo && modalPeriodo.parentElement !== document.body) {
+        document.body.appendChild(modalPeriodo);
+    }
+
+    // PERIODOS: editar
+    document.querySelectorAll('.btn-edit-periodo').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('edit-periodo-id').value = this.dataset.id;
+            document.getElementById('edit-periodo-nombre').value = this.dataset.nombre;
+            document.getElementById('edit-periodo-inicio').value = this.dataset.inicio;
+            document.getElementById('edit-periodo-fin').value = this.dataset.fin;
+            document.getElementById('edit-periodo-fin').min = this.dataset.inicio;
+            modalPeriodo.style.display = 'block';
+        });
+    });
+
+    // PERIODOS: confirmar el cierre anticipado (borra asignaciones)
+    document.querySelectorAll('.form-finalizar-periodo').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const n = this.dataset.asignaciones;
+            const msg = `¿Finalizar "${this.dataset.nombre}" ahora?\n\n` +
+                        `Se borrarán ${n} asignación(es) de horario de este periodo. Esta acción no se puede deshacer.`;
+            if (!confirm(msg)) e.preventDefault();
+        });
+    });
 
     // LÓGICA PARA EDITAR EDIFICIOS
     document.querySelectorAll('.btn-edit-edificio').forEach(btn => {

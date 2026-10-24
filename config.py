@@ -60,6 +60,9 @@ TIPOS_ESPACIO_RESERVABLES = ('laboratorio', 'sala de conferencia')
 # Validar también que un mismo grupo no esté en dos espacios a la misma hora
 VALIDAR_CHOQUE_DE_GRUPO = True
 
+# PERIODOS (CUATRIMESTRES)
+PERIODOS_REVISION_SEG = 60
+
 # NOTIFICACIONES (CAMPANA)
 NOTIS_LIMITE = 15           # máximo de avisos que se muestran en la campana
 

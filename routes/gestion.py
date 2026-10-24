@@ -5,6 +5,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 
 import config
 from database.conexion import get_db
+from services import periodos as servicio_periodos
+from services.errores import ErrorNegocio
 from .decoradores import role_required
 
 gestion_bp = Blueprint('gestion', __name__)
@@ -41,7 +43,7 @@ def vista_gestion():
 
     if not conn:
         flash("Error de conexión a la base de datos.", "danger")
-        return render_template('gestion.html', edificios=[], aulas=[], page=1, total_pages=1)
+        return render_template('gestion.html', edificios=[], aulas=[], periodos=[], page=1, total_pages=1)
 
     cursor = conn.cursor()
     
@@ -67,7 +69,11 @@ def vista_gestion():
     edificios = [tuple(ed) + (_color_edificio(ed[2]),) for ed in edificios_db]
     aulas = [tuple(au) + (_color_edificio(au[5]),) for au in aulas_db]
     
-    return render_template('gestion.html', edificios=edificios, aulas=aulas, page=page, total_pages=total_pages)
+    servicio_periodos.cerrar_vencidos_seguro(conn)      # que la lista nunca muestre un periodo vencido como activo
+    periodos = servicio_periodos.listar(conn)
+
+    return render_template('gestion.html', edificios=edificios, aulas=aulas, periodos=periodos,
+                           page=page, total_pages=total_pages)
 
 
 @gestion_bp.route('/gestion/agregar_espacio', methods=['POST'])
@@ -144,3 +150,65 @@ def eliminar_espacio(id):
             "Error al eliminar el espacio",
             "Error al eliminar el espacio. Inténtalo de nuevo o avisa al administrador.")
     return redirect(url_for('gestion.vista_gestion'))
+
+
+# PERIODOS (CUATRIMESTRES)
+def _volver_a_periodos():
+    return redirect(url_for('gestion.vista_gestion', _anchor='vista-periodos'))
+
+
+@gestion_bp.route('/gestion/periodos/crear', methods=['POST'])
+@role_required(config.ROL_ADMIN)
+def crear_periodo():
+    conn = get_db()
+    if not conn:
+        flash("Error de conexión a la base de datos.", "danger")
+        return _volver_a_periodos()
+    f = request.form
+    try:
+        servicio_periodos.crear_periodo(conn, f.get('nombre'), f.get('fecha_inicio'), f.get('fecha_fin'))
+        flash("Periodo creado. Se inactivará solo al pasar su fecha de fin.", "success")
+    except ErrorNegocio as e:
+        flash(e.mensaje, "danger")
+    except Exception:
+        logger.exception("Error al crear el periodo")
+        flash("Error al crear el periodo. Inténtalo de nuevo o avisa al administrador.", "danger")
+    return _volver_a_periodos()
+
+
+@gestion_bp.route('/gestion/periodos/editar', methods=['POST'])
+@role_required(config.ROL_ADMIN)
+def editar_periodo():
+    conn = get_db()
+    if not conn:
+        flash("Error de conexión a la base de datos.", "danger")
+        return _volver_a_periodos()
+    f = request.form
+    try:
+        servicio_periodos.actualizar_periodo(conn, f.get('id_periodo', type=int), f.get('nombre'),
+                                             f.get('fecha_inicio'), f.get('fecha_fin'))
+        flash("Periodo actualizado correctamente.", "success")
+    except ErrorNegocio as e:
+        flash(e.mensaje, "danger")
+    except Exception:
+        logger.exception("Error al actualizar el periodo")
+        flash("Error al actualizar el periodo. Inténtalo de nuevo o avisa al administrador.", "danger")
+    return _volver_a_periodos()
+
+
+@gestion_bp.route('/gestion/periodos/finalizar/<int:id_periodo>', methods=['POST'])
+@role_required(config.ROL_ADMIN)
+def finalizar_periodo(id_periodo):
+    conn = get_db()
+    if not conn:
+        flash("Error de conexión a la base de datos.", "danger")
+        return _volver_a_periodos()
+    try:
+        nombre, borradas = servicio_periodos.finalizar_periodo(conn, id_periodo)
+        flash(f"Periodo '{nombre}' finalizado. Se borraron {borradas} asignaciones.", "success")
+    except ErrorNegocio as e:
+        flash(e.mensaje, "warning")
+    except Exception:
+        logger.exception("Error al finalizar el periodo")
+        flash("Error al finalizar el periodo. Inténtalo de nuevo o avisa al administrador.", "danger")
+    return _volver_a_periodos()
