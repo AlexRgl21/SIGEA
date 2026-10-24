@@ -210,7 +210,10 @@
                                             <i class="fas fa-edit"></i>
                                         </button>
 
-                                        <form action="{{ url_for('asignaciones.eliminar_grupo', id_grupo=grupo.id_grupo) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este grupo?');">
+                                        <form action="{{ url_for('asignaciones.eliminar_grupo', id_grupo=grupo.id_grupo) }}" method="POST" style="display:inline;"
+                                            data-confirmar="¿Eliminar el grupo “{{ grupo.nombre_grupo }}”?"
+                                            data-confirmar-texto="El grupo dejará de aparecer en el catálogo y en las asignaciones nuevas."
+                                            data-confirmar-boton="Sí, eliminar">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn-action-delete">
                                                 <i class="fas fa-trash"></i>
