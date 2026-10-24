@@ -262,35 +262,6 @@
 .btn-save:hover { background: #0095CC; }
 
 
-/* NAVEGACIÓN POR PESTAÑAS (TABS) */
-.tabs-container {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 25px;
-    border-bottom: 2px solid var(--gris-bordes);
-}
-
-.tab-btn {
-    background: none;
-    border: none;
-    padding: 10px 5px;
-    font-size: 15px;
-    font-weight: bold;
-    color: #718096;
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    transition: all 0.2s ease;
-}
-
-.tab-btn:hover {
-    color: #007A78; /* mismo verde que la pestaña activa */
-}
-
-.tab-btn.active {
-    color: #007A78; /* Verde institucional */
-    border-bottom-color: #007A78; /* Subrayado verde */
-}
-
 /* Ocultar contenido inactivo */
 .tab-content {
     display: none;
@@ -316,6 +287,4 @@
     .cards-grid { grid-template-columns: 1fr; }
     .form-row { flex-direction: column; gap: 15px; }
     
-    /* Pestañas (Tabs) deslizables */
-    .tabs-container { overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
 }
