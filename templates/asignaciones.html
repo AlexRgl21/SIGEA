@@ -18,11 +18,6 @@
 
 {% block content %}
     <section class="workspace">
-        <div class="tabs-container">
-            <button class="tab-btn active" onclick="abrirPestana(event, 'vista-calendario')">Calendario de Horarios</button>
-            <button class="tab-btn" onclick="abrirPestana(event, 'vista-grupos')">Catálogo de Grupos</button>
-        </div>
-
         <div id="vista-calendario" class="tab-content active">
             <div class="workspace-split">
                 
@@ -237,20 +232,20 @@
                     {% if total_pages > 1 %}
                     <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
                         {% if page > 1 %}
-                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=page-1) }}#vista-grupos" class="page-btn" onclick="abrirPestana(event, 'vista-grupos')">&laquo; Anterior</a>
+                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=page-1) }}#vista-grupos" class="page-btn">&laquo; Anterior</a>
                         {% else %}
                             <span class="page-btn disabled">&laquo; Anterior</span>
                         {% endif %}
 
                         {% for p in range(1, total_pages + 1) %}
                             <a href="{{ url_for('asignaciones.vista_asignaciones', page=p) }}#vista-grupos" 
-                               class="page-btn {% if p == page %}active{% endif %}" onclick="abrirPestana(event, 'vista-grupos')">
+                               class="page-btn {% if p == page %}active{% endif %}">
                                 {{ p }}
                             </a>
                         {% endfor %}
 
                         {% if page < total_pages %}
-                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=page+1) }}#vista-grupos" class="page-btn" onclick="abrirPestana(event, 'vista-grupos')">Siguiente &raquo;</a>
+                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=page+1) }}#vista-grupos" class="page-btn">Siguiente &raquo;</a>
                         {% else %}
                             <span class="page-btn disabled">Siguiente &raquo;</span>
                         {% endif %}
@@ -381,50 +376,6 @@
             }
         });
     }
-
-    function abrirPestana(evt, nombrePestana) {
-        let contenidos = document.getElementsByClassName("tab-content");
-        for (let i = 0; i < contenidos.length; i++) {
-            contenidos[i].classList.remove("active");
-        }
-        let botones = document.getElementsByClassName("tab-btn");
-        for (let i = 0; i < botones.length; i++) {
-            botones[i].classList.remove("active");
-        }
-        document.getElementById(nombrePestana).classList.add("active");
-        
-        if(evt && evt.currentTarget && evt.currentTarget.classList) {
-             evt.currentTarget.classList.add("active");
-        } else {
-             let btn = document.querySelector(`button[onclick*="${nombrePestana}"]`);
-             if(btn) btn.classList.add("active");
-        }
-        
-        localStorage.setItem("pestanaActiva_" + window.location.pathname, nombrePestana);
-
-        let buscador = document.getElementById("input-busqueda");
-        if (buscador) {
-            buscador.value = ""; 
-            if (typeof ejecutarBusqueda === "function") {
-                ejecutarBusqueda(); 
-            }
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", function() {
-        let pestanaGuardada = localStorage.getItem("pestanaActiva_" + window.location.pathname);
-        if (window.location.hash) {
-            pestanaGuardada = window.location.hash.substring(1); 
-        }
-        
-        if (pestanaGuardada) {
-            let btn = document.querySelector(`button[onclick*="${pestanaGuardada}"]`);
-            if (btn) {
-                abrirPestana(null, pestanaGuardada);
-                return; 
-            }
-        }
-    });
 
     const rutaCrear = "{{ url_for('asignaciones.agregar_grupo') }}";
 
