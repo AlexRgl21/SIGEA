@@ -333,8 +333,10 @@
                                         <i class="fas fa-pencil-alt"></i> Editar
                                     </button>
                                     <form action="{{ url_for('gestion.finalizar_periodo', id_periodo=p.id_periodo) }}" method="POST"
-                                          class="form-finalizar-periodo"
-                                          data-nombre="{{ p.nombre }}" data-asignaciones="{{ p.asignaciones }}">
+                                        class="form-finalizar-periodo"
+                                        data-confirmar="¿Finalizar “{{ p.nombre }}” ahora?"
+                                        data-confirmar-texto="Se borrarán {{ p.asignaciones }} asignación(es) de horario de este periodo. Esta acción no se puede deshacer."
+                                        data-confirmar-boton="Sí, finalizar">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="action-btn btn-delete" title="Finalizar ahora">
                                             <i class="fas fa-flag-checkered"></i> Finalizar
@@ -414,16 +416,6 @@
             document.getElementById('edit-periodo-fin').value = this.dataset.fin;
             document.getElementById('edit-periodo-fin').min = this.dataset.inicio;
             modalPeriodo.style.display = 'block';
-        });
-    });
-
-    // PERIODOS: confirmar el cierre anticipado (borra asignaciones)
-    document.querySelectorAll('.form-finalizar-periodo').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            const n = this.dataset.asignaciones;
-            const msg = `¿Finalizar "${this.dataset.nombre}" ahora?\n\n` +
-                        `Se borrarán ${n} asignación(es) de horario de este periodo. Esta acción no se puede deshacer.`;
-            if (!confirm(msg)) e.preventDefault();
         });
     });
 
