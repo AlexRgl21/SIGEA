@@ -7,6 +7,40 @@
         return meta ? meta.content : '';
     }
 
+    /* CONFIRMACIONES CON SWEETALERT2 */
+    function iniciarConfirmaciones() {
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (!form.matches || !form.matches('form[data-confirmar]')) { return; }
+            e.preventDefault();
+
+            var d = form.dataset;
+            var titulo = d.confirmar;
+            var texto = d.confirmarTexto || '';
+
+            // Sin SweetAlert (CDN caído): se usa el cuadro del navegador para no perder la confirmación
+            if (typeof Swal === 'undefined') {
+                if (window.confirm(texto ? titulo + '\n\n' + texto : titulo)) { form.submit(); }
+                return;
+            }
+
+            Swal.fire({
+                title: titulo,
+                text: texto,
+                icon: d.confirmarIcono || 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: d.confirmarBoton || 'Sí, continuar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true,
+                focusCancel: true
+            }).then(function (resultado) {
+                if (resultado.isConfirmed) { form.submit(); }   // submit() no vuelve a disparar este evento
+            });
+        });
+    }
+
     /* SESIÓN POR INACTIVIDAD */
     function iniciarSesion() {
         var d = document.body.dataset;
@@ -155,4 +189,5 @@
 
     iniciarSesion();
     iniciarCampana();
+    iniciarConfirmaciones();
 })();
