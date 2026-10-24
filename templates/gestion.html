@@ -75,11 +75,6 @@
     {% endif %}
 
     <section class="workspace">
-        <div class="tabs-container">
-            <button class="tab-btn active" data-target="vista-edificios"><i class="fas fa-building"></i> Edificios</button>
-            <button class="tab-btn" data-target="vista-aulas"><i class="fas fa-chalkboard"></i> Aulas y Espacios</button>
-        </div>
-
         <div id="vista-aulas" class="tab-content">
             <div class="section-header">
                 <h2>Aulas Registradas</h2>
@@ -179,20 +174,20 @@
             {% if total_pages > 1 %}
             <div class="pagination-container" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; display: flex; justify-content: center; gap: 5px;">
                 {% if page > 1 %}
-                    <a href="{{ url_for('gestion.vista_gestion', page=page-1) }}#vista-aulas" class="page-btn" onclick="guardarPestanaAula()">&laquo; Anterior</a>
+                    <a href="{{ url_for('gestion.vista_gestion', page=page-1) }}#vista-aulas" class="page-btn">&laquo; Anterior</a>
                 {% else %}
                     <span class="page-btn disabled">&laquo; Anterior</span>
                 {% endif %}
 
                 {% for p in range(1, total_pages + 1) %}
                     <a href="{{ url_for('gestion.vista_gestion', page=p) }}#vista-aulas" 
-                       class="page-btn {% if p == page %}active{% endif %}" onclick="guardarPestanaAula()">
+                       class="page-btn {% if p == page %}active{% endif %}">
                         {{ p }}
                     </a>
                 {% endfor %}
 
                 {% if page < total_pages %}
-                    <a href="{{ url_for('gestion.vista_gestion', page=page+1) }}#vista-aulas" class="page-btn" onclick="guardarPestanaAula()">Siguiente &raquo;</a>
+                    <a href="{{ url_for('gestion.vista_gestion', page=page+1) }}#vista-aulas" class="page-btn">Siguiente &raquo;</a>
                 {% else %}
                     <span class="page-btn disabled">Siguiente &raquo;</span>
                 {% endif %}
@@ -246,42 +241,6 @@
 
 {% block scripts %}
 <script>
-    // LÓGICA DE LAS PESTAÑAS (TABS)
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    // Damos prioridad al hash en la URL (#vista-aulas) si venimos de cambiar de página
-    let tabGuardada = localStorage.getItem('tabActiva_Sigea') || 'vista-edificios';
-    if (window.location.hash) {
-        tabGuardada = window.location.hash.substring(1);
-    }
-
-    function activarTab(targetId) {
-        tabBtns.forEach(b => b.classList.remove('active'));
-        tabContents.forEach(c => c.classList.remove('active'));
-
-        const btn = document.querySelector(`.tab-btn[data-target="${targetId}"]`);
-        const content = document.getElementById(targetId);
-        
-        if (btn && content) {
-            btn.classList.add('active');
-            content.classList.add('active');
-            localStorage.setItem('tabActiva_Sigea', targetId);
-        }
-    }
-
-    activarTab(tabGuardada);
-
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            activarTab(btn.getAttribute('data-target'));
-        });
-    });
-
-    function guardarPestanaAula() {
-        localStorage.setItem('tabActiva_Sigea', 'vista-aulas');
-    }
-
     // MANEJO VISUAL DEL FORMULARIO DE AULAS
     const btnToggleAulas = document.getElementById('btn-toggle-form');
     const panelAulas = document.getElementById('panel-nuevo-espacio');
