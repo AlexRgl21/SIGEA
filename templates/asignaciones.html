@@ -88,7 +88,7 @@
                             <select name="id_periodo" id="select-periodo-form" required>
                                 <option value="">Seleccione el periodo...</option>
                                 {% for periodo in periodos %}
-                                    <option value="{{ periodo.id_periodo }}">{{ periodo.nombre }}</option>
+                                    <option value="{{ periodo.id_periodo }}" data-inicio="{{ periodo.fecha_inicio }}" data-fin="{{ periodo.fecha_fin }}">{{ periodo.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -150,7 +150,7 @@
                             <select id="select-carrera" name="id_carrera" required>
                                 <option value="">Selecciona una opción...</option>
                                 {% for carrera in carreras %}
-                                <option value="{{ carrera.id_carrera }}">{{ carrera.nombre_carrera }}</option>
+                                <option value="{{ carrera.id_carrera }}" data-acronimo="{{ carrera.acronimo }}">{{ carrera.nombre_carrera }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -353,15 +353,21 @@
         let selectEdificio = document.getElementById('select-edificio-form');
         let selectEspacio = document.getElementById('select-espacio-form');
         let idEdificioSeleccionado = selectEdificio.value;
+        let placeholderSalon = selectEspacio.options[0];
 
         selectEspacio.value = ""; 
 
+        // Sin edificio válido el salón queda bloqueado y atenuado
         if (idEdificioSeleccionado === "") {
             selectEspacio.disabled = true;
+            selectEspacio.title = "Selecciona primero un edificio";
+            placeholderSalon.textContent = "Primero elige un edificio...";
             return;
         }
 
         selectEspacio.disabled = false; 
+        selectEspacio.title = "";
+        placeholderSalon.textContent = "Seleccione el salón...";
 
         Array.from(selectEspacio.options).forEach(opcion => {
             if (opcion.value === "") return; 
@@ -580,28 +586,98 @@
     });
 
     const selectPeriodo = document.getElementById('select-periodo-form');
-    
+    // Periodo automático: se elige el periodo activo cuyas fechas incluyen el día de hoy.
     if (selectPeriodo) {
-        const fechaActual = new Date();
-        const mesActual = fechaActual.getMonth() + 1; 
-        const añoActual = fechaActual.getFullYear();
-        
-        let textoCuatrimestre = "";
-        
-        if (mesActual >= 1 && mesActual <= 4) {
-            textoCuatrimestre = "Enero - Abril";
-        } else if (mesActual >= 5 && mesActual <= 8) {
-            textoCuatrimestre = "Mayo - Agosto";
-        } else {
-            textoCuatrimestre = "Septiembre - Diciembre";
+        const f = new Date();
+        const dos = (n) => String(n).padStart(2, '0');
+        const hoy = f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate());
+
+        const periodoActual = Array.from(selectPeriodo.options).find(opcion =>
+            opcion.value !== '' &&
+            opcion.dataset.inicio && opcion.dataset.fin &&
+            opcion.dataset.inicio <= hoy && hoy <= opcion.dataset.fin     // fechas ISO: se comparan como texto
+        );
+
+        if (periodoActual) {
+            selectPeriodo.value = periodoActual.value;
         }
-        
-        Array.from(selectPeriodo.options).forEach(opcion => {
-            const textoOpcion = opcion.text; 
-            if (textoOpcion.includes(textoCuatrimestre) && textoOpcion.includes(añoActual.toString())) {
-                selectPeriodo.value = opcion.value; 
-            }
-        });
     }
+
+
+    // Asignación rápida: al elegir la hora de inicio, la hora de fin se llena con +2 horas
+    (function () {
+        const horaInicio = document.getElementById('hora-inicio-form');
+        const horaFin = document.getElementById('hora-fin-form');
+        if (!horaInicio || !horaFin) return;
+
+        const DURACION_MINUTOS = 120;
+        const aMinutos = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
+        const aHHMM = (min) => String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0');
+
+        function calcularHoraFin() {
+            if (!horaInicio.value) return;                       // el campo aún está incompleto
+            let fin = aMinutos(horaInicio.value) + DURACION_MINUTOS;
+            if (horaFin.max) fin = Math.min(fin, aMinutos(horaFin.max));   // no pasar del horario máximo (20:00)
+            horaFin.value = aHHMM(fin);
+        }
+
+        horaInicio.addEventListener('input', calcularHoraFin);
+        horaInicio.addEventListener('change', calcularHoraFin);
+    })();
+
+    // Asignación rápida: el salón arranca bloqueado hasta elegir edificio (también al volver con "atrás")
+    document.addEventListener('DOMContentLoaded', filtrarSalonesFormulario);
+
+
+    // Nuevo grupo: año de inicio por defecto y año de fin según la duración de la carrera
+    (function () {
+        const inicio = document.getElementById('input-inicio');
+        const fin = document.getElementById('input-fin');
+        const carrera = document.getElementById('select-carrera');
+        const nombre = document.getElementById('input-nombre');
+        const formGrupo = document.getElementById('form-grupo');
+        if (!inicio || !fin || !carrera) return;
+
+        // Duración en años por acrónimo de carrera (en MAYÚSCULAS).
+        const DURACION_POR_CARRERA = { 'PREPA': 3 };
+        const DURACION_POR_DEFECTO = 4;
+
+        // defaultValue hace que form.reset() (Cancelar edición) también regrese al año actual
+        const anioActual = new Date().getFullYear();
+        inicio.defaultValue = anioActual;
+        inicio.value = anioActual;
+
+        let finManual = false;                                    // true si el usuario escribió el año fin a mano
+
+        function duracionCarrera() {
+            const opcion = carrera.options[carrera.selectedIndex];
+            const acronimo = ((opcion && opcion.dataset.acronimo) || '').toUpperCase();
+            return DURACION_POR_CARRERA[acronimo] || DURACION_POR_DEFECTO;
+        }
+
+        function calcularFin() {
+            if (finManual) return;
+            if (carrera.hasAttribute('data-editando')) return;   // al editar se respetan los valores guardados
+            if (!/^\d{4}$/.test(inicio.value) || !carrera.value) return;
+            fin.value = parseInt(inicio.value, 10) + duracionCarrera();
+            fin.min = inicio.value;
+        }
+
+        inicio.addEventListener('input', calcularFin);
+        inicio.addEventListener('change', calcularFin);
+        carrera.addEventListener('change', calcularFin);
+        // La carrera también se autoselecciona al escribir las siglas del grupo (ej. ISA-43)
+        if (nombre) nombre.addEventListener('input', calcularFin);
+
+        fin.addEventListener('input', () => { finManual = fin.value !== ''; });
+
+        if (formGrupo) {
+            formGrupo.addEventListener('reset', () => {
+                finManual = false;
+                setTimeout(calcularFin, 0);                       // reset() termina después del evento
+            });
+        }
+        calcularFin();
+    })();
 </script>
 {% endblock %}

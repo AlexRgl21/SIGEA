@@ -273,3 +273,11 @@
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* Campos bloqueados (ej. Salón hasta elegir Edificio) */
+.form-group select:disabled {
+    background-color: #e9ecef;
+    color: #8a929a;
+    opacity: 0.65;
+    cursor: not-allowed;
+}

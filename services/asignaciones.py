@@ -78,7 +78,7 @@ def datos_vista(conn, page=1):
     cols_espacios = [column[0] for column in cursor.description]
     espacios_list = [dict(zip(cols_espacios, row)) for row in espacios]
 
-    cursor.execute("SELECT id_periodo, nombre FROM Periodos WHERE activo = 1")
+    cursor.execute("SELECT id_periodo, nombre, fecha_inicio, fecha_fin FROM Periodos WHERE activo = 1 ORDER BY fecha_inicio")
     periodos = cursor.fetchall()
     cols_periodos = [column[0] for column in cursor.description]
     periodos_list = [dict(zip(cols_periodos, row)) for row in periodos]
