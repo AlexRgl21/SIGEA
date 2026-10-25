@@ -42,8 +42,12 @@
                     <label>Espacio Requerido</label>
                     <select name="id_espacio" required>
                         <option value="">Seleccione...</option>
-                        {% for espacio in espacios %}
-                            <option value="{{ espacio.id_espacio }}">{{ espacio.edificio_nombre }} - {{ espacio.espacio_nombre }}</option>
+                        {% for edificio, salones in espacios | groupby('edificio_nombre') %}
+                            <optgroup label="{{ edificio }}">
+                                {% for espacio in salones | sort(attribute='espacio_nombre') %}
+                                    <option value="{{ espacio.id_espacio }}">{{ espacio.espacio_nombre }}</option>
+                                {% endfor %}
+                            </optgroup>
                         {% endfor %}
                     </select>
                 </div>
@@ -52,7 +56,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Fecha del Evento</label>
-                    <input type="date" name="fecha" required>
+                    <input type="date" name="fecha" id="fecha-evento" required>
                 </div>
                 <div class="form-group">
                     <label>Horario</label>
@@ -180,6 +184,43 @@
         });
     }
 
+    // FECHA DEL EVENTO: sin pasado, sin domingos
+    const inputFechaEvento = document.getElementById('fecha-evento');
+
+    if (inputFechaEvento) {
+        const hoy = new Date();
+        const dos = (n) => String(n).padStart(2, '0');
+        inputFechaEvento.min = hoy.getFullYear() + '-' + dos(hoy.getMonth() + 1) + '-' + dos(hoy.getDate());
+
+        inputFechaEvento.addEventListener('change', function () {
+            if (!this.value) return;
+
+            const [anio, mes, dia] = this.value.split('-').map(Number);
+            const diaSemana = new Date(anio, mes - 1, dia).getDay();   // 0 = domingo, 6 = sábado
+
+            if (this.value < this.min) {
+                this.value = '';
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Fecha no válida',
+                    text: 'No puedes solicitar una fecha que ya pasó.',
+                    confirmButtonColor: '#00AEEF',
+                    confirmButtonText: 'Entendido'
+                });
+            } else if (diaSemana === 0) {
+                this.value = '';
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Fecha no disponible',
+                    text: 'Las solicitudes solo pueden hacerse de lunes a sábado.',
+                    confirmButtonColor: '#00AEEF',
+                    confirmButtonText: 'Entendido'
+                });
+            }
+        });
+    }
+    
+    
     // ==========================================
     // 3. SWEETALERT DE CONFIRMACIÓN DE RESERVA
     // ==========================================
