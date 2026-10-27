@@ -94,8 +94,8 @@ El equipo de SIGEA.
 """)
 
 
-def notificar_nueva_reserva(correos_admins, fecha):
-    enviar_correo(correos_admins, "SIGEA - Nueva Solicitud de Reserva Especial",
+def notificar_nueva_reserva(correos_almacen, fecha):
+    enviar_correo(correos_almacen, "SIGEA - Nueva Solicitud de Reserva Especial",
                 f"Se ha registrado una nueva solicitud para el día {fecha}. "
                 "Ingresa a SIGEA para revisarla.")
 
@@ -109,4 +109,4 @@ def notificar_reserva_aprobada(correo, nombre, espacio, fecha, hora_inicio, hora
 def notificar_reserva_rechazada(correo, nombre, espacio, fecha):
     enviar_correo(correo, "SIGEA - Tu reserva ha sido Rechazada",
                 f"Hola {nombre},\n\nLamentablemente tu solicitud para el espacio '{espacio}' "
-                f"el día {fecha} ha sido RECHAZADA.\n\nContacta a coordinación para más detalles.")
+                f"el día {fecha} ha sido RECHAZADA.\n\nContacta a almacén para más detalles.")

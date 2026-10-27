@@ -15,7 +15,8 @@
     {% block custom_css %}{% endblock %}
 </head>
 <body{% if session.get('id_usuario') %} data-sesion-total="{{ sesion_total_seg }}" data-sesion-aviso="{{ sesion_aviso_seg }}" data-sesion-ping="{{ sesion_ping_seg }}" data-url-extender="{{ url_for('auth.extender_sesion') }}"{% endif %}>
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
+        <button type="button" class="sidebar-cerrar" id="btn-cerrar-menu" aria-label="Cerrar menú">&times;</button>
         <div class="logo-container">
             <img src="{{ url_for('static', filename='img/logo_up.png') }}" alt="SIGEA">
         </div>
@@ -31,12 +32,22 @@
                 </li>
                 {% endif %}
                 
-                <li class="{% if request.endpoint == 'asignaciones.vista_asignaciones' %}active{% endif %}">
-                    <a href="{{ url_for('asignaciones.vista_asignaciones') }}">
+                {% if session.get('role') in ['ADMIN', 'COORDINADOR', 'MAESTRO'] %}
+                {% set en_asignaciones = request.endpoint == 'asignaciones.vista_asignaciones' %}
+                <li class="has-submenu{% if en_asignaciones %} is-current open{% endif %}">
+                    <button type="button" class="submenu-toggle" aria-expanded="{{ 'true' if en_asignaciones else 'false' }}" aria-controls="submenu-asignaciones">
                         <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                         <span>Asignación de Horarios</span>
-                    </a>
+                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="submenu" id="submenu-asignaciones">
+                        <ul>
+                            <li><a class="submenu-link" href="{{ url_for('asignaciones.vista_asignaciones') }}#vista-calendario" data-tab-target="vista-calendario">Calendario de Horarios</a></li>
+                            <li><a class="submenu-link" href="{{ url_for('asignaciones.vista_asignaciones') }}#vista-grupos" data-tab-target="vista-grupos">Catálogo de Grupos</a></li>
+                        </ul>
+                    </div>
                 </li>
+                {% endif %}
                 
                 <li class="{% if request.endpoint == 'reservas.vista_reserva' %}active{% endif %}">
                     <a href="{{ url_for('reservas.vista_reserva') }}">
@@ -55,20 +66,33 @@
                 {% endif %}
 
                 {% if session.get('role') == 'ADMIN'%}
-                <li class="{% if request.endpoint == 'gestion.vista_gestion' %}active{% endif %}">
-                    <a href="{{ url_for('gestion.vista_gestion') }}">
+                {% set en_gestion = request.endpoint == 'gestion.vista_gestion' %}
+                <li class="has-submenu{% if en_gestion %} is-current open{% endif %}">
+                    <button type="button" class="submenu-toggle" aria-expanded="{{ 'true' if en_gestion else 'false' }}" aria-controls="submenu-gestion">
                         <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><line x1="9" y1="9" x2="9" y2="9.01"/><line x1="9" y1="13" x2="9" y2="13.01"/><line x1="9" y1="17" x2="9" y2="17.01"/></svg>
                         <span>Gestión de Infraestructura</span>
-                    </a>
+                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="submenu" id="submenu-gestion">
+                        <ul>
+                            <li><a class="submenu-link" href="{{ url_for('gestion.vista_gestion') }}#vista-edificios" data-tab-target="vista-edificios">Edificios</a></li>
+                            <li><a class="submenu-link" href="{{ url_for('gestion.vista_gestion') }}#vista-aulas" data-tab-target="vista-aulas">Aulas y Espacios</a></li>
+                            <li><a class="submenu-link" href="{{ url_for('gestion.vista_gestion') }}#vista-periodos" data-tab-target="vista-periodos">Periodos</a></li>
+                        </ul>
+                    </div>
                 </li>
                 {% endif %}
             </ul>
         </nav>
     </aside>
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
     <main class="main-content">
         <header class="top-bar">
             <div class="page-title">
+                <button type="button" class="btn-hamburguesa" id="btn-hamburguesa" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
                 <h1>{% block header_title %}Módulo SIGEA{% endblock %}</h1>
             </div>
 
@@ -110,7 +134,7 @@
                 <div class="perfil-usuario-nav">
                     <span class="nombre-usuario">{{ session.get('nombre_usuario', 'Usuario') }}</span>
                     <span class="badge-rol badge-{{ session.get('role', '') | lower }}">
-                        {{ session.get('role', '') | capitalize }}
+                        {{ 'Almacén' if session.get('role') == 'ALMACEN' else (session.get('role', '') | capitalize) }}
                     </span>
                 </div>
                 <form action="{{ url_for('auth.logout') }}" method="POST" id="form-logout" style="margin: 0;" novalidate>
@@ -147,7 +171,9 @@
     <script>
     // SCRIPT DEL BUSCADOR GLOBAL
     function ejecutarBusqueda() {
-        let input = document.getElementById('input-busqueda').value.toLowerCase();
+        let inputEl = document.getElementById('input-busqueda');
+        if (!inputEl) return;
+        let input = inputEl.value.toLowerCase();
         let tarjetas = document.querySelectorAll('.reserva-card, .salon-card');
         tarjetas.forEach(tarjeta => {
             let texto = tarjeta.innerText.toLowerCase();
@@ -157,6 +183,127 @@
     </script>
     <!-- Aviso de expiración de sesión y campana de notificaciones -->
     <script src="{{ url_for('static', filename='js/sigea.js') }}"></script>
+
+    <!-- SIDEBAR: acordeón de submenús + cambio de pestañas (.tab-content) sin recargar -->
+    <script>
+    (function () {
+        'use strict';
+
+        var menu = document.querySelector('.sidebar .menu');
+        if (!menu) { return; }
+
+        /* ACORDEÓN sidebar */
+        var padres = menu.querySelectorAll('li.has-submenu');
+
+        function fijarAbierto(li, abierto) {
+            li.classList.toggle('open', abierto);
+            li.querySelector('.submenu-toggle').setAttribute('aria-expanded', abierto ? 'true' : 'false');
+        }
+
+        padres.forEach(function (li) {
+            li.querySelector('.submenu-toggle').addEventListener('click', function () {
+                var estabaAbierto = li.classList.contains('open');
+                padres.forEach(function (otro) { fijarAbierto(otro, false); });   // solo uno abierto a la vez
+                fijarAbierto(li, !estabaAbierto);
+            });
+        });
+
+        /* PESTAÑAS CONTROLADAS DESDE EL SIDEBAR */
+        var enlaces = menu.querySelectorAll('.submenu-link[data-tab-target]');
+        var paneles = document.querySelectorAll('.tab-content');
+        var claveGuardada = 'tabActiva:' + location.pathname;
+
+        function panelExiste(id) {
+            var el = id ? document.getElementById(id) : null;
+            return !!el && el.classList.contains('tab-content');
+        }
+
+        function leerGuardada() {
+            try { return localStorage.getItem(claveGuardada); } catch (e) { return null; }
+        }
+
+        function guardar(id) {
+            try { localStorage.setItem(claveGuardada, id); } catch (e) { /* modo privado: se ignora */ }
+        }
+
+        function activarTab(id, recordar) {
+            paneles.forEach(function (p) { p.classList.toggle('active', p.id === id); });
+
+            enlaces.forEach(function (a) {
+                var activo = a.pathname === location.pathname && a.dataset.tabTarget === id;
+                a.classList.toggle('is-active', activo);
+                if (activo) { a.setAttribute('aria-current', 'page'); } else { a.removeAttribute('aria-current'); }
+            });
+
+            if (recordar) { guardar(id); }
+
+            // FullCalendar recalcula su tamaño al volver a ser visible
+            setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 50);
+        }
+
+        if (paneles.length) {
+            var porDefecto = (document.querySelector('.tab-content.active') || paneles[0]).id;
+            var inicial = location.hash.slice(1);            // 1º el hash (#vista-aulas), p. ej. al paginar
+            if (!panelExiste(inicial)) { inicial = leerGuardada(); }   // 2º la última pestaña usada
+            if (!panelExiste(inicial)) { inicial = porDefecto; }       // 3º la que marque el HTML
+            activarTab(inicial, false);
+        }
+
+        enlaces.forEach(function (a) {
+            a.addEventListener('click', function (e) {
+                var id = a.dataset.tabTarget;
+                // Si el sub-ítem es de OTRA pantalla, se navega normal (y allí se lee el hash)
+                if (a.pathname !== location.pathname || !panelExiste(id)) { return; }
+                e.preventDefault();
+                activarTab(id, true);
+                history.replaceState(null, '', '#' + id);
+            });
+        });
+
+        window.addEventListener('hashchange', function () {
+            var id = location.hash.slice(1);
+            if (panelExiste(id)) { activarTab(id, true); }
+        });
+
+        /* MENÚ HAMBURGUESA (móvil) */
+        var btnHamburguesa = document.getElementById('btn-hamburguesa');
+        var btnCerrarMenu = document.getElementById('btn-cerrar-menu');
+        var fondoMenu = document.getElementById('sidebar-backdrop');
+
+        function fijarMenuMovil(abierto) {
+            document.body.classList.toggle('menu-abierto', abierto);
+            if (btnHamburguesa) {
+                btnHamburguesa.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+                btnHamburguesa.setAttribute('aria-label', abierto ? 'Cerrar menú' : 'Abrir menú');
+            }
+        }
+
+        if (btnHamburguesa) {
+            btnHamburguesa.addEventListener('click', function () {
+                fijarMenuMovil(!document.body.classList.contains('menu-abierto'));
+            });
+        }
+        if (btnCerrarMenu) { btnCerrarMenu.addEventListener('click', function () { fijarMenuMovil(false); }); }
+        if (fondoMenu) { fondoMenu.addEventListener('click', function () { fijarMenuMovil(false); }); }
+
+        // Al elegir un sub-ítem el menú se cierra (si cambia de pantalla, la página recarga igual)
+        menu.addEventListener('click', function (e) {
+            if (e.target.closest('.submenu-link')) { fijarMenuMovil(false); }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && document.body.classList.contains('menu-abierto')) {
+                fijarMenuMovil(false);
+                if (btnHamburguesa) { btnHamburguesa.focus(); }
+            }
+        });
+
+        // Si la ventana crece a escritorio con el menú abierto, se restablece
+        window.matchMedia('(min-width: 769px)').addEventListener('change', function (m) {
+            if (m.matches) { fijarMenuMovil(false); }
+        });
+    })();
+    </script>
     {% block scripts %}{% endblock %}
 
     <footer class="sigea-footer">

@@ -17,9 +17,9 @@
         <div class="header-actions">
             <div class="search-box">
                 <i class="fas fa-search"></i>
-                <input type="text" id="buscador-reservas" onkeyup="filtrarReservas()" placeholder="Buscar folio o solicitante...">
+                <input type="text" id="buscador-reservas" oninput="filtrarReservas()" placeholder="Buscar folio o solicitante...">
             </div>
-            {% if session.get('role') in ['ADMIN', 'MAESTRO'] %}
+            {% if session.get('role') in ['ADMIN', 'COORDINADOR', 'MAESTRO'] %}
             <button class="btn-add" id="btn-toggle-reserva">
                 <i class="fas fa-plus"></i> Nueva Reserva
             </button>
@@ -27,7 +27,7 @@
         </div>
     </div>
 
-    {% if session.get('role') in ['ADMIN', 'MAESTRO'] %}
+    {% if session.get('role') in ['ADMIN', 'COORDINADOR', 'MAESTRO'] %}
     <div class="form-container" id="panel-nueva-reserva" style="display: none;">
         <h3>Registrar Solicitud Extraordinaria</h3>
         <form id="form-reserva" action="{{ url_for('reservas.crear_reserva') }}" method="POST">
@@ -42,8 +42,12 @@
                     <label>Espacio Requerido</label>
                     <select name="id_espacio" required>
                         <option value="">Seleccione...</option>
-                        {% for espacio in espacios %}
-                            <option value="{{ espacio.id_espacio }}">{{ espacio.edificio_nombre }} - {{ espacio.espacio_nombre }}</option>
+                        {% for edificio, salones in espacios | groupby('edificio_nombre') %}
+                            <optgroup label="{{ edificio }}">
+                                {% for espacio in salones | sort(attribute='espacio_nombre') %}
+                                    <option value="{{ espacio.id_espacio }}">{{ espacio.espacio_nombre }}</option>
+                                {% endfor %}
+                            </optgroup>
                         {% endfor %}
                     </select>
                 </div>
@@ -52,7 +56,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Fecha del Evento</label>
-                    <input type="date" name="fecha" required>
+                    <input type="date" name="fecha" id="fecha-evento" required>
                 </div>
                 <div class="form-group">
                     <label>Horario</label>
@@ -97,14 +101,14 @@
                         <p><i class="fas fa-calendar-alt"></i> {{ res.fecha }} • {{ res.hora_inicio.strftime('%H:%M') }} - {{ res.hora_fin.strftime('%H:%M') }}</p>
                     </div>
                     
-                    {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
+                    {% if session.get('role') == 'ALMACEN' %}
                     <div class="card-actions" style="gap: 10px;">
                         <form action="{{ url_for('reservas.aceptar_reserva', id=res.id_reserva) }}" method="POST" style="display:inline; width: 100%;">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="action-btn" style="border: 1px solid #28a745; color: #28a745; width: 100%;"><i class="fas fa-check"></i> Aprobar</button>
                         </form>
                         <form action="{{ url_for('reservas.rechazar_reserva', id=res.id_reserva) }}" method="POST" style="display:inline;">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="action-btn" style="border: 1px solid #dc3545; color: #dc3545;" title="Rechazar"><i class="fas fa-times"></i></button>
                         </form>
                     </div>
@@ -151,12 +155,13 @@
     // 1. SCRIPT DE BÚSQUEDA EN TIEMPO REAL
     // ==========================================
     function filtrarReservas() {
-        let input = document.getElementById('buscador-reservas').value.toLowerCase();
-        let tarjetas = document.querySelectorAll('.card'); // Selecciona todas las tarjetas del tablero
+        let inputEl = document.getElementById('buscador-reservas');
+        if (!inputEl) return;
+        let input = inputEl.value.toLowerCase();
+        let tarjetas = document.querySelectorAll('.kanban-cards .card');
 
         tarjetas.forEach(tarjeta => {
             let texto = tarjeta.innerText.toLowerCase();
-            // Muestra u oculta la tarjeta si coincide con la búsqueda
             tarjeta.style.display = texto.includes(input) ? '' : 'none';
         });
     }
@@ -180,10 +185,46 @@
         });
     }
 
+    // FECHA DEL EVENTO: sin pasado, sin domingos
+    const inputFechaEvento = document.getElementById('fecha-evento');
+
+    if (inputFechaEvento) {
+        const hoy = new Date();
+        const dos = (n) => String(n).padStart(2, '0');
+        inputFechaEvento.min = hoy.getFullYear() + '-' + dos(hoy.getMonth() + 1) + '-' + dos(hoy.getDate());
+
+        inputFechaEvento.addEventListener('change', function () {
+            if (!this.value) return;
+
+            const [anio, mes, dia] = this.value.split('-').map(Number);
+            const diaSemana = new Date(anio, mes - 1, dia).getDay();   // 0 = domingo, 6 = sábado
+
+            if (this.value < this.min) {
+                this.value = '';
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Fecha no válida',
+                    text: 'No puedes solicitar una fecha que ya pasó.',
+                    confirmButtonColor: '#00AEEF',
+                    confirmButtonText: 'Entendido'
+                });
+            } else if (diaSemana === 0) {
+                this.value = '';
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Fecha no disponible',
+                    text: 'Las solicitudes solo pueden hacerse de lunes a sábado.',
+                    confirmButtonColor: '#00AEEF',
+                    confirmButtonText: 'Entendido'
+                });
+            }
+        });
+    }
+    
     // ==========================================
     // 3. SWEETALERT DE CONFIRMACIÓN DE RESERVA
     // ==========================================
-    const formReserva = document.querySelector('form[action="{{ url_for("reservas.crear_reserva") }}"]');
+    const formReserva = document.getElementById('form-reserva');
     
     if (formReserva) {
         formReserva.addEventListener('submit', function(e) {
@@ -191,7 +232,7 @@
             
             Swal.fire({
                 title: '¿Confirmar Solicitud?',
-                text: "Esta reserva será enviada al coordinador para su revisión.",
+                text: "Esta reserva será enviada a almacén para su revisión.",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#00AEEF',

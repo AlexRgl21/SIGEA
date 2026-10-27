@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 import config
 from database.conexion import get_db
 from services import asignaciones as servicio
+from services import periodos as servicio_periodos
 from services.errores import ErrorNegocio
 from .decoradores import role_required
 
@@ -19,22 +20,24 @@ def _volver():
 
 
 @asignaciones_bp.route('/asignaciones')
-@role_required(*config.TODOS_LOS_ROLES)           # todos pueden ver el calendario
+@role_required(config.ROL_ADMIN, config.ROL_COORDINADOR, config.ROL_MAESTRO)
 def vista_asignaciones():
     conn = get_db()
     
-    # 1. Paginación: Leer la página actual de la URL
+    # 1. Paginación y búsqueda: Leer página y filtro q de la URL
     page = request.args.get('page', 1, type=int)
     if page < 1:
         page = 1
+    q = (request.args.get('q') or '').strip()
         
     if not conn:
         flash("Error de conexión a la base de datos.", "danger")
-        return render_template('asignaciones.html', carreras=[], grupos=[], espacios=[],
-                               periodos=[], edificios=[], eventos_calendario=[], page=1, total_pages=1)
-                               
-    # Le pasamos la página al servicio de datos_vista
-    datos = servicio.datos_vista(conn, page)
+        return render_template('asignaciones.html', carreras=[], grupos=[], grupos_todos=[], espacios=[],
+                               periodos=[], edificios=[], eventos_calendario=[], page=1, total_pages=1, q='')
+    
+    servicio_periodos.cerrar_vencidos_seguro(conn)                         
+    # Le pasamos la página y el texto de búsqueda al servicio de datos_vista
+    datos = servicio.datos_vista(conn, page=page, q=q)
     return render_template('asignaciones.html', **datos)
 
 

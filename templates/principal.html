@@ -72,14 +72,14 @@
             <div class="workspace-header">
                 <h3 class="widget-title" style="border: none; padding: 0; margin: 0;">Disponibilidad de Espacios</h3>
                 
-                <div class="table-controls" style="margin-top: 0; display: flex; gap: 10px; align-items: center;">
-                    <select id="filtro-estado" class="search-bar">
-                        <option value="todos">Todos los Estatus</option>
-                        <option value="libre">Solo Libres</option>
-                        <option value="ocupado">Solo Ocupados</option>
+                <form id="form-filtros-panel" method="GET" action="{{ url_for('panel.inicio') }}" class="table-controls" style="margin-top: 0; display: flex; gap: 10px; align-items: center;">
+                    <select id="filtro-estado" name="estado" class="search-bar" onchange="enviarFiltrosPanel()">
+                        <option value="todos" {% if estado == 'todos' %}selected{% endif %}>Todos los Estatus</option>
+                        <option value="libre" {% if estado == 'libre' %}selected{% endif %}>Solo Libres</option>
+                        <option value="ocupado" {% if estado == 'ocupado' %}selected{% endif %}>Solo Ocupados</option>
                     </select>
-                    <input type="text" id="buscador" class="search-bar" placeholder="Buscar por grupo (Ej. ISA)...">
-                </div>
+                    <input type="text" id="buscador" name="q" value="{{ q or '' }}" class="search-bar" placeholder="Buscar por grupo (Ej. ISA)..." oninput="buscarPanelConRetraso()">
+                </form>
             </div>
 
             <div class="schedule-table">
@@ -101,7 +101,7 @@
                 </div>
                 {% else %}
                 <div class="table-row" style="grid-template-columns: 1fr; text-align: center;">
-                    <div style="color: var(--texto-gris);">No hay espacios activos registrados.</div>
+                    <div style="color: var(--texto-gris);">No se encontraron espacios con esos filtros.</div>
                 </div>
                 {% endfor %}
             </div>
@@ -110,20 +110,20 @@
             {% if total_pages > 1 %}
             <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
                 {% if page > 1 %}
-                    <a href="{{ url_for('panel.inicio', page=page-1) }}" class="page-btn">&laquo; Anterior</a>
+                    <a href="{{ url_for('panel.inicio', page=page-1, q=q, estado=estado) }}" class="page-btn" onclick="irAPaginaPanel(event, {{ page-1 }})">&laquo; Anterior</a>
                 {% else %}
                     <span class="page-btn disabled">&laquo; Anterior</span>
                 {% endif %}
 
                 {% for p in range(1, total_pages + 1) %}
-                    <a href="{{ url_for('panel.inicio', page=p) }}" 
-                       class="page-btn {% if p == page %}active{% endif %}">
+                    <a href="{{ url_for('panel.inicio', page=p, q=q, estado=estado) }}" 
+                       class="page-btn {% if p == page %}active{% endif %}" onclick="irAPaginaPanel(event, {{ p }})">
                         {{ p }}
                     </a>
                 {% endfor %}
 
                 {% if page < total_pages %}
-                    <a href="{{ url_for('panel.inicio', page=page+1) }}" class="page-btn">Siguiente &raquo;</a>
+                    <a href="{{ url_for('panel.inicio', page=page+1, q=q, estado=estado) }}" class="page-btn" onclick="irAPaginaPanel(event, {{ page+1 }})">Siguiente &raquo;</a>
                 {% else %}
                     <span class="page-btn disabled">Siguiente &raquo;</span>
                 {% endif %}
@@ -138,33 +138,40 @@
 
 {% block scripts %}
 <script>
-    const buscador = document.getElementById('buscador');
-    const filtroEstado = document.getElementById('filtro-estado');
-    const filas = document.querySelectorAll('.schedule-table .table-row');
+    let timerPanel = null;
 
-    function filtrarTabla() {
-        let textoBuscado = buscador.value.toLowerCase();
-        let estadoBuscado = filtroEstado.value.toLowerCase();
-
-        filas.forEach(function(fila){
-            if (fila.children.length < 5) return; 
-
-            let textoGrupo = fila.children[2].textContent.toLowerCase();
-            let textoEstado = fila.children[4].textContent.toLowerCase();
-
-            let coincideGrupo = textoGrupo.includes(textoBuscado);
-            let coincideEstado = (estadoBuscado === 'todos') || textoEstado.includes(estadoBuscado);
-
-            if (coincideGrupo && coincideEstado){
-                fila.style.display = 'grid';
-            } 
-            else {
-                fila.style.display = 'none';
-            }
-        });
+    function buscarPanelConRetraso() {
+        clearTimeout(timerPanel);
+        timerPanel = setTimeout(function() {
+            sessionStorage.setItem('foco_buscador_panel', '1');
+            document.getElementById('form-filtros-panel').submit();
+        }, 400);
     }
 
-    buscador.addEventListener('keyup', filtrarTabla);
-    filtroEstado.addEventListener('change', filtrarTabla);
+    function enviarFiltrosPanel() {
+        document.getElementById('form-filtros-panel').submit();
+    }
+
+    function irAPaginaPanel(e, numPagina) {
+        e.preventDefault();
+        const buscador = document.getElementById('buscador');
+        const filtroEstado = document.getElementById('filtro-estado');
+        const params = new URLSearchParams({
+            page: numPagina,
+            q: buscador ? buscador.value.trim() : '',
+            estado: filtroEstado ? filtroEstado.value : 'todos'
+        });
+        window.location.href = "{{ url_for('panel.inicio') }}?" + params.toString();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const buscador = document.getElementById('buscador');
+        if (sessionStorage.getItem('foco_buscador_panel') === '1' && buscador) {
+            sessionStorage.removeItem('foco_buscador_panel');
+            buscador.focus();
+            const len = buscador.value.length;
+            buscador.setSelectionRange(len, len);
+        }
+    });
 </script>
 {% endblock %}

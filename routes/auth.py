@@ -168,6 +168,8 @@ def login():
 
         if usuario['role'] == config.ROL_MAESTRO:
             return redirect(url_for('asignaciones.vista_asignaciones'))
+        if usuario['role'] == config.ROL_ALMACEN:
+            return redirect(url_for('reservas.vista_reserva'))
         return redirect(url_for('panel.inicio'))
 
     return render_template('login.html', error=error, success=success)

@@ -58,7 +58,6 @@ def datos_vista(conn, rol, id_usuario, hoy=None):
 
 # Crear
 def validar_solicitud(id_espacio, fecha, hora_inicio, hora_fin, motivo, hoy=None):
-    
     hoy = hoy or datetime.date.today()
     motivo = (motivo or '').strip()
     if not all([id_espacio, fecha, hora_inicio, hora_fin, motivo]):
@@ -81,7 +80,7 @@ def validar_solicitud(id_espacio, fecha, hora_inicio, hora_fin, motivo, hoy=None
 
 
 def crear_reserva(conn, id_usuario, id_espacio, fecha, hora_inicio, hora_fin, motivo):
-    # Guarda la solicitud como Pendiente y avisa por correo a admins y coordinadores.
+    # Guarda la solicitud como Pendiente y avisa por correo al encargado de Almacén.
     id_espacio, fecha_obj, inicio, fin, motivo = validar_solicitud(
         id_espacio, fecha, hora_inicio, hora_fin, motivo)
 
@@ -107,13 +106,13 @@ def crear_reserva(conn, id_usuario, id_espacio, fecha, hora_inicio, hora_fin, mo
         conn.rollback()
         raise
 
-    # La reserva ya está guardada: si falla el aviso, no se deshace nada.
+    # La reserva ya está guardada: notificamos a los usuarios activos con rol Almacén (id_rol = 4)
     try:
-        cursor.execute("SELECT correo FROM Usuarios WHERE id_rol IN (1, 2) AND estado = 'Activo'")
+        cursor.execute("SELECT correo FROM Usuarios WHERE id_rol = 4 AND estado = 'Activo'")
         correos = [f[0] for f in cursor.fetchall()]
         correo.notificar_nueva_reserva(correos, fecha_obj)
     except Exception:
-        logger.exception("No se pudo avisar a coordinación de la nueva reserva")
+        logger.exception("No se pudo avisar a almacén de la nueva reserva")
 
 
 # Aprobar / rechazar

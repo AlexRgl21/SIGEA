@@ -16,12 +16,14 @@ SESION_PING_SEG = 30        # mientras haya actividad, se renueva la cookie como
 ROL_ADMIN = 'ADMIN'
 ROL_COORDINADOR = 'COORDINADOR'
 ROL_MAESTRO = 'MAESTRO'
+ROL_ALMACEN = 'ALMACEN'
 
-ROLES_POR_ID = {1: ROL_ADMIN, 2: ROL_COORDINADOR, 3: ROL_MAESTRO}   # id_rol (BD) -> rol de sesión
-NOMBRES_ROL = {1: 'Administrador', 2: 'Coordinador de Carrera', 3: 'Docente'}  # texto que ve el usuario
+ROLES_POR_ID = {1: ROL_ADMIN, 2: ROL_COORDINADOR, 3: ROL_MAESTRO, 4: ROL_ALMACEN}   # id_rol (BD) -> rol de sesión
+NOMBRES_ROL = {1: 'Administrador', 2: 'Coordinador de Carrera', 3: 'Docente', 4: 'Almacén'}  # texto que ve el usuario
 ID_ROL_MAESTRO = 3
+ID_ROL_ALMACEN = 4
 ROLES_ADMINISTRATIVOS = (ROL_ADMIN, ROL_COORDINADOR)
-TODOS_LOS_ROLES = (ROL_ADMIN, ROL_COORDINADOR, ROL_MAESTRO)
+TODOS_LOS_ROLES = (ROL_ADMIN, ROL_COORDINADOR, ROL_MAESTRO, ROL_ALMACEN)
 
 # COLORES
 COLORES_CARRERA = {

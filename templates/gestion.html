@@ -59,35 +59,47 @@
                     </select>
                 </div>
                 <div class="form-group">
-                        <label>Estatus</label>
-                        <select name="estatus" id="edit-aula-estatus" required>
-                            <option value="Activo">Activo</option>
-                            <option value="Mantenimiento">Mantenimiento</option>
-                        </select>
-                    </div>
+                    <label>Estatus</label>
+                    <select name="estatus" id="edit-aula-estatus" required>
+                        <option value="Activo">Activo</option>
+                        <option value="Mantenimiento">Mantenimiento</option>
+                    </select>
+                </div>
                 <div class="form-actions" style="margin-top: 20px; justify-content: flex-end;">
                     <button type="button" class="btn-cancel" onclick="document.getElementById('modal-editar-aula').style.display='none'">Cancelar</button>
                     <button type="submit" class="btn-save">Guardar Cambios</button>
                 </div>
             </form>
         </div>
+
+        <div id="modal-editar-periodo" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+            <div style="background:white; padding:20px; border-radius:8px; width:400px; max-width:92%; margin: 10% auto;">
+                <h3>Editar Periodo</h3>
+                <form action="{{ url_for('gestion.editar_periodo') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="id_periodo" id="edit-periodo-id">
+                    <div class="form-group"><label>Nombre</label><input type="text" name="nombre" id="edit-periodo-nombre" maxlength="100" required></div>
+                    <div class="form-group"><label>Fecha de inicio</label><input type="date" name="fecha_inicio" id="edit-periodo-inicio" required></div>
+                    <div class="form-group"><label>Fecha de fin</label><input type="date" name="fecha_fin" id="edit-periodo-fin" required></div>
+                    <div class="form-actions" style="margin-top: 20px; justify-content: flex-end;">
+                        <button type="button" class="btn-cancel" onclick="document.getElementById('modal-editar-periodo').style.display='none'">Cancelar</button>
+                        <button type="submit" class="btn-save">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
     {% endif %}
 
     <section class="workspace">
-        <div class="tabs-container">
-            <button class="tab-btn active" data-target="vista-edificios"><i class="fas fa-building"></i> Edificios</button>
-            <button class="tab-btn" data-target="vista-aulas"><i class="fas fa-chalkboard"></i> Aulas y Espacios</button>
-        </div>
-
         <div id="vista-aulas" class="tab-content">
             <div class="section-header">
                 <h2>Aulas Registradas</h2>
                 <div class="header-actions">
-                    <div class="search-box">
+                    <form id="form-buscar-aulas" method="GET" action="{{ url_for('gestion.vista_gestion') }}#vista-aulas" class="search-box" style="margin: 0;" onsubmit="buscarAulasSubmit(event)">
                         <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Buscar aula...">
-                    </div>
+                        <input type="text" id="input-busqueda-aulas" name="q" value="{{ q or '' }}" placeholder="Buscar aula..." oninput="buscarAulasConRetraso()">
+                    </form>
                     {% if session.get('role') == 'ADMIN' %}
                     <button class="btn-add" id="btn-toggle-form">
                         <i class="fas fa-plus"></i> Añadir Espacio
@@ -167,11 +179,11 @@
                                 data-estatus="{{ aula[4] }}"
                                 data-idedificio="{{ aula[5] }}"> <i class="fas fa-pencil-alt"></i>
                         </button>
-                        </div>
+                    </div>
                     {% endif %}
                 </div>
                 {% else %}
-                <p style="color: #888; grid-column: 1 / -1; text-align: center; padding: 20px;">No hay aulas registradas en el sistema.</p>
+                <p style="color: #888; grid-column: 1 / -1; text-align: center; padding: 20px;">No se encontraron aulas registradas.</p>
                 {% endfor %}
             </div>
 
@@ -179,20 +191,20 @@
             {% if total_pages > 1 %}
             <div class="pagination-container" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; display: flex; justify-content: center; gap: 5px;">
                 {% if page > 1 %}
-                    <a href="{{ url_for('gestion.vista_gestion', page=page-1) }}#vista-aulas" class="page-btn" onclick="guardarPestanaAula()">&laquo; Anterior</a>
+                    <a href="{{ url_for('gestion.vista_gestion', page=page-1, q=q) }}#vista-aulas" class="page-btn" onclick="irAPaginaAulas(event, {{ page-1 }})">&laquo; Anterior</a>
                 {% else %}
                     <span class="page-btn disabled">&laquo; Anterior</span>
                 {% endif %}
 
                 {% for p in range(1, total_pages + 1) %}
-                    <a href="{{ url_for('gestion.vista_gestion', page=p) }}#vista-aulas" 
-                       class="page-btn {% if p == page %}active{% endif %}" onclick="guardarPestanaAula()">
+                    <a href="{{ url_for('gestion.vista_gestion', page=p, q=q) }}#vista-aulas" 
+                       class="page-btn {% if p == page %}active{% endif %}" onclick="irAPaginaAulas(event, {{ p }})">
                         {{ p }}
                     </a>
                 {% endfor %}
 
                 {% if page < total_pages %}
-                    <a href="{{ url_for('gestion.vista_gestion', page=page+1) }}#vista-aulas" class="page-btn" onclick="guardarPestanaAula()">Siguiente &raquo;</a>
+                    <a href="{{ url_for('gestion.vista_gestion', page=page+1, q=q) }}#vista-aulas" class="page-btn" onclick="irAPaginaAulas(event, {{ page+1 }})">Siguiente &raquo;</a>
                 {% else %}
                     <span class="page-btn disabled">Siguiente &raquo;</span>
                 {% endif %}
@@ -219,25 +231,128 @@
                     <div class="card-title">{{ edificio[1] }}</div>
                     
                     <div class="card-details">
-                    <p><i class="fas fa-hashtag"></i> Código: {{ edificio[2] }}</p>
-                    <p><i class="fas fa-info-circle"></i> Estatus: {{ edificio[3] }}</p> 
-                </div>
+                        <p><i class="fas fa-hashtag"></i> Código: {{ edificio[2] }}</p>
+                        <p><i class="fas fa-info-circle"></i> Estatus: {{ edificio[3] }}</p> 
+                    </div>
                 
-                {% if session.get('role') == 'ADMIN' %}
-                <div class="card-actions">
-                    <button class="action-btn btn-edit btn-edit-edificio" 
-                            data-id="{{ edificio[0] }}" 
-                            data-nombre="{{ edificio[1] }}" 
-                            data-codigo="{{ edificio[2] }}" 
-                            data-estatus="{{ edificio[3] }}">
-                        <i class="fas fa-pencil-alt"></i> Editar
-                    </button>
-                </div>
-                {% endif %}
+                    {% if session.get('role') == 'ADMIN' %}
+                    <div class="card-actions">
+                        <button class="action-btn btn-edit btn-edit-edificio" 
+                                data-id="{{ edificio[0] }}" 
+                                data-nombre="{{ edificio[1] }}" 
+                                data-codigo="{{ edificio[2] }}" 
+                                data-estatus="{{ edificio[3] }}">
+                            <i class="fas fa-pencil-alt"></i> Editar
+                        </button>
+                    </div>
+                    {% endif %}
                 </div>
                 {% else %}
                 <p style="color: #888; grid-column: 1 / -1; text-align: center; padding: 20px;">No hay edificios registrados en el sistema.</p>
                 {% endfor %}
+            </div>
+        </div>
+
+        <div id="vista-periodos" class="tab-content">
+            <div class="section-header">
+                <h2>Periodos / Cuatrimestres</h2>
+                <div class="header-actions">
+                    <button class="btn-add" id="btn-toggle-periodo">
+                        <i class="fas fa-plus"></i> Nuevo Periodo
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-container" id="panel-nuevo-periodo" style="display: none;">
+                <h3>Registrar Nuevo Periodo</h3>
+                <p class="periodo-ayuda">
+                    Al pasar la fecha de fin, el periodo se inactiva y se borran sus asignaciones de horario.
+                </p>
+                <form id="form-periodo" action="{{ url_for('gestion.crear_periodo') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <input type="text" name="nombre" placeholder="Ej. Mayo - Agosto 2026" maxlength="100" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fecha de inicio</label>
+                            <input type="date" name="fecha_inicio" id="nuevo-periodo-inicio" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de fin</label>
+                            <input type="date" name="fecha_fin" id="nuevo-periodo-fin" required>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" id="btn-cancelar-periodo">Cancelar</button>
+                        <button type="submit" class="btn-save"><i class="fas fa-save"></i> Guardar</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="periodos-tabla-wrap">
+                <table class="periodos-tabla">
+                    <thead>
+                        <tr>
+                            <th>Periodo</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th>Estado</th>
+                            <th>Asignaciones</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in periodos %}
+                        <tr>
+                            <td data-label="Periodo"><strong>{{ p.nombre }}</strong></td>
+                            <td data-label="Inicio">{{ p.fecha_inicio.strftime('%d/%m/%Y') }}</td>
+                            <td data-label="Fin">{{ p.fecha_fin.strftime('%d/%m/%Y') }}</td>
+                            <td data-label="Estado">
+                                <span class="estado-periodo estado-{{ p.estado | replace(' ', '-') | lower }}">{{ p.estado }}</span>
+                                {% if p.activo and p.dias_restantes is not none %}
+                                    <small class="periodo-dias">
+                                        {% if p.dias_restantes == 0 %}último día
+                                        {% elif p.dias_restantes == 1 %}queda 1 día
+                                        {% else %}quedan {{ p.dias_restantes }} días{% endif %}
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td data-label="Asignaciones">{{ p.asignaciones }}</td>
+                            <td data-label="Acciones">
+                                {% if p.activo %}
+                                <div class="periodo-acciones">
+                                    <button type="button" class="action-btn btn-edit btn-edit-periodo"
+                                            data-id="{{ p.id_periodo }}"
+                                            data-nombre="{{ p.nombre }}"
+                                            data-inicio="{{ p.fecha_inicio.isoformat() }}"
+                                            data-fin="{{ p.fecha_fin.isoformat() }}">
+                                        <i class="fas fa-pencil-alt"></i> Editar
+                                    </button>
+                                    <form action="{{ url_for('gestion.finalizar_periodo', id_periodo=p.id_periodo) }}" method="POST"
+                                        class="form-finalizar-periodo"
+                                        data-confirmar="¿Finalizar “{{ p.nombre }}” ahora?"
+                                        data-confirmar-texto="Se borrarán {{ p.asignaciones }} asignación(es) de horario de este periodo. Esta acción no se puede deshacer."
+                                        data-confirmar-boton="Sí, finalizar">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="action-btn btn-delete" title="Finalizar ahora">
+                                            <i class="fas fa-flag-checkered"></i> Finalizar
+                                        </button>
+                                    </form>
+                                </div>
+                                {% else %}
+                                    <span class="periodo-dias">Solo consulta</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="periodos-vacio">No hay periodos registrados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -246,42 +361,6 @@
 
 {% block scripts %}
 <script>
-    // LÓGICA DE LAS PESTAÑAS (TABS)
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    // Damos prioridad al hash en la URL (#vista-aulas) si venimos de cambiar de página
-    let tabGuardada = localStorage.getItem('tabActiva_Sigea') || 'vista-edificios';
-    if (window.location.hash) {
-        tabGuardada = window.location.hash.substring(1);
-    }
-
-    function activarTab(targetId) {
-        tabBtns.forEach(b => b.classList.remove('active'));
-        tabContents.forEach(c => c.classList.remove('active'));
-
-        const btn = document.querySelector(`.tab-btn[data-target="${targetId}"]`);
-        const content = document.getElementById(targetId);
-        
-        if (btn && content) {
-            btn.classList.add('active');
-            content.classList.add('active');
-            localStorage.setItem('tabActiva_Sigea', targetId);
-        }
-    }
-
-    activarTab(tabGuardada);
-
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            activarTab(btn.getAttribute('data-target'));
-        });
-    });
-
-    function guardarPestanaAula() {
-        localStorage.setItem('tabActiva_Sigea', 'vista-aulas');
-    }
-
     // MANEJO VISUAL DEL FORMULARIO DE AULAS
     const btnToggleAulas = document.getElementById('btn-toggle-form');
     const panelAulas = document.getElementById('panel-nuevo-espacio');
@@ -297,6 +376,47 @@
             document.getElementById('form-espacio').reset();
         });
     }
+
+    // PERIODOS: formulario de alta
+    const btnTogglePeriodo = document.getElementById('btn-toggle-periodo');
+    const panelPeriodo = document.getElementById('panel-nuevo-periodo');
+    if (btnTogglePeriodo && panelPeriodo) {
+        btnTogglePeriodo.addEventListener('click', () => {
+            panelPeriodo.style.display = panelPeriodo.style.display === 'none' ? 'block' : 'none';
+        });
+        document.getElementById('btn-cancelar-periodo').addEventListener('click', () => {
+            panelPeriodo.style.display = 'none';
+            document.getElementById('form-periodo').reset();
+        });
+    }
+
+    // PERIODOS: la fecha de fin no puede ser menor que la de inicio
+    function ligarFechas(idInicio, idFin) {
+        const ini = document.getElementById(idInicio), fin = document.getElementById(idFin);
+        if (!ini || !fin) return;
+        const sincronizar = () => { fin.min = ini.value || ''; };
+        ini.addEventListener('change', sincronizar);
+        sincronizar();
+    }
+    ligarFechas('nuevo-periodo-inicio', 'nuevo-periodo-fin');
+    ligarFechas('edit-periodo-inicio', 'edit-periodo-fin');
+
+    // PERIODOS: editar
+    const modalPeriodo = document.getElementById('modal-editar-periodo');
+    if (modalPeriodo && modalPeriodo.parentElement !== document.body) {
+        document.body.appendChild(modalPeriodo);
+    }
+
+    document.querySelectorAll('.btn-edit-periodo').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('edit-periodo-id').value = this.dataset.id;
+            document.getElementById('edit-periodo-nombre').value = this.dataset.nombre;
+            document.getElementById('edit-periodo-inicio').value = this.dataset.inicio;
+            document.getElementById('edit-periodo-fin').value = this.dataset.fin;
+            document.getElementById('edit-periodo-fin').min = this.dataset.inicio;
+            modalPeriodo.style.display = 'block';
+        });
+    });
 
     // LÓGICA PARA EDITAR EDIFICIOS
     document.querySelectorAll('.btn-edit-edificio').forEach(btn => {
@@ -323,30 +443,39 @@
         });
     });
 
-    // LÓGICA DE LA BARRA DE BUSQUEDA
-    const inputBusqueda = document.querySelector('.search-box input');
+    // BÚSQUEDA Y PAGINACIÓN PERSISTENTE EN AULAS
+    let timerAulas = null;
 
-    if (inputBusqueda){
-        inputBusqueda.addEventListener('input', function(){
-            const textoBuscado = this.value.toLowerCase().trim();
-            const tarjetasAulas = document.querySelectorAll('#vista-aulas .card');
-
-            tarjetasAulas.forEach(tarjeta => {
-                const elementoTitulo = tarjeta.querySelector('.card-title');
-                const elementoDetalles = tarjeta.querySelector('.card-details');
-
-                if (elementoTitulo && elementoDetalles) {
-                    const titulo = elementoTitulo.textContent.toLowerCase();
-                    const detalles = elementoDetalles.textContent.toLowerCase();
-
-                    if (textoBuscado === "" || titulo.includes(textoBuscado) || detalles.includes(textoBuscado)){
-                        tarjeta.style.display = '';
-                    } else {
-                        tarjeta.style.display = 'none';
-                    }
-                }
-            });
-        });
+    function buscarAulasConRetraso() {
+        clearTimeout(timerAulas);
+        timerAulas = setTimeout(function() {
+            sessionStorage.setItem('foco_buscador_aulas', '1');
+            irAPaginaAulas(null, 1);
+        }, 400);
     }
+
+    function buscarAulasSubmit(e) {
+        e.preventDefault();
+        sessionStorage.setItem('foco_buscador_aulas', '1');
+        irAPaginaAulas(null, 1);
+    }
+
+    function irAPaginaAulas(e, numPagina) {
+        if (e) e.preventDefault();
+        const input = document.getElementById('input-busqueda-aulas');
+        const q = input ? input.value.trim() : '';
+        const params = new URLSearchParams({ page: numPagina, q: q });
+        window.location.href = "{{ url_for('gestion.vista_gestion') }}?" + params.toString() + "#vista-aulas";
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const input = document.getElementById('input-busqueda-aulas');
+        if (sessionStorage.getItem('foco_buscador_aulas') === '1' && input) {
+            sessionStorage.removeItem('foco_buscador_aulas');
+            input.focus();
+            const len = input.value.length;
+            input.setSelectionRange(len, len);
+        }
+    });
 </script>
 {% endblock %}

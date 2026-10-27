@@ -42,7 +42,7 @@ def construir_eventos(horarios_db):
     return eventos
 
 
-def datos_vista(conn, page=1):
+def datos_vista(conn, page=1, q=''):
     # Todo lo que necesita la pantalla de asignaciones.
     cursor = conn.cursor()
 
@@ -51,22 +51,67 @@ def datos_vista(conn, page=1):
     cols_carreras = [column[0] for column in cursor.description]
     carreras_list = [dict(zip(cols_carreras, row)) for row in carreras]
 
-    # --- LÓGICA DE PAGINACIÓN PARA LA TABLA DE GRUPOS ---
-    per_page = 10
-    offset = (page - 1) * per_page
-
-    cursor.execute("SELECT COUNT(*) FROM Grupos WHERE estatus = 'Activo'")
-    total_grupos_db = cursor.fetchone()[0] or 0
-    total_pages = math.ceil(total_grupos_db / per_page) if total_grupos_db > 0 else 1
-
+    # Lista completa de grupos activos para el select de Nueva Asignación Rápida
     cursor.execute("""
-        SELECT g.id_grupo, g.nombre_grupo, g.generacion_inicio, g.generacion_fin, c.acronimo, g.id_carrera
-        FROM Grupos g
-        INNER JOIN Carreras c ON g.id_carrera = c.id_carrera
-        WHERE g.estatus = 'Activo'
-        ORDER BY g.generacion_inicio DESC, g.nombre_grupo ASC
-        OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-    """, (offset, per_page))
+        SELECT id_grupo, nombre_grupo
+        FROM Grupos
+        WHERE estatus = 'Activo'
+        ORDER BY nombre_grupo ASC
+    """)
+    cols_gt = [column[0] for column in cursor.description]
+    grupos_todos_list = [dict(zip(cols_gt, row)) for row in cursor.fetchall()]
+
+    # --- LÓGICA DE PAGINACIÓN Y BÚSQUEDA PARA LA TABLA DE GRUPOS ---
+    per_page = 10
+    q_limpio = (q or '').strip()
+
+    if q_limpio:
+        like_param = f"%{q_limpio}%"
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM Grupos g
+            INNER JOIN Carreras c ON g.id_carrera = c.id_carrera
+            WHERE g.estatus = 'Activo'
+              AND (g.nombre_grupo LIKE ?
+                   OR c.acronimo LIKE ?
+                   OR CAST(g.generacion_inicio AS VARCHAR(10)) LIKE ?
+                   OR CAST(ISNULL(g.generacion_fin, '') AS VARCHAR(10)) LIKE ?)
+        """, (like_param, like_param, like_param, like_param))
+        total_grupos_db = cursor.fetchone()[0] or 0
+        total_pages = math.ceil(total_grupos_db / per_page) if total_grupos_db > 0 else 1
+        if page > total_pages:
+            page = total_pages
+        offset = (page - 1) * per_page
+
+        cursor.execute("""
+            SELECT g.id_grupo, g.nombre_grupo, g.generacion_inicio, g.generacion_fin, c.acronimo, g.id_carrera
+            FROM Grupos g
+            INNER JOIN Carreras c ON g.id_carrera = c.id_carrera
+            WHERE g.estatus = 'Activo'
+              AND (g.nombre_grupo LIKE ?
+                   OR c.acronimo LIKE ?
+                   OR CAST(g.generacion_inicio AS VARCHAR(10)) LIKE ?
+                   OR CAST(ISNULL(g.generacion_fin, '') AS VARCHAR(10)) LIKE ?)
+            ORDER BY g.generacion_inicio DESC, g.nombre_grupo ASC
+            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+        """, (like_param, like_param, like_param, like_param, offset, per_page))
+    else:
+        cursor.execute("SELECT COUNT(*) FROM Grupos WHERE estatus = 'Activo'")
+        total_grupos_db = cursor.fetchone()[0] or 0
+        total_pages = math.ceil(total_grupos_db / per_page) if total_grupos_db > 0 else 1
+        if page > total_pages:
+            page = total_pages
+        offset = (page - 1) * per_page
+
+        cursor.execute("""
+            SELECT g.id_grupo, g.nombre_grupo, g.generacion_inicio, g.generacion_fin, c.acronimo, g.id_carrera
+            FROM Grupos g
+            INNER JOIN Carreras c ON g.id_carrera = c.id_carrera
+            WHERE g.estatus = 'Activo'
+            ORDER BY g.generacion_inicio DESC, g.nombre_grupo ASC
+            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+        """, (offset, per_page))
+
     grupos_db = cursor.fetchall()
     cols_grupos = [column[0] for column in cursor.description]
     grupos_list = [dict(zip(cols_grupos, row)) for row in grupos_db]
@@ -96,9 +141,10 @@ def datos_vista(conn, page=1):
     cursor.execute("SELECT id_edificio, nombre FROM Edificios")
     edificios = cursor.fetchall()
 
-    return dict(carreras=carreras_list, grupos=grupos_list, espacios=espacios_list, periodos=periodos_list,
+    return dict(carreras=carreras_list, grupos=grupos_list, grupos_todos=grupos_todos_list,
+                espacios=espacios_list, periodos=periodos_list,
                 edificios=edificios, eventos_calendario=construir_eventos(horarios_db), 
-                page=page, total_pages=total_pages)
+                page=page, total_pages=total_pages, q=q_limpio)
 
 
 # Asignación de horarios (usa el motor de conflictos)
@@ -150,7 +196,7 @@ def crear_asignacion(conn, id_grupo, id_espacio, id_periodo, hora_inicio, hora_f
             dias, inicio, fin, id_espacio, existentes,
             id_grupo=id_grupo, validar_grupo=config.VALIDAR_CHOQUE_DE_GRUPO)
         if choque:
-            conn.rollback()                       # libera los bloqueos
+            conn.rollback()                      # libera los bloqueos
             raise ErrorNegocio(choque.mensaje())
 
         cursor.execute("""

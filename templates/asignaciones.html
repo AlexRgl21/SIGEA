@@ -18,11 +18,6 @@
 
 {% block content %}
     <section class="workspace">
-        <div class="tabs-container">
-            <button class="tab-btn active" onclick="abrirPestana(event, 'vista-calendario')">Calendario de Horarios</button>
-            <button class="tab-btn" onclick="abrirPestana(event, 'vista-grupos')">Catálogo de Grupos</button>
-        </div>
-
         <div id="vista-calendario" class="tab-content active">
             <div class="workspace-split">
                 
@@ -33,17 +28,17 @@
                         <div class="filters-group">
                             <label>Edificio</label>
                             <select id="filtro-edificio">
-                                <option value="todos">Todos los Edificios</option>
+                                <option value="todos">Seleccione un edificio...</option>
                                 {% for ed in edificios %}
                                 <option value="{{ ed[0] }}">{{ ed[1] }}</option>
                                 {% endfor %}
                             </select>
                             
                             <label>Salón</label>
-                            <select id="filtro-espacio">
-                                <option value="todos">Todos los Salones</option>
+                            <select id="filtro-espacio" disabled title="Selecciona primero un edificio">
+                                <option value="todos">Primero elige un edificio...</option>
                                 {% for esp in espacios %}
-                                <option value="{{ esp.id_espacio }}" data-edificio="{{ esp.id_edificio}}">{{ esp.nombre }}</option>
+                                <option value="{{ esp.id_espacio }}" data-edificio="{{ esp.id_edificio }}" style="display: none;" hidden disabled>{{ esp.nombre }}</option>
                                 {% endfor %}
                             </select>
 
@@ -65,7 +60,7 @@
                             <label>Grupo:</label>
                             <select name="id_grupo" id="select-grupo-form" required>
                                 <option value="">Seleccione un grupo...</option>
-                                {% for grupo in grupos %}
+                                {% for grupo in (grupos_todos if grupos_todos is defined else grupos) %}
                                     <option value="{{ grupo.id_grupo }}">{{ grupo.nombre_grupo }}</option>
                                 {% endfor %}
                             </select>
@@ -93,7 +88,7 @@
                             <select name="id_periodo" id="select-periodo-form" required>
                                 <option value="">Seleccione el periodo...</option>
                                 {% for periodo in periodos %}
-                                    <option value="{{ periodo.id_periodo }}">{{ periodo.nombre }}</option>
+                                    <option value="{{ periodo.id_periodo }}" data-inicio="{{ periodo.fecha_inicio }}" data-fin="{{ periodo.fecha_fin }}">{{ periodo.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -155,7 +150,7 @@
                             <select id="select-carrera" name="id_carrera" required>
                                 <option value="">Selecciona una opción...</option>
                                 {% for carrera in carreras %}
-                                <option value="{{ carrera.id_carrera }}">{{ carrera.nombre_carrera }}</option>
+                                <option value="{{ carrera.id_carrera }}" data-acronimo="{{ carrera.acronimo }}">{{ carrera.nombre_carrera }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -174,10 +169,10 @@
                             <button type="button" id="btn-toggle-grupo" class="btn-submit" style="padding: 8px 15px; margin: 0; font-size: 14px; background-color: #00AEEF; cursor: pointer; border: none; border-radius: 5px; color: white; height: 38px;">+ Nuevo Grupo</button>
                             {% endif %}
                             
-                            <div class="search-box" style="display: flex; align-items: center; background: white; border: 1px solid #ccc; border-radius: 5px; padding: 5px 15px; height: 38px;">
+                            <form id="form-buscar-grupos" method="GET" action="{{ url_for('asignaciones.vista_asignaciones') }}#vista-grupos" class="search-box" style="display: flex; align-items: center; background: white; border: 1px solid #ccc; border-radius: 5px; padding: 5px 15px; height: 38px; margin: 0;">
                                 <i class="fas fa-search" style="color: #888; margin-right: 8px;"></i>
-                                <input type="text" id="input-busqueda" placeholder="Buscar grupo..." onkeyup="ejecutarBusqueda()" style="border: none; outline: none; width: 200px; font-size: 14px;">
-                            </div>
+                                <input type="text" id="input-busqueda" name="q" value="{{ q or '' }}" placeholder="Buscar grupo..." oninput="buscarGruposConRetraso()" style="border: none; outline: none; width: 200px; font-size: 14px;">
+                            </form>
                         </div>
                     </div>
 
@@ -215,7 +210,10 @@
                                             <i class="fas fa-edit"></i>
                                         </button>
 
-                                        <form action="{{ url_for('asignaciones.eliminar_grupo', id_grupo=grupo.id_grupo) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este grupo?');">
+                                        <form action="{{ url_for('asignaciones.eliminar_grupo', id_grupo=grupo.id_grupo) }}" method="POST" style="display:inline;"
+                                            data-confirmar="¿Eliminar el grupo “{{ grupo.nombre_grupo }}”?"
+                                            data-confirmar-texto="El grupo dejará de aparecer en el catálogo y en las asignaciones nuevas."
+                                            data-confirmar-boton="Sí, eliminar">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn-action-delete">
                                                 <i class="fas fa-trash"></i>
@@ -226,7 +224,7 @@
                                 </tr>
                                 {% else %}
                                 <tr>
-                                    <td colspan="{% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}4{% else %}3{% endif %}" style="text-align: center; padding: 20px;">No hay grupos registrados todavía.</td>
+                                    <td colspan="{% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}4{% else %}3{% endif %}" style="text-align: center; padding: 20px;">No se encontraron grupos registrados.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -237,20 +235,20 @@
                     {% if total_pages > 1 %}
                     <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
                         {% if page > 1 %}
-                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=page-1) }}#vista-grupos" class="page-btn" onclick="abrirPestana(event, 'vista-grupos')">&laquo; Anterior</a>
+                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=page-1, q=q) }}#vista-grupos" class="page-btn" onclick="irAPaginaGrupos(event, {{ page-1 }})">&laquo; Anterior</a>
                         {% else %}
                             <span class="page-btn disabled">&laquo; Anterior</span>
                         {% endif %}
 
                         {% for p in range(1, total_pages + 1) %}
-                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=p) }}#vista-grupos" 
-                               class="page-btn {% if p == page %}active{% endif %}" onclick="abrirPestana(event, 'vista-grupos')">
+                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=p, q=q) }}#vista-grupos" 
+                               class="page-btn {% if p == page %}active{% endif %}" onclick="irAPaginaGrupos(event, {{ p }})">
                                 {{ p }}
                             </a>
                         {% endfor %}
 
                         {% if page < total_pages %}
-                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=page+1) }}#vista-grupos" class="page-btn" onclick="abrirPestana(event, 'vista-grupos')">Siguiente &raquo;</a>
+                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=page+1, q=q) }}#vista-grupos" class="page-btn" onclick="irAPaginaGrupos(event, {{ page+1 }})">Siguiente &raquo;</a>
                         {% else %}
                             <span class="page-btn disabled">Siguiente &raquo;</span>
                         {% endif %}
@@ -283,6 +281,14 @@
             events: []
         });
         calendar.render();
+
+        const inputBusqueda = document.getElementById('input-busqueda');
+        if (sessionStorage.getItem('foco_busqueda_grupos') === '1' && inputBusqueda) {
+            sessionStorage.removeItem('foco_busqueda_grupos');
+            inputBusqueda.focus();
+            const len = inputBusqueda.value.length;
+            inputBusqueda.setSelectionRange(len, len);
+        }
     });
 
     const todosLosEventos = JSON.parse(document.getElementById('eventos-data').textContent);
@@ -291,10 +297,33 @@
 
     function filtrarCalendario() {
         let idEdificioSeleccionado = selectEdificio.value;
+        let placeholderSalon = selectEspacio.options[0];
+
+        if (!idEdificioSeleccionado || idEdificioSeleccionado === 'todos') {
+            selectEspacio.value = 'todos';
+            selectEspacio.disabled = true;
+            selectEspacio.title = 'Selecciona primero un edificio';
+            placeholderSalon.textContent = 'Primero elige un edificio...';
+            Array.from(selectEspacio.options).forEach(opcion => {
+                if (opcion.value === 'todos') return;
+                opcion.style.display = 'none';
+                opcion.hidden = true;
+                opcion.disabled = true;
+            });
+            if (calendar) {
+                calendar.removeAllEventSources();
+            }
+            return;
+        }
+
+        selectEspacio.disabled = false;
+        selectEspacio.title = '';
+        placeholderSalon.textContent = 'Seleccione un salón...';
+
         Array.from(selectEspacio.options).forEach(opcion => {
             if (opcion.value === 'todos') return; 
             let idEdificioOpcion = opcion.getAttribute('data-edificio');
-            if (idEdificioSeleccionado === 'todos' || idEdificioOpcion == idEdificioSeleccionado) {
+            if (idEdificioOpcion == idEdificioSeleccionado) {
                 opcion.style.display = '';       
                 opcion.hidden = false;
                 opcion.disabled = false;        
@@ -315,12 +344,18 @@
                 return evento.extendedProps.id_espacio == idEspacioSeleccionado;
             });
         }
-        calendar.removeAllEventSources();
-        calendar.addEventSource(eventosFiltrados);
+        if (calendar) {
+            calendar.removeAllEventSources();
+            calendar.addEventSource(eventosFiltrados);
+        }
     }
 
-    selectEdificio.addEventListener('change', filtrarCalendario);
+    selectEdificio.addEventListener('change', function() {
+        selectEspacio.value = 'todos';
+        filtrarCalendario();
+    });
     selectEspacio.addEventListener('change', filtrarCalendario);
+    document.addEventListener('DOMContentLoaded', filtrarCalendario);
 
     function toggleFormularioAsignacion() {
         var panel = document.getElementById("panel-asignacion");
@@ -354,16 +389,23 @@
     function filtrarSalonesFormulario() {
         let selectEdificio = document.getElementById('select-edificio-form');
         let selectEspacio = document.getElementById('select-espacio-form');
+        if (!selectEdificio || !selectEspacio) return;
         let idEdificioSeleccionado = selectEdificio.value;
+        let placeholderSalon = selectEspacio.options[0];
 
         selectEspacio.value = ""; 
 
+        // Sin edificio válido el salón queda bloqueado y atenuado
         if (idEdificioSeleccionado === "") {
             selectEspacio.disabled = true;
+            selectEspacio.title = "Selecciona primero un edificio";
+            placeholderSalon.textContent = "Primero elige un edificio...";
             return;
         }
 
         selectEspacio.disabled = false; 
+        selectEspacio.title = "";
+        placeholderSalon.textContent = "Seleccione el salón...";
 
         Array.from(selectEspacio.options).forEach(opcion => {
             if (opcion.value === "") return; 
@@ -381,50 +423,6 @@
             }
         });
     }
-
-    function abrirPestana(evt, nombrePestana) {
-        let contenidos = document.getElementsByClassName("tab-content");
-        for (let i = 0; i < contenidos.length; i++) {
-            contenidos[i].classList.remove("active");
-        }
-        let botones = document.getElementsByClassName("tab-btn");
-        for (let i = 0; i < botones.length; i++) {
-            botones[i].classList.remove("active");
-        }
-        document.getElementById(nombrePestana).classList.add("active");
-        
-        if(evt && evt.currentTarget && evt.currentTarget.classList) {
-             evt.currentTarget.classList.add("active");
-        } else {
-             let btn = document.querySelector(`button[onclick*="${nombrePestana}"]`);
-             if(btn) btn.classList.add("active");
-        }
-        
-        localStorage.setItem("pestanaActiva_" + window.location.pathname, nombrePestana);
-
-        let buscador = document.getElementById("input-busqueda");
-        if (buscador) {
-            buscador.value = ""; 
-            if (typeof ejecutarBusqueda === "function") {
-                ejecutarBusqueda(); 
-            }
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", function() {
-        let pestanaGuardada = localStorage.getItem("pestanaActiva_" + window.location.pathname);
-        if (window.location.hash) {
-            pestanaGuardada = window.location.hash.substring(1); 
-        }
-        
-        if (pestanaGuardada) {
-            let btn = document.querySelector(`button[onclick*="${pestanaGuardada}"]`);
-            if (btn) {
-                abrirPestana(null, pestanaGuardada);
-                return; 
-            }
-        }
-    });
 
     const rutaCrear = "{{ url_for('asignaciones.agregar_grupo') }}";
 
@@ -476,25 +474,26 @@
         selectCarrera.removeAttribute('data-editando');
     }
 
-    function ejecutarBusqueda() {
-        let buscador = document.getElementById("input-busqueda");
-        if (!buscador) return;
-        let filtro = buscador.value.toUpperCase();
-        let pestanaActiva = document.querySelector('.tab-content.active');
-        
-        if (pestanaActiva && pestanaActiva.id === "vista-grupos") {
-            let filas = document.querySelectorAll("#vista-grupos .grupos-table tbody tr");
-            filas.forEach(function(fila) {
-                if (fila.cells.length === 1) return; 
-                let textoFila = fila.textContent || fila.innerText;
-                if (textoFila.toUpperCase().indexOf(filtro) > -1) {
-                    fila.style.display = ""; 
-                } else {
-                    fila.style.display = "none"; 
-                }
-            });
-        }
-    } 
+    // BÚSQUEDA Y PAGINACIÓN PERSISTENTE EN CATÁLOGO DE GRUPOS
+    let timerGrupos = null;
+    function buscarGruposConRetraso() {
+        clearTimeout(timerGrupos);
+        timerGrupos = setTimeout(function() {
+            sessionStorage.setItem('foco_busqueda_grupos', '1');
+            const inputBusqueda = document.getElementById('input-busqueda');
+            const q = inputBusqueda ? inputBusqueda.value.trim() : '';
+            const params = new URLSearchParams({ page: 1, q: q });
+            window.location.href = "{{ url_for('asignaciones.vista_asignaciones') }}?" + params.toString() + "#vista-grupos";
+        }, 400);
+    }
+
+    function irAPaginaGrupos(e, numPagina) {
+        e.preventDefault();
+        const inputBusqueda = document.getElementById('input-busqueda');
+        const q = inputBusqueda ? inputBusqueda.value.trim() : '';
+        const params = new URLSearchParams({ page: numPagina, q: q });
+        window.location.href = "{{ url_for('asignaciones.vista_asignaciones') }}?" + params.toString() + "#vista-grupos";
+    }
 
     const inputGrupo = document.getElementById('input-nombre'); 
     const selectCarrera = document.getElementById('select-carrera');
@@ -626,28 +625,98 @@
     });
 
     const selectPeriodo = document.getElementById('select-periodo-form');
-    
+    // Periodo automático: se elige el periodo activo cuyas fechas incluyen el día de hoy.
     if (selectPeriodo) {
-        const fechaActual = new Date();
-        const mesActual = fechaActual.getMonth() + 1; 
-        const añoActual = fechaActual.getFullYear();
-        
-        let textoCuatrimestre = "";
-        
-        if (mesActual >= 1 && mesActual <= 4) {
-            textoCuatrimestre = "Enero - Abril";
-        } else if (mesActual >= 5 && mesActual <= 8) {
-            textoCuatrimestre = "Mayo - Agosto";
-        } else {
-            textoCuatrimestre = "Septiembre - Diciembre";
+        const f = new Date();
+        const dos = (n) => String(n).padStart(2, '0');
+        const hoy = f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate());
+
+        const periodoActual = Array.from(selectPeriodo.options).find(opcion =>
+            opcion.value !== '' &&
+            opcion.dataset.inicio && opcion.dataset.fin &&
+            opcion.dataset.inicio <= hoy && hoy <= opcion.dataset.fin     // fechas ISO: se comparan como texto
+        );
+
+        if (periodoActual) {
+            selectPeriodo.value = periodoActual.value;
         }
-        
-        Array.from(selectPeriodo.options).forEach(opcion => {
-            const textoOpcion = opcion.text; 
-            if (textoOpcion.includes(textoCuatrimestre) && textoOpcion.includes(añoActual.toString())) {
-                selectPeriodo.value = opcion.value; 
-            }
-        });
     }
+
+
+    // Asignación rápida: al elegir la hora de inicio, la hora de fin se llena con +2 horas
+    (function () {
+        const horaInicio = document.getElementById('hora-inicio-form');
+        const horaFin = document.getElementById('hora-fin-form');
+        if (!horaInicio || !horaFin) return;
+
+        const DURACION_MINUTOS = 120;
+        const aMinutos = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
+        const aHHMM = (min) => String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0');
+
+        function calcularHoraFin() {
+            if (!horaInicio.value) return;                       // el campo aún está incompleto
+            let fin = aMinutos(horaInicio.value) + DURACION_MINUTOS;
+            if (horaFin.max) fin = Math.min(fin, aMinutos(horaFin.max));   // no pasar del horario máximo (20:00)
+            horaFin.value = aHHMM(fin);
+        }
+
+        horaInicio.addEventListener('input', calcularHoraFin);
+        horaInicio.addEventListener('change', calcularHoraFin);
+    })();
+
+    // Asignación rápida: el salón arranca bloqueado hasta elegir edificio (también al volver con "atrás")
+    document.addEventListener('DOMContentLoaded', filtrarSalonesFormulario);
+
+
+    // Nuevo grupo: año de inicio por defecto y año de fin según la duración de la carrera
+    (function () {
+        const inicio = document.getElementById('input-inicio');
+        const fin = document.getElementById('input-fin');
+        const carrera = document.getElementById('select-carrera');
+        const nombre = document.getElementById('input-nombre');
+        const formGrupo = document.getElementById('form-grupo');
+        if (!inicio || !fin || !carrera) return;
+
+        // Duración en años por acrónimo de carrera (en MAYÚSCULAS).
+        const DURACION_POR_CARRERA = { 'PREPA': 3 };
+        const DURACION_POR_DEFECTO = 4;
+
+        // defaultValue hace que form.reset() (Cancelar edición) también regrese al año actual
+        const anioActual = new Date().getFullYear();
+        inicio.defaultValue = anioActual;
+        inicio.value = anioActual;
+
+        let finManual = false;                                    // true si el usuario escribió el año fin a mano
+
+        function duracionCarrera() {
+            const opcion = carrera.options[carrera.selectedIndex];
+            const acronimo = ((opcion && opcion.dataset.acronimo) || '').toUpperCase();
+            return DURACION_POR_CARRERA[acronimo] || DURACION_POR_DEFECTO;
+        }
+
+        function calcularFin() {
+            if (finManual) return;
+            if (carrera.hasAttribute('data-editando')) return;   // al editar se respetan los valores guardados
+            if (!/^\d{4}$/.test(inicio.value) || !carrera.value) return;
+            fin.value = parseInt(inicio.value, 10) + duracionCarrera();
+            fin.min = inicio.value;
+        }
+
+        inicio.addEventListener('input', calcularFin);
+        inicio.addEventListener('change', calcularFin);
+        carrera.addEventListener('change', calcularFin);
+        // La carrera también se autoselecciona al escribir las siglas del grupo (ej. ISA-43)
+        if (nombre) nombre.addEventListener('input', calcularFin);
+
+        fin.addEventListener('input', () => { finManual = fin.value !== ''; });
+
+        if (formGrupo) {
+            formGrupo.addEventListener('reset', () => {
+                finManual = false;
+                setTimeout(calcularFin, 0);                       // reset() termina después del evento
+            });
+        }
+        calcularFin();
+    })();
 </script>
 {% endblock %}

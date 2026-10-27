@@ -11,21 +11,22 @@
 {% block content %}
 <section class="workspace">
     <div class="search-box-container">
-        <input type="text" id="buscador" class="search-input" placeholder="Buscar por nombre o correo..." oninput="filtrarTabla()">
+        <input type="text" id="buscador" class="search-input" value="{{ q or '' }}" placeholder="Buscar por nombre o correo..." oninput="buscarUsuariosConRetraso()">
     </div> 
     
     <div class="filters-container">
-        <select id="filtroRol" class="filter-select" onchange="filtrarTabla()">
-            <option value="">Rol (todos)</option>
-            <option value="Administrador">Administrador</option>
-            <option value="Coordinador de Carrera">Coordinador de Carrera</option>
-            <option value="Docente">Docente</option>
+        <select id="filtroRol" class="filter-select" onchange="aplicarFiltrosUsuarios()">
+            <option value="" {% if not rol %}selected{% endif %}>Rol (todos)</option>
+            <option value="Administrador" {% if rol == 'Administrador' %}selected{% endif %}>Administrador</option>
+            <option value="Coordinador de Carrera" {% if rol == 'Coordinador de Carrera' %}selected{% endif %}>Coordinador de Carrera</option>
+            <option value="Docente" {% if rol == 'Docente' %}selected{% endif %}>Docente</option>
+            <option value="Almacén" {% if rol == 'Almacén' %}selected{% endif %}>Almacén</option>
         </select>
         
-        <select id="filtroEstado" class="filter-select" onchange="filtrarTabla()">
-            <option value="">Estado (todos)</option>
-            <option value="Activo">Activos</option>
-            <option value="Inactivo">Inactivos</option>
+        <select id="filtroEstado" class="filter-select" onchange="aplicarFiltrosUsuarios()">
+            <option value="" {% if not estado %}selected{% endif %}>Estado (todos)</option>
+            <option value="Activo" {% if estado == 'Activo' %}selected{% endif %}>Activos</option>
+            <option value="Inactivo" {% if estado == 'Inactivo' %}selected{% endif %}>Inactivos</option>
         </select>
         
         <button class="btn-primary" onclick="toggleFormulario()">+ Nuevo Usuario</button>
@@ -51,6 +52,7 @@
                         {% if session.get('role') == 'ADMIN' %}
                             <option value="1">Administrador</option>
                             <option value="2">Coordinador de Carrera</option>
+                            <option value="4">Almacén</option>
                         {% endif %}
                         <option value="3">Docente</option>
                     </select>
@@ -92,6 +94,8 @@
                             <span class="badge-rol badge-admin">Administrador</span>
                         {% elif usuario.rol_nombre == 'Coordinador de Carrera' %}
                             <span class="badge-role badge-coordinador">Coordinador de Carrera</span>
+                        {% elif usuario.rol_nombre == 'Almacén' %}
+                            <span class="badge-role badge-almacen">Almacén</span>
                         {% else %}
                             <span class="badge-role badge-docente">{{ usuario.rol_nombre }}</span>
                         {% endif %}
@@ -118,7 +122,6 @@
                             <span style="color: #aaa; font-size: 12px; font-style: italic;">
                                 <i class="fas fa-lock"></i> Sin permisos
                             </span>
-
                         {% endif %}
 
                         <div id="modal-editar-{{ usuario.id_usuario }}" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
@@ -166,6 +169,7 @@
                                             {% if session.get('role') == 'ADMIN' %}
                                                 <option value="1" {% if usuario.rol_nombre == 'Administrador' %}selected{% endif %}>Administrador</option>
                                                 <option value="2" {% if usuario.rol_nombre == 'Coordinador de Carrera' %}selected{% endif %}>Coordinador de Carrera</option>
+                                                <option value="4" {% if usuario.rol_nombre == 'Almacén' %}selected{% endif %}>Almacén</option>
                                             {% endif %}
 
                                             <option value="3" {% if usuario.rol_nombre == 'Docente' %}selected{% endif %}>Docente</option>
@@ -191,7 +195,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 20px;">No hay usuarios registrados.</td>
+                    <td colspan="5" style="text-align: center; padding: 20px;">No se encontraron usuarios registrados.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -202,19 +206,19 @@
     {% if total_pages > 1 %}
     <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
         {% if page > 1 %}
-            <a href="{{ url_for('usuarios.lista_usuarios', page=page-1) }}" class="page-btn">&laquo; Anterior</a>
+            <a href="{{ url_for('usuarios.lista_usuarios', page=page-1, q=q, rol=rol, estado=estado) }}" class="page-btn" onclick="irAPaginaUsuarios(event, {{ page-1 }})">&laquo; Anterior</a>
         {% else %}
             <span class="page-btn disabled">&laquo; Anterior</span>
         {% endif %}
 
         {% for p in range(1, total_pages + 1) %}
-            <a href="{{ url_for('usuarios.lista_usuarios', page=p) }}" class="page-btn {% if p == page %}active{% endif %}">
+            <a href="{{ url_for('usuarios.lista_usuarios', page=p, q=q, rol=rol, estado=estado) }}" class="page-btn {% if p == page %}active{% endif %}" onclick="irAPaginaUsuarios(event, {{ p }})">
                 {{ p }}
             </a>
         {% endfor %}
 
         {% if page < total_pages %}
-            <a href="{{ url_for('usuarios.lista_usuarios', page=page+1) }}" class="page-btn">Siguiente &raquo;</a>
+            <a href="{{ url_for('usuarios.lista_usuarios', page=page+1, q=q, rol=rol, estado=estado) }}" class="page-btn" onclick="irAPaginaUsuarios(event, {{ page+1 }})">Siguiente &raquo;</a>
         {% else %}
             <span class="page-btn disabled">Siguiente &raquo;</span>
         {% endif %}
@@ -226,7 +230,7 @@
 {% block scripts %}
 <script>
     function toggleFormulario(){
-        var form = document.getElementById("formularioNuevoUsuario")
+        var form = document.getElementById("formularioNuevoUsuario");
         if (form.style.display === "none" || form.style.display === "") {
             form.style.display = "block";
         } else {
@@ -248,37 +252,6 @@
         }
     }
 
-    // Función para filtrar la tabla en tiempo real
-    function filtrarTabla() {
-        let textoBusqueda = document.getElementById("buscador").value.toLowerCase();
-        let valorRol = document.getElementById("filtroRol").value.toLowerCase();
-        let valorEstado = document.getElementById("filtroEstado").value.toLowerCase();
-
-        let filas = document.getElementById("cuerpoTabla").getElementsByTagName("tr");
-
-        for (let i = 0; i < filas.length; i++) {
-            let celdas = filas[i].getElementsByTagName("td");
-            
-            if (celdas.length > 0) {
-                let nombre = celdas[0].innerText.toLowerCase();
-                let correo = celdas[1].innerText.toLowerCase();
-                let rol = celdas[2].innerText.toLowerCase().trim();
-                let estado = celdas[3].innerText.toLowerCase().trim();
-
-                let coincideBusqueda = nombre.includes(textoBusqueda) || correo.includes(textoBusqueda);
-                
-                let coincideRol = (valorRol === "") || (rol === valorRol);
-                let coincideEstado = (valorEstado === "") || (estado === valorEstado);
-
-                if (coincideBusqueda && coincideRol && coincideEstado) {
-                    filas[i].style.display = "";
-                } else {
-                    filas[i].style.display = "none";
-                }
-            }
-        }
-    }
-
     function abrirModalEditar(id) {
         var modal = document.getElementById("modal-editar-" + id);
         if (modal) {
@@ -292,5 +265,41 @@
             modal.style.display = "none";
         }
     }
+
+    // BÚSQUEDA Y FILTROS PERSISTENTES CON LA PAGINACIÓN
+    let timerUsuarios = null;
+
+    function buscarUsuariosConRetraso() {
+        clearTimeout(timerUsuarios);
+        timerUsuarios = setTimeout(function() {
+            sessionStorage.setItem('foco_buscador_usuarios', '1');
+            aplicarFiltrosUsuarios(1);
+        }, 400);
+    }
+
+    function aplicarFiltrosUsuarios(numPagina) {
+        const pagina = numPagina || 1;
+        const q = (document.getElementById("buscador")?.value || '').trim();
+        const rol = document.getElementById("filtroRol")?.value || '';
+        const estado = document.getElementById("filtroEstado")?.value || '';
+
+        const params = new URLSearchParams({ page: pagina, q: q, rol: rol, estado: estado });
+        window.location.href = "{{ url_for('usuarios.lista_usuarios') }}?" + params.toString();
+    }
+
+    function irAPaginaUsuarios(e, numPagina) {
+        e.preventDefault();
+        aplicarFiltrosUsuarios(numPagina);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const buscador = document.getElementById('buscador');
+        if (sessionStorage.getItem('foco_buscador_usuarios') === '1' && buscador) {
+            sessionStorage.removeItem('foco_buscador_usuarios');
+            buscador.focus();
+            const len = buscador.value.length;
+            buscador.setSelectionRange(len, len);
+        }
+    });
 </script>
 {% endblock %}
