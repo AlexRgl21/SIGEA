@@ -28,13 +28,11 @@ def _ejecutar(conn, sql, parametros, ok, error_log, error_msg):
         flash(error_msg, "danger")
 
 
-# VISTA PRINCIPAL: AULAS Y EDIFICIOS
 @gestion_bp.route('/gestion')
 @role_required(config.ROL_ADMIN)
 def vista_gestion():
     conn = get_db()
     
-    # 1. Parámetros de paginación para las aulas (12 tarjetas por página)
     page = request.args.get('page', 1, type=int)
     if page < 1:
         page = 1
@@ -47,16 +45,13 @@ def vista_gestion():
 
     cursor = conn.cursor()
     
-    # Edificios completos (sin paginación porque se muestran en su propia pestaña)
     cursor.execute("SELECT id_edificio, nombre, codigo, estatus FROM Edificios")
     edificios_db = cursor.fetchall()
 
-    # Contar total de aulas para la paginación
     cursor.execute("SELECT COUNT(*) FROM Espacios")
     total_aulas_db = cursor.fetchone()[0] or 0
     total_pages = math.ceil(total_aulas_db / per_page) if total_aulas_db > 0 else 1
 
-    # Aulas paginadas con OFFSET / FETCH NEXT
     cursor.execute("""
         SELECT e.id_espacio, e.nombre, e.capacidad, e.tipo, e.estatus, ed.codigo
         FROM Espacios e
@@ -69,7 +64,7 @@ def vista_gestion():
     edificios = [tuple(ed) + (_color_edificio(ed[2]),) for ed in edificios_db]
     aulas = [tuple(au) + (_color_edificio(au[5]),) for au in aulas_db]
     
-    servicio_periodos.cerrar_vencidos_seguro(conn)      # que la lista nunca muestre un periodo vencido como activo
+    servicio_periodos.cerrar_vencidos_seguro(conn)
     periodos = servicio_periodos.listar(conn)
 
     return render_template('gestion.html', edificios=edificios, aulas=aulas, periodos=periodos,
@@ -108,8 +103,7 @@ def editar_edificio():
     try:
         cursor = conn.cursor()
         cursor.execute("UPDATE Edificios SET nombre = ?, codigo = ?, estatus = ? WHERE id_edificio = ?",
-                        (nombre, codigo, estatus, id_edificio))
-        # El estatus del edificio se propaga a todos sus espacios
+                       (nombre, codigo, estatus, id_edificio))
         cursor.execute("UPDATE Espacios SET estatus = ? WHERE id_edificio = ?", (estatus, id_edificio))
         conn.commit()
         flash("Edificio y sus espacios actualizados correctamente.", "success")
@@ -152,7 +146,6 @@ def eliminar_espacio(id):
     return redirect(url_for('gestion.vista_gestion'))
 
 
-# PERIODOS (CUATRIMESTRES)
 def _volver_a_periodos():
     return redirect(url_for('gestion.vista_gestion', _anchor='vista-periodos'))
 
@@ -186,7 +179,7 @@ def editar_periodo():
     f = request.form
     try:
         servicio_periodos.actualizar_periodo(conn, f.get('id_periodo', type=int), f.get('nombre'),
-                                             f.get('fecha_inicio'), f.get('fecha_fin'))
+                                           f.get('fecha_inicio'), f.get('fecha_fin'))
         flash("Periodo actualizado correctamente.", "success")
     except ErrorNegocio as e:
         flash(e.mensaje, "danger")

@@ -47,7 +47,6 @@
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                     <select name="id_rol" required style="padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
                         <option value="">-- Selecciona un Rol --</option>
-
                         {% if session.get('role') == 'ADMIN' %}
                             <option value="1">Administrador</option>
                             <option value="2">Coordinador de Carrera</option>
@@ -80,7 +79,7 @@
 
             <tbody id="cuerpoTabla">
                  {% for usuario in usuarios %}
-                <tr>
+                <tr data-nombre="{{ usuario.nombre_completo | lower }}" data-correo="{{ usuario.correo | lower }}" data-rol="{{ usuario.rol_nombre | lower }}" data-estado="{{ usuario.estado | lower }}">
                     <td class="user-name-cell">
                         <span class="main-name">{{ usuario.nombre_completo }}</span>
                     </td>
@@ -118,7 +117,6 @@
                             <span style="color: #aaa; font-size: 12px; font-style: italic;">
                                 <i class="fas fa-lock"></i> Sin permisos
                             </span>
-
                         {% endif %}
 
                         <div id="modal-editar-{{ usuario.id_usuario }}" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
@@ -198,7 +196,6 @@
         </table>
     </div>
 
-    <!-- CONTROLES DE PAGINACIÓN -->
     {% if total_pages > 1 %}
     <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
         {% if page > 1 %}
@@ -248,33 +245,30 @@
         }
     }
 
-    // Función para filtrar la tabla en tiempo real
     function filtrarTabla() {
-        let textoBusqueda = document.getElementById("buscador").value.toLowerCase();
+        let textoBusqueda = document.getElementById("buscador").value.toLowerCase().trim();
         let valorRol = document.getElementById("filtroRol").value.toLowerCase();
         let valorEstado = document.getElementById("filtroEstado").value.toLowerCase();
 
         let filas = document.getElementById("cuerpoTabla").getElementsByTagName("tr");
 
         for (let i = 0; i < filas.length; i++) {
-            let celdas = filas[i].getElementsByTagName("td");
-            
-            if (celdas.length > 0) {
-                let nombre = celdas[0].innerText.toLowerCase();
-                let correo = celdas[1].innerText.toLowerCase();
-                let rol = celdas[2].innerText.toLowerCase().trim();
-                let estado = celdas[3].innerText.toLowerCase().trim();
+            let fila = filas[i];
+            if (!fila.hasAttribute('data-nombre')) continue;
 
-                let coincideBusqueda = nombre.includes(textoBusqueda) || correo.includes(textoBusqueda);
-                
-                let coincideRol = (valorRol === "") || (rol === valorRol);
-                let coincideEstado = (valorEstado === "") || (estado === valorEstado);
+            let nombre = fila.getAttribute('data-nombre');
+            let correo = fila.getAttribute('data-correo');
+            let rol = fila.getAttribute('data-rol');
+            let estado = fila.getAttribute('data-estado');
 
-                if (coincideBusqueda && coincideRol && coincideEstado) {
-                    filas[i].style.display = "";
-                } else {
-                    filas[i].style.display = "none";
-                }
+            let coincideBusqueda = textoBusqueda === "" || nombre.includes(textoBusqueda) || correo.includes(textoBusqueda);
+            let coincideRol = (valorRol === "") || (rol === valorRol);
+            let coincideEstado = (valorEstado === "") || (estado === valorEstado);
+
+            if (coincideBusqueda && coincideRol && coincideEstado) {
+                fila.style.display = "";
+            } else {
+                fila.style.display = "none";
             }
         }
     }
@@ -293,4 +287,4 @@
         }
     }
 </script>
-{% endblock %} 
+{% endblock %}

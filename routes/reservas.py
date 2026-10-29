@@ -51,7 +51,7 @@ def crear_reserva():
 
 
 @reservas_bp.route('/reservas/aceptar/<int:id>', methods=['POST'])
-@role_required(*config.ROLES_ADMINISTRATIVOS)
+@role_required(config.ROL_ALMACEN)
 def aceptar_reserva(id):
     conn = get_db()
     if not conn:
@@ -69,7 +69,7 @@ def aceptar_reserva(id):
 
 
 @reservas_bp.route('/reservas/rechazar/<int:id>', methods=['POST'])
-@role_required(*config.ROLES_ADMINISTRATIVOS)
+@role_required(config.ROL_ALMACEN)
 def rechazar_reserva(id):
     conn = get_db()
     if not conn:

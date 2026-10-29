@@ -24,7 +24,6 @@ def _sin_conexion():
 def lista_usuarios():
     conn = get_db()
     
-    # Leer la página actual de la URL (por defecto la 1)
     page = request.args.get('page', 1, type=int)
     if page < 1:
         page = 1

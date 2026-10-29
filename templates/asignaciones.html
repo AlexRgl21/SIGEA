@@ -35,10 +35,10 @@
                             </select>
                             
                             <label>Salón</label>
-                            <select id="filtro-espacio">
-                                <option value="todos">Todos los Salones</option>
+                            <select id="filtro-espacio" disabled>
+                                <option value="todos">Primero elige un edificio...</option>
                                 {% for esp in espacios %}
-                                <option value="{{ esp.id_espacio }}" data-edificio="{{ esp.id_edificio}}">{{ esp.nombre }}</option>
+                                <option value="{{ esp.id_espacio }}" data-edificio="{{ esp.id_edificio }}">{{ esp.nombre }}</option>
                                 {% endfor %}
                             </select>
 
@@ -77,9 +77,9 @@
                         <div class="form-group">
                             <label>Salón:</label>
                             <select name="id_espacio" id="select-espacio-form" required disabled> 
-                                <option value="">Seleccione el salón...</option>
+                                <option value="">Primero elige un edificio...</option>
                                 {% for espacio in espacios %}
-                                    <option value="{{ espacio.id_espacio }}" data-edificio="{{ espacio.id_edificio}}">{{ espacio.nombre }}</option>
+                                    <option value="{{ espacio.id_espacio }}" data-edificio="{{ espacio.id_edificio }}">{{ espacio.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -126,7 +126,6 @@
             <div class="workspace-split">
                 
                 {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
-                <!-- FORMULARIO OCULTO POR DEFECTO -->
                 <div class="form-container" id="panel-nuevo-grupo" style="display: none;">
                     <h3 class="section-title" id="form-titulo">Nuevo Grupo</h3>
                     <form id="form-grupo" action="{{ url_for('asignaciones.agregar_grupo') }}" method="POST">
@@ -190,7 +189,7 @@
                             </thead>
                             <tbody>
                                 {% for grupo in grupos %}
-                                <tr>
+                                <tr data-grupo="{{ grupo.nombre_grupo | lower }}" data-carrera="{{ grupo.acronimo | lower }}">
                                     <td class="fw-bold" style="color: var(--azul-oscuro);">{{ grupo.nombre_grupo }}</td>
                                     <td>{{ grupo.acronimo }}</td>
                                     <td>
@@ -211,9 +210,9 @@
                                         </button>
 
                                         <form action="{{ url_for('asignaciones.eliminar_grupo', id_grupo=grupo.id_grupo) }}" method="POST" style="display:inline;"
-                                            data-confirmar="¿Eliminar el grupo “{{ grupo.nombre_grupo }}”?"
-                                            data-confirmar-texto="El grupo dejará de aparecer en el catálogo y en las asignaciones nuevas."
-                                            data-confirmar-boton="Sí, eliminar">
+                                              data-confirmar="¿Eliminar el grupo “{{ grupo.nombre_grupo }}”?"
+                                              data-confirmar-texto="El grupo dejará de aparecer en el catálogo y en las asignaciones nuevas."
+                                              data-confirmar-boton="Sí, eliminar">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn-action-delete">
                                                 <i class="fas fa-trash"></i>
@@ -231,7 +230,6 @@
                         </table>
                     </div>
 
-                    <!-- CONTROLES DE PAGINACIÓN -->
                     {% if total_pages > 1 %}
                     <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
                         {% if page > 1 %}
@@ -272,7 +270,7 @@
 
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'timeGridWeek',
-            hiddenDays: [0], // Ocultamos el domingo
+            hiddenDays: [0],
             slotMinTime: '07:00:00',
             slotMaxTime: '20:00:00',
             locale: 'es',
@@ -289,23 +287,34 @@
 
     function filtrarCalendario() {
         let idEdificioSeleccionado = selectEdificio.value;
+        
+        if (idEdificioSeleccionado === 'todos') {
+            selectEspacio.value = 'todos';
+            selectEspacio.disabled = true;
+            selectEspacio.options[0].textContent = "Primero elige un edificio...";
+        } else {
+            selectEspacio.disabled = false;
+            selectEspacio.options[0].textContent = "Todos los Salones";
+        }
+
         Array.from(selectEspacio.options).forEach(opcion => {
             if (opcion.value === 'todos') return; 
             let idEdificioOpcion = opcion.getAttribute('data-edificio');
-            if (idEdificioSeleccionado === 'todos' || idEdificioOpcion == idEdificioSeleccionado) {
-                opcion.style.display = '';       
+            if (idEdificioSeleccionado !== 'todos' && idEdificioOpcion == idEdificioSeleccionado) {
+                opcion.style.display = '';      
                 opcion.hidden = false;
                 opcion.disabled = false;        
             } else {
                 opcion.style.display = 'none';   
                 opcion.hidden = true;            
-                opcion.disabled = true;          
+                opcion.disabled = true;           
             }
         });
 
         if (selectEspacio.options[selectEspacio.selectedIndex].disabled) {
             selectEspacio.value = 'todos';
         }
+        
         let idEspacioSeleccionado = selectEspacio.value; 
         let eventosFiltrados = []; 
         if (idEspacioSeleccionado !== 'todos') {
@@ -334,7 +343,6 @@
         }
     }
 
-    // LÓGICA PARA DESPLEGAR / OCULTAR EL FORMULARIO DE NUEVO GRUPO
     const btnToggleGrupo = document.getElementById('btn-toggle-grupo');
     const panelNuevoGrupo = document.getElementById('panel-nuevo-grupo');
 
@@ -357,7 +365,6 @@
 
         selectEspacio.value = ""; 
 
-        // Sin edificio válido el salón queda bloqueado y atenuado
         if (idEdificioSeleccionado === "") {
             selectEspacio.disabled = true;
             selectEspacio.title = "Selecciona primero un edificio";
@@ -412,7 +419,6 @@
         document.getElementById("btn-guardar").style.backgroundColor = "#007A78"; 
         document.getElementById("btn-cancelar").style.display = "block"; 
 
-        // Desplegar automáticamente el formulario si está oculto al darle en editar
         if (panelNuevoGrupo) {
             panelNuevoGrupo.style.display = "block";
         }
@@ -574,7 +580,8 @@
         });
     }
 
-    $(document).ready(function() {$('#select-grupo-form').select2({
+    $(document).ready(function() {
+        $('#select-grupo-form').select2({
             placeholder: "Escribe para buscar un grupo...",
             width: '100%',
             language: {
@@ -586,7 +593,6 @@
     });
 
     const selectPeriodo = document.getElementById('select-periodo-form');
-    // Periodo automático: se elige el periodo activo cuyas fechas incluyen el día de hoy.
     if (selectPeriodo) {
         const f = new Date();
         const dos = (n) => String(n).padStart(2, '0');
@@ -595,7 +601,7 @@
         const periodoActual = Array.from(selectPeriodo.options).find(opcion =>
             opcion.value !== '' &&
             opcion.dataset.inicio && opcion.dataset.fin &&
-            opcion.dataset.inicio <= hoy && hoy <= opcion.dataset.fin     // fechas ISO: se comparan como texto
+            opcion.dataset.inicio <= hoy && hoy <= opcion.dataset.fin    
         );
 
         if (periodoActual) {
@@ -603,8 +609,6 @@
         }
     }
 
-
-    // Asignación rápida: al elegir la hora de inicio, la hora de fin se llena con +2 horas
     (function () {
         const horaInicio = document.getElementById('hora-inicio-form');
         const horaFin = document.getElementById('hora-fin-form');
@@ -615,9 +619,9 @@
         const aHHMM = (min) => String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0');
 
         function calcularHoraFin() {
-            if (!horaInicio.value) return;                       // el campo aún está incompleto
+            if (!horaInicio.value) return;            
             let fin = aMinutos(horaInicio.value) + DURACION_MINUTOS;
-            if (horaFin.max) fin = Math.min(fin, aMinutos(horaFin.max));   // no pasar del horario máximo (20:00)
+            if (horaFin.max) fin = Math.min(fin, aMinutos(horaFin.max));   
             horaFin.value = aHHMM(fin);
         }
 
@@ -625,11 +629,8 @@
         horaInicio.addEventListener('change', calcularHoraFin);
     })();
 
-    // Asignación rápida: el salón arranca bloqueado hasta elegir edificio (también al volver con "atrás")
     document.addEventListener('DOMContentLoaded', filtrarSalonesFormulario);
 
-
-    // Nuevo grupo: año de inicio por defecto y año de fin según la duración de la carrera
     (function () {
         const inicio = document.getElementById('input-inicio');
         const fin = document.getElementById('input-fin');
@@ -638,16 +639,14 @@
         const formGrupo = document.getElementById('form-grupo');
         if (!inicio || !fin || !carrera) return;
 
-        // Duración en años por acrónimo de carrera (en MAYÚSCULAS).
         const DURACION_POR_CARRERA = { 'PREPA': 3 };
         const DURACION_POR_DEFECTO = 4;
 
-        // defaultValue hace que form.reset() (Cancelar edición) también regrese al año actual
         const anioActual = new Date().getFullYear();
         inicio.defaultValue = anioActual;
         inicio.value = anioActual;
 
-        let finManual = false;                                    // true si el usuario escribió el año fin a mano
+        let finManual = false;                        
 
         function duracionCarrera() {
             const opcion = carrera.options[carrera.selectedIndex];
@@ -657,7 +656,7 @@
 
         function calcularFin() {
             if (finManual) return;
-            if (carrera.hasAttribute('data-editando')) return;   // al editar se respetan los valores guardados
+            if (carrera.hasAttribute('data-editando')) return;   
             if (!/^\d{4}$/.test(inicio.value) || !carrera.value) return;
             fin.value = parseInt(inicio.value, 10) + duracionCarrera();
             fin.min = inicio.value;
@@ -666,7 +665,6 @@
         inicio.addEventListener('input', calcularFin);
         inicio.addEventListener('change', calcularFin);
         carrera.addEventListener('change', calcularFin);
-        // La carrera también se autoselecciona al escribir las siglas del grupo (ej. ISA-43)
         if (nombre) nombre.addEventListener('input', calcularFin);
 
         fin.addEventListener('input', () => { finManual = fin.value !== ''; });
@@ -674,7 +672,7 @@
         if (formGrupo) {
             formGrupo.addEventListener('reset', () => {
                 finManual = false;
-                setTimeout(calcularFin, 0);                       // reset() termina después del evento
+                setTimeout(calcularFin, 0);                     
             });
         }
         calcularFin();

@@ -20,11 +20,10 @@ def _volver():
 
 
 @asignaciones_bp.route('/asignaciones')
-@role_required(*config.TODOS_LOS_ROLES)           # todos pueden ver el calendario
+@role_required(*config.TODOS_LOS_ROLES)
 def vista_asignaciones():
     conn = get_db()
     
-    # 1. Paginación: Leer la página actual de la URL
     page = request.args.get('page', 1, type=int)
     if page < 1:
         page = 1
@@ -34,8 +33,7 @@ def vista_asignaciones():
         return render_template('asignaciones.html', carreras=[], grupos=[], espacios=[],
                                periodos=[], edificios=[], eventos_calendario=[], page=1, total_pages=1)
     
-    servicio_periodos.cerrar_vencidos_seguro(conn)                           
-    # Le pasamos la página al servicio de datos_vista
+    servicio_periodos.cerrar_vencidos_seguro(conn)                                     
     datos = servicio.datos_vista(conn, page)
     return render_template('asignaciones.html', **datos)
 
@@ -73,7 +71,7 @@ def agregar_grupo():
     try:
         f = request.form
         mensaje = servicio.agregar_grupo(conn, f.get('nombre_grupo'), f.get('generacion_inicio'),
-                                         f.get('generacion_fin'), f.get('id_carrera'))
+                                       f.get('generacion_fin'), f.get('id_carrera'))
         flash(mensaje, "success")
     except ErrorNegocio as e:
         flash(e.mensaje, "danger")

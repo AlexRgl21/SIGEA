@@ -56,9 +56,7 @@
                     {% for dato in datos_grafica %}
                     <div class="bar-column">
                         <span class="bar-percent">{{ dato.porcentaje }}%</span>
-
                         <div class="bar" style="height: {{ dato.porcentaje }}%;"></div>
-
                         <span class="bar-label">{{ dato.edificio }}</span>
                     </div>
                     {% else %}
@@ -92,11 +90,11 @@
                 </div>
 
                 {% for item in tabla_disponibilidad %}
-                <div class="table-row">
+                <div class="table-row" data-grupo="{{ item.grupo | lower }}" data-estatus="{{ item.estatus | lower }}">
                     <div>{{ item.edificio }}</div>
                     <div>{{ item.espacio }}</div>
                     <div class="fw-bold">{{ item.grupo }}</div>
-                    <div>{{ item.horario}}</div>
+                    <div>{{ item.horario }}</div>
                     <div><span class="badge {{ item.badge_class }}">{{ item.estatus }}</span></div>
                 </div>
                 {% else %}
@@ -106,7 +104,6 @@
                 {% endfor %}
             </div>
 
-            <!-- CONTROLES DE PAGINACIÓN -->
             {% if total_pages > 1 %}
             <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
                 {% if page > 1 %}
@@ -143,16 +140,16 @@
     const filas = document.querySelectorAll('.schedule-table .table-row');
 
     function filtrarTabla() {
-        let textoBuscado = buscador.value.toLowerCase();
+        let textoBuscado = buscador.value.toLowerCase().trim();
         let estadoBuscado = filtroEstado.value.toLowerCase();
 
         filas.forEach(function(fila){
-            if (fila.children.length < 5) return; 
+            if (!fila.hasAttribute('data-grupo')) return; 
 
-            let textoGrupo = fila.children[2].textContent.toLowerCase();
-            let textoEstado = fila.children[4].textContent.toLowerCase();
+            let textoGrupo = fila.getAttribute('data-grupo');
+            let textoEstado = fila.getAttribute('data-estatus');
 
-            let coincideGrupo = textoGrupo.includes(textoBuscado);
+            let coincideGrupo = textoBuscado === "" || textoGrupo.includes(textoBuscado);
             let coincideEstado = (estadoBuscado === 'todos') || textoEstado.includes(estadoBuscado);
 
             if (coincideGrupo && coincideEstado){

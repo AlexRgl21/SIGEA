@@ -1,5 +1,3 @@
-# Lógica de negocio de las reservas especiales.
-
 import datetime
 import logging
 
@@ -19,9 +17,7 @@ def _filas_a_dicts(cursor):
     return [dict(zip(columnas, fila)) for fila in cursor.fetchall()]
 
 
-# Consulta
 def datos_vista(conn, rol, id_usuario, hoy=None):
-    # Devuelve (pendientes, aprobadas, espacios) para la pantalla de reservas.
     hoy = hoy or datetime.date.today()
     cursor = conn.cursor()
 
@@ -46,7 +42,7 @@ def datos_vista(conn, rol, id_usuario, hoy=None):
     orden = " ORDER BY r.fecha ASC, r.hora_inicio ASC"
     if rol == config.ROL_MAESTRO:
         cursor.execute(base + " WHERE r.id_usuario = ? AND (r.fecha >= ? OR r.estado = 'Pendiente')" + orden,
-                    (id_usuario, hoy))
+                       (id_usuario, hoy))
     else:
         cursor.execute(base + " WHERE r.fecha >= ? OR r.estado = 'Pendiente'" + orden, (hoy,))
     todas = _filas_a_dicts(cursor)
@@ -56,9 +52,7 @@ def datos_vista(conn, rol, id_usuario, hoy=None):
     return pendientes, aprobadas, espacios
 
 
-# Crear
 def validar_solicitud(id_espacio, fecha, hora_inicio, hora_fin, motivo, hoy=None):
-    
     hoy = hoy or datetime.date.today()
     motivo = (motivo or '').strip()
     if not all([id_espacio, fecha, hora_inicio, hora_fin, motivo]):
@@ -81,7 +75,6 @@ def validar_solicitud(id_espacio, fecha, hora_inicio, hora_fin, motivo, hoy=None
 
 
 def crear_reserva(conn, id_usuario, id_espacio, fecha, hora_inicio, hora_fin, motivo):
-    # Guarda la solicitud como Pendiente y avisa por correo a admins y coordinadores.
     id_espacio, fecha_obj, inicio, fin, motivo = validar_solicitud(
         id_espacio, fecha, hora_inicio, hora_fin, motivo)
 
@@ -107,16 +100,14 @@ def crear_reserva(conn, id_usuario, id_espacio, fecha, hora_inicio, hora_fin, mo
         conn.rollback()
         raise
 
-    # La reserva ya está guardada: si falla el aviso, no se deshace nada.
     try:
-        cursor.execute("SELECT correo FROM Usuarios WHERE id_rol IN (1, 2) AND estado = 'Activo'")
+        cursor.execute("SELECT correo FROM Usuarios WHERE id_rol IN (1, 2, 4) AND estado = 'Activo'")
         correos = [f[0] for f in cursor.fetchall()]
         correo.notificar_nueva_reserva(correos, fecha_obj)
     except Exception:
-        logger.exception("No se pudo avisar a coordinación de la nueva reserva")
+        logger.exception("No se pudo avisar de la nueva reserva")
 
 
-# Aprobar / rechazar
 def _reserva_con_datos(cursor, id_reserva):
     cursor.execute("""
         SELECT r.id_espacio, r.fecha, r.hora_inicio, r.hora_fin, r.estado,
@@ -164,7 +155,7 @@ def aprobar_reserva(conn, id_reserva):
         raise
 
     correo.notificar_reserva_aprobada(reserva['correo'], reserva['nombre'], reserva['espacio'],
-                                      reserva['fecha'], reserva['hora_inicio'], reserva['hora_fin'])
+                                     reserva['fecha'], reserva['hora_inicio'], reserva['hora_fin'])
 
 
 def rechazar_reserva(conn, id_reserva):

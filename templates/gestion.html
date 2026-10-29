@@ -153,7 +153,7 @@
 
             <div class="cards-grid">
                 {% for aula in aulas %}
-                <div class="card activo" style="border-left-color: {% if aula[4] != 'Activo' %}#f39c12{% else %}{{ aula[6] }}{% endif %};">
+                <div class="card activo" style="border-left-color: {% if aula[4] != 'Activo' %}#f39c12{% else %}{{ aula[6] }}{% endif %};" data-titulo="{{ aula[1] | lower }}" data-detalles="edificio: {{ aula[5] | lower }} capacidad: {{ aula[2] }} tipo: {{ aula[3] | lower }}">
                     <div class="card-header">
                         <i class="fas fa-chalkboard card-icon" style="color: {% if aula[4] != 'Activo' %}#f39c12{% else %}{{ aula[6] }}{% endif %};"></i>
                         {% if aula[4] == 'Activo' %}
@@ -187,7 +187,6 @@
                 {% endfor %}
             </div>
 
-            <!-- CONTROLES DE PAGINACIÓN PARA AULAS -->
             {% if total_pages > 1 %}
             <div class="pagination-container" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; display: flex; justify-content: center; gap: 5px;">
                 {% if page > 1 %}
@@ -361,7 +360,6 @@
 
 {% block scripts %}
 <script>
-    // MANEJO VISUAL DEL FORMULARIO DE AULAS
     const btnToggleAulas = document.getElementById('btn-toggle-form');
     const panelAulas = document.getElementById('panel-nuevo-espacio');
     const btnCancelAulas = document.getElementById('btn-cancelar');
@@ -377,7 +375,6 @@
         });
     }
 
-        // PERIODOS: formulario de alta
     const btnTogglePeriodo = document.getElementById('btn-toggle-periodo');
     const panelPeriodo = document.getElementById('panel-nuevo-periodo');
     if (btnTogglePeriodo && panelPeriodo) {
@@ -390,7 +387,6 @@
         });
     }
 
-    // PERIODOS: la fecha de fin no puede ser menor que la de inicio
     function ligarFechas(idInicio, idFin) {
         const ini = document.getElementById(idInicio), fin = document.getElementById(idFin);
         if (!ini || !fin) return;
@@ -401,13 +397,11 @@
     ligarFechas('nuevo-periodo-inicio', 'nuevo-periodo-fin');
     ligarFechas('edit-periodo-inicio', 'edit-periodo-fin');
 
-    // PERIODOS: editar
     const modalPeriodo = document.getElementById('modal-editar-periodo');
     if (modalPeriodo && modalPeriodo.parentElement !== document.body) {
         document.body.appendChild(modalPeriodo);
     }
 
-    // PERIODOS: editar
     document.querySelectorAll('.btn-edit-periodo').forEach(btn => {
         btn.addEventListener('click', function() {
             document.getElementById('edit-periodo-id').value = this.dataset.id;
@@ -419,7 +413,6 @@
         });
     });
 
-    // LÓGICA PARA EDITAR EDIFICIOS
     document.querySelectorAll('.btn-edit-edificio').forEach(btn => {
         btn.addEventListener('click', function() {
             document.getElementById('edit-edificio-id').value = this.getAttribute('data-id');
@@ -431,7 +424,6 @@
         });
     });
 
-    // LÓGICA PARA EDITAR AULAS
     document.querySelectorAll('.btn-edit-aula').forEach(btn => {
         btn.addEventListener('click', function() {
             document.getElementById('edit-aula-id').value = this.getAttribute('data-id');
@@ -444,7 +436,6 @@
         });
     });
 
-    // LÓGICA DE LA BARRA DE BUSQUEDA
     const inputBusqueda = document.querySelector('.search-box input');
 
     if (inputBusqueda){
@@ -453,18 +444,15 @@
             const tarjetasAulas = document.querySelectorAll('#vista-aulas .card');
 
             tarjetasAulas.forEach(tarjeta => {
-                const elementoTitulo = tarjeta.querySelector('.card-title');
-                const elementoDetalles = tarjeta.querySelector('.card-details');
+                if (!tarjeta.hasAttribute('data-titulo')) return;
 
-                if (elementoTitulo && elementoDetalles) {
-                    const titulo = elementoTitulo.textContent.toLowerCase();
-                    const detalles = elementoDetalles.textContent.toLowerCase();
+                const titulo = tarjeta.getAttribute('data-titulo');
+                const detalles = tarjeta.getAttribute('data-detalles');
 
-                    if (textoBuscado === "" || titulo.includes(textoBuscado) || detalles.includes(textoBuscado)){
-                        tarjeta.style.display = '';
-                    } else {
-                        tarjeta.style.display = 'none';
-                    }
+                if (textoBuscado === "" || titulo.includes(textoBuscado) || detalles.includes(textoBuscado)){
+                    tarjeta.style.display = '';
+                } else {
+                    tarjeta.style.display = 'none';
                 }
             });
         });

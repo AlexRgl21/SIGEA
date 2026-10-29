@@ -1,4 +1,3 @@
-# Cálculo de los indicadores del panel principal
 import math
 from datetime import datetime
 
@@ -32,7 +31,6 @@ def calcular_panel(conn, page=1, ahora=None):
     dia_hoy = nombre_dia(hoy)
     cursor = conn.cursor()
 
-    # Parámetros de paginación (10 registros por página)
     per_page = 10
     offset = (page - 1) * per_page
 
@@ -92,8 +90,6 @@ def calcular_panel(conn, page=1, ahora=None):
                       'porcentaje': int((f[2] / f[1] * 100) if f[1] > 0 else 0)}
                      for f in cursor.fetchall()]
 
-    # --- PAGINACIÓN DE LA TABLA DE DISPONIBILIDAD ---
-    # 1. Contamos el total de salones activos para calcular las páginas
     cursor.execute("""
         SELECT COUNT(*)
         FROM Espacios e
@@ -103,7 +99,6 @@ def calcular_panel(conn, page=1, ahora=None):
     total_filas = cursor.fetchone()[0] or 0
     total_pages = math.ceil(total_filas / per_page) if total_filas > 0 else 1
 
-    # 2. Obtenemos solo los 10 salones correspondientes a la página actual
     cursor.execute("""
         SELECT e.id_espacio, e.nombre AS espacio, ed.nombre AS edificio
         FROM Espacios e

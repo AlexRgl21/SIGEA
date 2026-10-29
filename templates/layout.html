@@ -32,6 +32,7 @@
                 </li>
                 {% endif %}
                 
+                {% if session.get('role') != 'ALMACEN' %}
                 {% set en_asignaciones = request.endpoint == 'asignaciones.vista_asignaciones' %}
                 <li class="has-submenu{% if en_asignaciones %} is-current open{% endif %}">
                     <button type="button" class="submenu-toggle" aria-expanded="{{ 'true' if en_asignaciones else 'false' }}" aria-controls="submenu-asignaciones">
@@ -46,6 +47,7 @@
                         </ul>
                     </div>
                 </li>
+                {% endif %}
                 
                 <li class="{% if request.endpoint == 'reservas.vista_reserva' %}active{% endif %}">
                     <a href="{{ url_for('reservas.vista_reserva') }}">
@@ -131,9 +133,13 @@
                 
                 <div class="perfil-usuario-nav">
                     <span class="nombre-usuario">{{ session.get('nombre_usuario', 'Usuario') }}</span>
+                    {% if session.get('role') == 'ALMACEN' %}
+                    <span class="badge-almacen">Almacén</span>
+                    {% else %}
                     <span class="badge-rol badge-{{ session.get('role', '') | lower }}">
                         {{ session.get('role', '') | capitalize }}
                     </span>
+                    {% endif %}
                 </div>
                 <form action="{{ url_for('auth.logout') }}" method="POST" id="form-logout" style="margin: 0;" novalidate>
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -148,12 +154,10 @@
                 {% if messages %}
                     <div class="flash-container" style="margin-bottom: 20px;">
                     {% for category, message in messages %}
-                        
                         <div class="alerta-sigea alerta-{{ category }}">
                             {{ message }}
                             <span class="cerrar-alerta" onclick="this.parentElement.style.display='none';">&times;</span>
                         </div>
-
                     {% endfor %}
                     </div>
                 {% endif %}
@@ -167,7 +171,6 @@
     </main>
 
     <script>
-    // SCRIPT DEL BUSCADOR GLOBAL
     function ejecutarBusqueda() {
         let input = document.getElementById('input-busqueda').value.toLowerCase();
         let tarjetas = document.querySelectorAll('.reserva-card, .salon-card');
@@ -177,10 +180,8 @@
         });
     }
     </script>
-    <!-- Aviso de expiración de sesión y campana de notificaciones -->
     <script src="{{ url_for('static', filename='js/sigea.js') }}"></script>
 
-        <!-- SIDEBAR: acordeón de submenús + cambio de pestañas (.tab-content) sin recargar -->
     <script>
     (function () {
         'use strict';
@@ -188,7 +189,6 @@
         var menu = document.querySelector('.sidebar .menu');
         if (!menu) { return; }
 
-        /* ACORDEÓN sidebar */
         var padres = menu.querySelectorAll('li.has-submenu');
 
         function fijarAbierto(li, abierto) {
@@ -199,12 +199,11 @@
         padres.forEach(function (li) {
             li.querySelector('.submenu-toggle').addEventListener('click', function () {
                 var estabaAbierto = li.classList.contains('open');
-                padres.forEach(function (otro) { fijarAbierto(otro, false); });   // solo uno abierto a la vez
+                padres.forEach(function (otro) { fijarAbierto(otro, false); });
                 fijarAbierto(li, !estabaAbierto);
             });
         });
 
-        /* PESTAÑAS CONTROLADAS DESDE EL SIDEBAR */
         var enlaces = menu.querySelectorAll('.submenu-link[data-tab-target]');
         var paneles = document.querySelectorAll('.tab-content');
         var claveGuardada = 'tabActiva:' + location.pathname;
@@ -219,7 +218,7 @@
         }
 
         function guardar(id) {
-            try { localStorage.setItem(claveGuardada, id); } catch (e) { /* modo privado: se ignora */ }
+            try { localStorage.setItem(claveGuardada, id); } catch (e) {}
         }
 
         function activarTab(id, recordar) {
@@ -233,29 +232,26 @@
 
             if (recordar) { guardar(id); }
 
-            // Al cambiar de pestaña se limpia el buscador (igual que antes)
             var buscador = document.getElementById('input-busqueda');
             if (buscador && buscador.value) {
                 buscador.value = '';
                 if (typeof ejecutarBusqueda === 'function') { ejecutarBusqueda(); }
             }
 
-            // FullCalendar recalcula su tamaño al volver a ser visible
             setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 50);
         }
 
         if (paneles.length) {
             var porDefecto = (document.querySelector('.tab-content.active') || paneles[0]).id;
-            var inicial = location.hash.slice(1);            // 1º el hash (#vista-aulas), p. ej. al paginar
-            if (!panelExiste(inicial)) { inicial = leerGuardada(); }   // 2º la última pestaña usada
-            if (!panelExiste(inicial)) { inicial = porDefecto; }       // 3º la que marque el HTML
+            var inicial = location.hash.slice(1);
+            if (!panelExiste(inicial)) { inicial = leerGuardada(); }
+            if (!panelExiste(inicial)) { inicial = porDefecto; }
             activarTab(inicial, false);
         }
 
         enlaces.forEach(function (a) {
             a.addEventListener('click', function (e) {
                 var id = a.dataset.tabTarget;
-                // Si el sub-ítem es de OTRA pantalla, se navega normal (y allí se lee el hash)
                 if (a.pathname !== location.pathname || !panelExiste(id)) { return; }
                 e.preventDefault();
                 activarTab(id, true);
@@ -267,12 +263,7 @@
             var id = location.hash.slice(1);
             if (panelExiste(id)) { activarTab(id, true); }
         });
-            window.addEventListener('hashchange', function () {
-            var id = location.hash.slice(1);
-            if (panelExiste(id)) { activarTab(id, true); }
-        });
 
-        /* MENÚ HAMBURGUESA (móvil) */
         var btnHamburguesa = document.getElementById('btn-hamburguesa');
         var btnCerrarMenu = document.getElementById('btn-cerrar-menu');
         var fondoMenu = document.getElementById('sidebar-backdrop');
@@ -293,7 +284,6 @@
         if (btnCerrarMenu) { btnCerrarMenu.addEventListener('click', function () { fijarMenuMovil(false); }); }
         if (fondoMenu) { fondoMenu.addEventListener('click', function () { fijarMenuMovil(false); }); }
 
-        // Al elegir un sub-ítem el menú se cierra (si cambia de pantalla, la página recarga igual)
         menu.addEventListener('click', function (e) {
             if (e.target.closest('.submenu-link')) { fijarMenuMovil(false); }
         });
@@ -305,13 +295,10 @@
             }
         });
 
-        // Si la ventana crece a escritorio con el menú abierto, se restablece
         window.matchMedia('(min-width: 769px)').addEventListener('change', function (m) {
             if (m.matches) { fijarMenuMovil(false); }
         });
     })();
-
-    
     </script>
     {% block scripts %}{% endblock %}
 

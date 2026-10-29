@@ -16,12 +16,13 @@ SESION_PING_SEG = 30        # mientras haya actividad, se renueva la cookie como
 ROL_ADMIN = 'ADMIN'
 ROL_COORDINADOR = 'COORDINADOR'
 ROL_MAESTRO = 'MAESTRO'
+ROL_ALMACEN = 'ALMACEN'
 
-ROLES_POR_ID = {1: ROL_ADMIN, 2: ROL_COORDINADOR, 3: ROL_MAESTRO}   # id_rol (BD) -> rol de sesión
-NOMBRES_ROL = {1: 'Administrador', 2: 'Coordinador de Carrera', 3: 'Docente'}  # texto que ve el usuario
+ROLES_POR_ID = {1: ROL_ADMIN, 2: ROL_COORDINADOR, 3: ROL_MAESTRO, 4: ROL_ALMACEN}   # id_rol (BD) -> rol de sesión
+NOMBRES_ROL = {1: 'Administrador', 2: 'Coordinador de Carrera', 3: 'Docente', 4: 'Almacén'}  # texto que ve el usuario
 ID_ROL_MAESTRO = 3
 ROLES_ADMINISTRATIVOS = (ROL_ADMIN, ROL_COORDINADOR)
-TODOS_LOS_ROLES = (ROL_ADMIN, ROL_COORDINADOR, ROL_MAESTRO)
+TODOS_LOS_ROLES = (ROL_ADMIN, ROL_COORDINADOR, ROL_MAESTRO, ROL_ALMACEN)
 
 # COLORES
 COLORES_CARRERA = {
@@ -47,17 +48,12 @@ COLORES_EDIFICIOS = {
 COLOR_EDIFICIO_DEFAULT = '#004a98'
 
 # CALENDARIO Y ESPACIOS
-
-# Deben coincidir EXACTO con los valores que guarda el formulario de asignaciones.
 DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-# Número de día para FullCalendar (domingo = 0)
 DIA_A_NUMERO_CALENDARIO = {'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4,
                            'Viernes': 5, 'Sábado': 6}
 
 TIPO_ESPACIO_AULA = 'Aula Clásica'
 TIPOS_ESPACIO_RESERVABLES = ('laboratorio', 'sala de conferencia')
-
-# Validar también que un mismo grupo no esté en dos espacios a la misma hora
 VALIDAR_CHOQUE_DE_GRUPO = True
 
 # PERIODOS (CUATRIMESTRES)
@@ -94,6 +90,5 @@ def aplicar_config(app):
     app.permanent_session_lifetime = timedelta(minutes=SESION_MINUTOS)
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-
     app.config['SESSION_COOKIE_SECURE'] = os.getenv('COOKIE_SECURE', '0') == '1'
     app.config['WTF_CSRF_TIME_LIMIT'] = None

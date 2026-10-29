@@ -801,3 +801,14 @@ body.menu-abierto .btn-hamburguesa span:nth-child(3) { transform: translateY(-7p
     .sidebar, .sidebar-backdrop,
     .btn-hamburguesa span { transition: none !important; }
 }
+/* Badge estilo pastilla para Almacén */
+.badge-almacen {
+    background-color: #0d9488; /* Verde azulado / Teal o #e0f2fe si lo quieres claro como Admin */
+    color: #ffffff;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+    text-align: center;
+}

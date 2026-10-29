@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 ERROR_CONEXION = "Error de conexión. Inténtalo de nuevo."
 
 
-# RECUPERACIÓN DE CONTRASEÑA
 @auth_bp.route('/olvide-contrasena', methods=['GET', 'POST'])
 def olvide_contrasena():
     error = request.args.get('error')
@@ -27,7 +26,6 @@ def olvide_contrasena():
             return render_template('olvide_contrasena.html',
                                    error="No pudimos procesar tu solicitud. Inténtalo de nuevo.")
 
-        # En la sesión solo queda el correo escrito; el código nunca sale de la BD
         session['reset_correo'] = correo
         session.pop('reset_verificado', None)
         return redirect(url_for('auth.restablecer_contrasena', success=autenticacion.MSG_ENVIO))
@@ -53,14 +51,13 @@ def reenviar_codigo():
     if not correo:
         return redirect(url_for('auth.olvide_contrasena'))
 
-    session.pop('reset_verificado', None)   # un código nuevo invalida la verificación anterior
+    session.pop('reset_verificado', None)
     if not _solicitar_codigo(correo):
         return redirect(url_for('auth.restablecer_contrasena',
                                 error="No pudimos reenviar el código. Inténtalo de nuevo."))
     return redirect(url_for('auth.restablecer_contrasena', success=autenticacion.MSG_ENVIO))
 
 
-# PASO 1: VERIFICAR EL CÓDIGO
 @auth_bp.route('/verificar-codigo', methods=['POST'])
 def verificar_codigo():
     correo = session.get('reset_correo')
@@ -69,7 +66,6 @@ def verificar_codigo():
 
     codigo = (request.form.get('codigo') or '').strip().upper()
     if len(codigo) != config.CODIGO_LONGITUD:
-        # Un código incompleto no gasta intentos
         return render_template('restablecer_contrasena.html', paso=1,
                                error=f"Escribe los {config.CODIGO_LONGITUD} caracteres del código.")
 
@@ -92,7 +88,6 @@ def verificar_codigo():
                             success="Código verificado. Ahora elige tu nueva contraseña."))
 
 
-# PASO 2: ELEGIR LA NUEVA CONTRASEÑA (solo si el código ya fue verificado)
 @auth_bp.route('/restablecer-contrasena', methods=['GET', 'POST'])
 def restablecer_contrasena():
     correo = session.get('reset_correo')
@@ -123,7 +118,6 @@ def restablecer_contrasena():
             return redirect(url_for('auth.login',
                                     success="Contraseña restablecida con éxito. Ya puedes iniciar sesión."))
 
-        # GET: muestra el paso que corresponde
         if id_usuario is None:
             session.pop('reset_verificado', None)
         return render_template('restablecer_contrasena.html',
@@ -136,7 +130,6 @@ def restablecer_contrasena():
                                error="No pudimos completar la operación. Inténtalo de nuevo.")
 
 
-# LOGIN / LOGOUT / SESIÓN
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     error = request.args.get('error')
@@ -160,7 +153,7 @@ def login():
             return render_template('login.html',
                                    error="No pudimos iniciar tu sesión. Inténtalo de nuevo.")
 
-        session.clear()                      # sesión nueva: evita reutilizar una anterior
+        session.clear()
         session.permanent = True
         session['id_usuario'] = usuario['id_usuario']
         session['nombre_usuario'] = usuario['nombre']
@@ -168,6 +161,8 @@ def login():
 
         if usuario['role'] == config.ROL_MAESTRO:
             return redirect(url_for('asignaciones.vista_asignaciones'))
+        elif usuario['role'] == config.ROL_ALMACEN:
+            return redirect(url_for('reservas.vista_reserva'))
         return redirect(url_for('panel.inicio'))
 
     return render_template('login.html', error=error, success=success)
@@ -184,8 +179,7 @@ def logout():
 
 @auth_bp.route('/sesion/extender', methods=['POST'])
 def extender_sesion():
-    # Renueva la cookie de sesión. La llama el navegador cuando el usuario sigue activo o pulsa 'Seguir conectado' en el aviso de expiración.
     if 'id_usuario' not in session:
         return ('', 401)
-    session.modified = True                  # fuerza a Flask a emitir la cookie con vigencia nueva
+    session.modified = True
     return ('', 204)
