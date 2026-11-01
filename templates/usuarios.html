@@ -20,6 +20,7 @@
             <option value="Administrador">Administrador</option>
             <option value="Coordinador de Carrera">Coordinador de Carrera</option>
             <option value="Docente">Docente</option>
+            <option value="Almacén">Almacén</option>
         </select>
         
         <select id="filtroEstado" class="filter-select" onchange="filtrarTabla()">
@@ -50,6 +51,7 @@
                         {% if session.get('role') == 'ADMIN' %}
                             <option value="1">Administrador</option>
                             <option value="2">Coordinador de Carrera</option>
+                            <option value="4">Almacén</option>
                         {% endif %}
                         <option value="3">Docente</option>
                     </select>
@@ -91,6 +93,8 @@
                             <span class="badge-rol badge-admin">Administrador</span>
                         {% elif usuario.rol_nombre == 'Coordinador de Carrera' %}
                             <span class="badge-role badge-coordinador">Coordinador de Carrera</span>
+                        {% elif usuario.rol_nombre == 'Almacén' %}
+                            <span class="badge-almacen">Almacén</span>
                         {% else %}
                             <span class="badge-role badge-docente">{{ usuario.rol_nombre }}</span>
                         {% endif %}
@@ -164,6 +168,7 @@
                                             {% if session.get('role') == 'ADMIN' %}
                                                 <option value="1" {% if usuario.rol_nombre == 'Administrador' %}selected{% endif %}>Administrador</option>
                                                 <option value="2" {% if usuario.rol_nombre == 'Coordinador de Carrera' %}selected{% endif %}>Coordinador de Carrera</option>
+                                                <option value="4" {% if usuario.rol_nombre == 'Almacén' %}selected{% endif %}>Almacén</option>
                                             {% endif %}
 
                                             <option value="3" {% if usuario.rol_nombre == 'Docente' %}selected{% endif %}>Docente</option>
@@ -187,74 +192,125 @@
                         </div>
                     </td>
                 </tr>
-                {% else %}
+            {% else %}
                 <tr>
                     <td colspan="5" style="text-align: center; padding: 20px;">No hay usuarios registrados.</td>
                 </tr>
                 {% endfor %}
+                
+                <!-- Fila oculta que aparece cuando el filtro no encuentra nada -->
+                <tr id="mensaje-sin-resultados-usuarios" style="display: none;">
+                    <td colspan="5" style="text-align: center; padding: 20px; color: #666; font-style: italic;">
+                        No se encontraron usuarios que coincidan con la búsqueda o los filtros aplicados.
+                    </td>
+                </tr>
+            </tbody>
+            </tbody>
             </tbody>
         </table>
     </div>
 
-    {% if total_pages > 1 %}
-    <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
-        {% if page > 1 %}
-            <a href="{{ url_for('usuarios.lista_usuarios', page=page-1) }}" class="page-btn">&laquo; Anterior</a>
-        {% else %}
-            <span class="page-btn disabled">&laquo; Anterior</span>
-        {% endif %}
-
-        {% for p in range(1, total_pages + 1) %}
-            <a href="{{ url_for('usuarios.lista_usuarios', page=p) }}" class="page-btn {% if p == page %}active{% endif %}">
-                {{ p }}
-            </a>
-        {% endfor %}
-
-        {% if page < total_pages %}
-            <a href="{{ url_for('usuarios.lista_usuarios', page=page+1) }}" class="page-btn">Siguiente &raquo;</a>
-        {% else %}
-            <span class="page-btn disabled">Siguiente &raquo;</span>
-        {% endif %}
+    <!-- Contenedor vacío donde JavaScript dibujará los botones dinámicamente -->
+    <div id="paginacion-dinamica" class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; display: flex; justify-content: center; gap: 5px;">
     </div>
-    {% endif %}
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script>
     function toggleFormulario(){
-        var form = document.getElementById("formularioNuevoUsuario")
-        if (form.style.display === "none" || form.style.display === "") {
-            form.style.display = "block";
-        } else {
-            form.style.display = "none";
-        }
+        var form = document.getElementById("formularioNuevoUsuario");
+        form.style.display = (form.style.display === "none" || form.style.display === "") ? "block" : "none";
     } 
     
-    function abrirModalConfig(id) {
-        var modal = document.getElementById("modal-config-" + id);
-        if (modal) {
-            modal.style.display = "flex";
+    function abrirModalConfig(id) { document.getElementById("modal-config-" + id).style.display = "flex"; }
+    function cerrarModalConfig(id) { document.getElementById("modal-config-" + id).style.display = "none"; }
+    function abrirModalEditar(id) { document.getElementById("modal-editar-" + id).style.display = "flex"; }
+    function cerrarModalEditar(id) { document.getElementById("modal-editar-" + id).style.display = "none"; }
+
+    // ==========================================
+    // LÓGICA DE PAGINACIÓN Y FILTRADO DINÁMICO
+    // ==========================================
+    const ITEMS_POR_PAGINA = 10;
+    let paginaActual = 1;
+    let filasFiltradas = [];
+
+    function renderizarPaginacion() {
+        const totalPaginas = Math.ceil(filasFiltradas.length / ITEMS_POR_PAGINA);
+        const container = document.getElementById('paginacion-dinamica');
+        container.innerHTML = '';
+
+        if (totalPaginas <= 1) return; // Si todo cabe en 1 página, oculta los botones
+
+        // Botón Anterior
+        let btnPrev = document.createElement('button');
+        btnPrev.className = 'page-btn ' + (paginaActual === 1 ? 'disabled' : '');
+        btnPrev.innerHTML = '&laquo; Anterior';
+        btnPrev.onclick = () => { if(paginaActual > 1) cambiarPagina(paginaActual - 1); };
+        container.appendChild(btnPrev);
+
+        // Números de página
+        for(let i = 1; i <= totalPaginas; i++) {
+            let btn = document.createElement('button');
+            btn.className = 'page-btn ' + (i === paginaActual ? 'active' : '');
+            btn.innerText = i;
+            btn.onclick = () => cambiarPagina(i);
+            container.appendChild(btn);
         }
+
+        // Botón Siguiente
+        let btnNext = document.createElement('button');
+        btnNext.className = 'page-btn ' + (paginaActual === totalPaginas ? 'disabled' : '');
+        btnNext.innerHTML = 'Siguiente &raquo;';
+        btnNext.onclick = () => { if(paginaActual < totalPaginas) cambiarPagina(paginaActual + 1); };
+        container.appendChild(btnNext);
     }
 
-    function cerrarModalConfig(id) {
-        var modal = document.getElementById("modal-config-" + id);
-        if (modal) {
-            modal.style.display = "none";
+    function cambiarPagina(pag) {
+        paginaActual = pag;
+        mostrarFilasActuales();
+        renderizarPaginacion();
+    }
+
+   function mostrarFilasActuales() {
+        const inicio = (paginaActual - 1) * ITEMS_POR_PAGINA;
+        const fin = inicio + ITEMS_POR_PAGINA;
+
+        // Ocultamos todas las filas filtradas
+        filasFiltradas.forEach(fila => fila.style.display = 'none');
+
+        // Mostramos solo el lote de 10 correspondientes a la página actual
+        for (let i = inicio; i < fin && i < filasFiltradas.length; i++) {
+            filasFiltradas[i].style.display = '';
+        }
+
+        // Encender o apagar el mensaje de "sin resultados"
+        const mensajeVacio = document.getElementById('mensaje-sin-resultados-usuarios');
+        if (mensajeVacio) {
+            mensajeVacio.style.display = (filasFiltradas.length === 0) ? '' : 'none';
         }
     }
 
     function filtrarTabla() {
-        let textoBusqueda = document.getElementById("buscador").value.toLowerCase().trim();
-        let valorRol = document.getElementById("filtroRol").value.toLowerCase();
-        let valorEstado = document.getElementById("filtroEstado").value.toLowerCase();
+        const inputBuscador = document.getElementById("buscador");
+        const selectRol = document.getElementById("filtroRol");
+        const selectEstado = document.getElementById("filtroEstado");
 
-        let filas = document.getElementById("cuerpoTabla").getElementsByTagName("tr");
+        let textoBusqueda = inputBuscador.value.toLowerCase().trim();
+        let valorRol = selectRol.value.toLowerCase();
+        let valorEstado = selectEstado.value.toLowerCase();
 
-        for (let i = 0; i < filas.length; i++) {
-            let fila = filas[i];
-            if (!fila.hasAttribute('data-nombre')) continue;
+        // Persistimos el estado en el navegador
+        sessionStorage.setItem('usuarios_buscador', inputBuscador.value);
+        sessionStorage.setItem('usuarios_rol', selectRol.value);
+        sessionStorage.setItem('usuarios_estado', selectEstado.value);
+
+        let todasLasFilas = Array.from(document.getElementById("cuerpoTabla").getElementsByTagName("tr"));
+        filasFiltradas = [];
+
+        // Filtramos las filas primero
+        todasLasFilas.forEach(fila => {
+            if (!fila.hasAttribute('data-nombre')) return;
 
             let nombre = fila.getAttribute('data-nombre');
             let correo = fila.getAttribute('data-correo');
@@ -266,25 +322,33 @@
             let coincideEstado = (valorEstado === "") || (estado === valorEstado);
 
             if (coincideBusqueda && coincideRol && coincideEstado) {
-                fila.style.display = "";
+                filasFiltradas.push(fila);
             } else {
-                fila.style.display = "none";
+                fila.style.display = 'none'; // Ocultar si no cumple el filtro
             }
-        }
+        });
+
+        // Al terminar de filtrar, siempre volvemos a la página 1 y re-renderizamos la paginación
+        paginaActual = 1;
+        mostrarFilasActuales();
+        renderizarPaginacion();
     }
 
-    function abrirModalEditar(id) {
-        var modal = document.getElementById("modal-editar-" + id);
-        if (modal) {
-            modal.style.display = "flex";
-        }
-    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputBuscador = document.getElementById("buscador");
+        const selectRol = document.getElementById("filtroRol");
+        const selectEstado = document.getElementById("filtroEstado");
 
-    function cerrarModalEditar(id) {
-        var modal = document.getElementById("modal-editar-" + id);
-        if (modal) {
-            modal.style.display = "none";
-        }
-    }
+        const textoGuardado = sessionStorage.getItem('usuarios_buscador');
+        const rolGuardado = sessionStorage.getItem('usuarios_rol');
+        const estadoGuardado = sessionStorage.getItem('usuarios_estado');
+
+        if (textoGuardado !== null && inputBuscador) inputBuscador.value = textoGuardado;
+        if (rolGuardado !== null && selectRol) selectRol.value = rolGuardado;
+        if (estadoGuardado !== null && selectEstado) selectEstado.value = estadoGuardado;
+
+        // Arranca el filtrado y la paginación inicial en cuanto carga la pantalla
+        filtrarTabla();
+    });
 </script>
 {% endblock %}

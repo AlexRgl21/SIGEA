@@ -1,6 +1,5 @@
 # Lógica de negocio de usuarios (sin Flask).
 import logging
-import math
 import secrets
 import string
 
@@ -26,30 +25,24 @@ def generar_password_temporal(longitud=8):
 
 
 def listar(conn, page=1):
-    per_page = 10
-    offset = (page - 1) * per_page
+    # Ya no usamos 'page' ni 'OFFSET' en SQL porque la paginación será dinámica (JS)
     cursor = conn.cursor()
 
-    # 1. Contar el total de usuarios para calcular el número de páginas
-    cursor.execute("SELECT COUNT(*) FROM Usuarios")
-    total_usuarios = cursor.fetchone()[0] or 0
-    total_pages = math.ceil(total_usuarios / per_page) if total_usuarios > 0 else 1
-
-    # 2. Traer únicamente los 10 registros de la página actual
+    # Traer TODOS los registros para que JavaScript haga la paginación y filtros en tiempo real
     cursor.execute("""
         SELECT id_usuario, nombre, apellidos, nombre + ' ' + apellidos AS nombre_completo,
                correo, estado, id_rol
         FROM Usuarios
         ORDER BY id_usuario ASC
-        OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-    """, (offset, per_page))
+    """)
     
     columnas = [c[0] for c in cursor.description]
     usuarios = [dict(zip(columnas, fila)) for fila in cursor.fetchall()]
     for u in usuarios:
         u['rol_nombre'] = config.NOMBRES_ROL.get(u['id_rol'])
         
-    return dict(usuarios=usuarios, page=page, total_pages=total_pages)
+    # Devolvemos total_pages=1 para anular la paginación estática de Jinja
+    return dict(usuarios=usuarios, page=1, total_pages=1)
 
 
 def puede_gestionar(conn, rol_actor, id_objetivo):

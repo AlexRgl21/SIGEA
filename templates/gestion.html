@@ -435,26 +435,36 @@
             document.getElementById('modal-editar-aula').style.display = 'block';
         });
     });
+const inputBusqueda = document.querySelector('.search-box input');
 
-    const inputBusqueda = document.querySelector('.search-box input');
+    function filtrarAulas() {
+        if (!inputBusqueda) return;
+        const textoBuscado = inputBusqueda.value.toLowerCase().trim();
+        sessionStorage.setItem('gestion_buscador_aulas', inputBusqueda.value);
 
-    if (inputBusqueda){
-        inputBusqueda.addEventListener('input', function(){
-            const textoBuscado = this.value.toLowerCase().trim();
-            const tarjetasAulas = document.querySelectorAll('#vista-aulas .card');
+        const tarjetasAulas = document.querySelectorAll('#vista-aulas .card');
+        tarjetasAulas.forEach(tarjeta => {
+            if (!tarjeta.hasAttribute('data-titulo')) return;
 
-            tarjetasAulas.forEach(tarjeta => {
-                if (!tarjeta.hasAttribute('data-titulo')) return;
+            const titulo = tarjeta.getAttribute('data-titulo');
+            const detalles = tarjeta.getAttribute('data-detalles');
 
-                const titulo = tarjeta.getAttribute('data-titulo');
-                const detalles = tarjeta.getAttribute('data-detalles');
+            if (textoBuscado === "" || titulo.includes(textoBuscado) || detalles.includes(textoBuscado)){
+                tarjeta.style.display = '';
+            } else {
+                tarjeta.style.display = 'none';
+            }
+        });
+    }
 
-                if (textoBuscado === "" || titulo.includes(textoBuscado) || detalles.includes(textoBuscado)){
-                    tarjeta.style.display = '';
-                } else {
-                    tarjeta.style.display = 'none';
-                }
-            });
+    if (inputBusqueda) {
+        inputBusqueda.addEventListener('input', filtrarAulas);
+        document.addEventListener('DOMContentLoaded', function() {
+            const guardado = sessionStorage.getItem('gestion_buscador_aulas');
+            if (guardado !== null) {
+                inputBusqueda.value = guardado;
+                filtrarAulas();
+            }
         });
     }
 </script>

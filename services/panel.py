@@ -31,9 +31,6 @@ def calcular_panel(conn, page=1, ahora=None):
     dia_hoy = nombre_dia(hoy)
     cursor = conn.cursor()
 
-    per_page = 10
-    offset = (page - 1) * per_page
-
     cursor.execute("""
         SELECT COUNT(*),
                SUM(CASE WHEN estatus = 'Mantenimiento' THEN 1 ELSE 0 END)
@@ -90,23 +87,14 @@ def calcular_panel(conn, page=1, ahora=None):
                       'porcentaje': int((f[2] / f[1] * 100) if f[1] > 0 else 0)}
                      for f in cursor.fetchall()]
 
-    cursor.execute("""
-        SELECT COUNT(*)
-        FROM Espacios e
-        JOIN Edificios ed ON e.id_edificio = ed.id_edificio
-        WHERE e.estatus = 'Activo' AND e.nombre LIKE 'Salón%'
-    """)
-    total_filas = cursor.fetchone()[0] or 0
-    total_pages = math.ceil(total_filas / per_page) if total_filas > 0 else 1
-
+    # --- LÓGICA DE TABLA DE DISPONIBILIDAD (Sin Paginación SQL) ---
     cursor.execute("""
         SELECT e.id_espacio, e.nombre AS espacio, ed.nombre AS edificio
         FROM Espacios e
         JOIN Edificios ed ON e.id_edificio = ed.id_edificio
         WHERE e.estatus = 'Activo' AND e.nombre LIKE 'Salón%'
         ORDER BY ed.nombre, CAST(SUBSTRING(e.nombre, 7, LEN(e.nombre)) AS INT)
-        OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-    """, (offset, per_page))
+    """)
     todos_espacios = [tuple(f) for f in cursor.fetchall()]
 
     cursor.execute("""
@@ -134,9 +122,10 @@ def calcular_panel(conn, page=1, ahora=None):
         clases_proximas.setdefault(
             f[0], {'grupo': f[1], 'horario': f"{_hhmm(f[2])} - {_hhmm(f[3])}"})
 
+    # Forzamos total_pages=1 para anular la paginación estática de Jinja
     return dict(
         total_espacios=total_espacios, bloqueados=bloqueados, reservas_hoy=reservas_hoy,
         datos_grafica=datos_grafica, dia_hoy=dia_hoy, ocupados=ocupados, libres=libres,
         tabla_disponibilidad=armar_tabla_disponibilidad(todos_espacios, clases_ahora, clases_proximas),
-        page=page, total_pages=total_pages
+        page=1, total_pages=1
     )

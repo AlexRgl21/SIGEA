@@ -75,12 +75,13 @@
                         <option value="todos">Todos los Estatus</option>
                         <option value="libre">Solo Libres</option>
                         <option value="ocupado">Solo Ocupados</option>
+                        <option value="próximo">Solo Próximos</option>
                     </select>
                     <input type="text" id="buscador" class="search-bar" placeholder="Buscar por grupo (Ej. ISA)...">
                 </div>
             </div>
 
-            <div class="schedule-table">
+            <div class="schedule-table" id="tabla-disponibilidad-contenedor">
                 <div class="table-header">
                     <div>Edificios</div>
                     <div>Espacio</div>
@@ -90,7 +91,7 @@
                 </div>
 
                 {% for item in tabla_disponibilidad %}
-                <div class="table-row" data-grupo="{{ item.grupo | lower }}" data-estatus="{{ item.estatus | lower }}">
+                <div class="table-row data-row" data-grupo="{{ item.grupo | lower }}" data-estatus="{{ item.estatus | lower }}">
                     <div>{{ item.edificio }}</div>
                     <div>{{ item.espacio }}</div>
                     <div class="fw-bold">{{ item.grupo }}</div>
@@ -98,34 +99,19 @@
                     <div><span class="badge {{ item.badge_class }}">{{ item.estatus }}</span></div>
                 </div>
                 {% else %}
-                <div class="table-row" style="grid-template-columns: 1fr; text-align: center;">
+                <div class="table-row no-data-row" style="grid-template-columns: 1fr; text-align: center;">
                     <div style="color: var(--texto-gris);">No hay espacios activos registrados.</div>
                 </div>
                 {% endfor %}
+                
+                <!-- Fila de mensaje de "sin resultados" oculta por defecto -->
+                <div id="mensaje-sin-resultados" class="table-row" style="display: none; grid-template-columns: 1fr; text-align: center; padding: 20px;">
+                    <div style="color: var(--texto-gris);">No se encontraron espacios que coincidan con la búsqueda o estatus.</div>
+                </div>
             </div>
 
-            {% if total_pages > 1 %}
-            <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
-                {% if page > 1 %}
-                    <a href="{{ url_for('panel.inicio', page=page-1) }}" class="page-btn">&laquo; Anterior</a>
-                {% else %}
-                    <span class="page-btn disabled">&laquo; Anterior</span>
-                {% endif %}
-
-                {% for p in range(1, total_pages + 1) %}
-                    <a href="{{ url_for('panel.inicio', page=p) }}" 
-                       class="page-btn {% if p == page %}active{% endif %}">
-                        {{ p }}
-                    </a>
-                {% endfor %}
-
-                {% if page < total_pages %}
-                    <a href="{{ url_for('panel.inicio', page=page+1) }}" class="page-btn">Siguiente &raquo;</a>
-                {% else %}
-                    <span class="page-btn disabled">Siguiente &raquo;</span>
-                {% endif %}
-            </div>
-            {% endif %}
+            <!-- Contenedor de Paginación Dinámica para el Panel -->
+            <div id="paginacion-dinamica-panel" class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; display: flex; justify-content: center; gap: 5px;"></div>
 
         </div>
 
@@ -137,13 +123,87 @@
 <script>
     const buscador = document.getElementById('buscador');
     const filtroEstado = document.getElementById('filtro-estado');
-    const filas = document.querySelectorAll('.schedule-table .table-row');
+    const mensajeSinResultados = document.getElementById('mensaje-sin-resultados');
+    
+    // ==========================================
+    // PAGINACIÓN Y FILTRADO DINÁMICO (PANEL)
+    // ==========================================
+    const ITEMS_POR_PAGINA = 10;
+    let paginaActual = 1;
+    let filasFiltradas = [];
+
+    function renderizarPaginacion() {
+        const totalPaginas = Math.ceil(filasFiltradas.length / ITEMS_POR_PAGINA);
+        const container = document.getElementById('paginacion-dinamica-panel');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (totalPaginas <= 1) return; // Si no hay más de 1 página (o no hay datos), no dibujar botones
+
+        // Botón Anterior
+        let btnPrev = document.createElement('button');
+        btnPrev.className = 'page-btn ' + (paginaActual === 1 ? 'disabled' : '');
+        btnPrev.innerHTML = '&laquo; Anterior';
+        btnPrev.onclick = () => { if(paginaActual > 1) cambiarPagina(paginaActual - 1); };
+        container.appendChild(btnPrev);
+
+        // Números
+        for(let i = 1; i <= totalPaginas; i++) {
+            let btn = document.createElement('button');
+            btn.className = 'page-btn ' + (i === paginaActual ? 'active' : '');
+            btn.innerText = i;
+            btn.onclick = () => cambiarPagina(i);
+            container.appendChild(btn);
+        }
+
+        // Botón Siguiente
+        let btnNext = document.createElement('button');
+        btnNext.className = 'page-btn ' + (paginaActual === totalPaginas ? 'disabled' : '');
+        btnNext.innerHTML = 'Siguiente &raquo;';
+        btnNext.onclick = () => { if(paginaActual < totalPaginas) cambiarPagina(paginaActual + 1); };
+        container.appendChild(btnNext);
+    }
+
+    function cambiarPagina(pag) {
+        paginaActual = pag;
+        mostrarFilasActuales();
+        renderizarPaginacion();
+    }
+
+    function mostrarFilasActuales() {
+        const inicio = (paginaActual - 1) * ITEMS_POR_PAGINA;
+        const fin = inicio + ITEMS_POR_PAGINA;
+
+        // Ocultamos todas las filas filtradas
+        filasFiltradas.forEach(fila => fila.style.display = 'none');
+
+        // Mostramos solo el lote de 10 correspondientes a la página actual
+        for (let i = inicio; i < fin && i < filasFiltradas.length; i++) {
+            filasFiltradas[i].style.display = 'grid'; // Usamos 'grid' por la clase .table-row
+        }
+        
+        // Mostrar mensaje si no hay resultados en absoluto
+        if (filasFiltradas.length === 0) {
+            mensajeSinResultados.style.display = 'grid';
+        } else {
+            mensajeSinResultados.style.display = 'none';
+        }
+    }
 
     function filtrarTabla() {
+        if (!buscador || !filtroEstado) return;
+        
         let textoBuscado = buscador.value.toLowerCase().trim();
         let estadoBuscado = filtroEstado.value.toLowerCase();
 
-        filas.forEach(function(fila){
+        // Guardar estado actual
+        sessionStorage.setItem('panel_buscador', buscador.value);
+        sessionStorage.setItem('panel_estado', filtroEstado.value);
+
+        let todasLasFilas = Array.from(document.querySelectorAll('.schedule-table .data-row'));
+        filasFiltradas = [];
+
+        todasLasFilas.forEach(function(fila){
             if (!fila.hasAttribute('data-grupo')) return; 
 
             let textoGrupo = fila.getAttribute('data-grupo');
@@ -152,16 +212,30 @@
             let coincideGrupo = textoBuscado === "" || textoGrupo.includes(textoBuscado);
             let coincideEstado = (estadoBuscado === 'todos') || textoEstado.includes(estadoBuscado);
 
-            if (coincideGrupo && coincideEstado){
-                fila.style.display = 'grid';
-            } 
-            else {
+            if (coincideGrupo && coincideEstado) {
+                filasFiltradas.push(fila);
+            } else {
                 fila.style.display = 'none';
             }
         });
+
+        // Regresar a página 1 tras filtrar
+        paginaActual = 1;
+        mostrarFilasActuales();
+        renderizarPaginacion();
     }
 
-    buscador.addEventListener('keyup', filtrarTabla);
-    filtroEstado.addEventListener('change', filtrarTabla);
+    document.addEventListener('DOMContentLoaded', function() {
+        const textoGuardado = sessionStorage.getItem('panel_buscador');
+        const estadoGuardado = sessionStorage.getItem('panel_estado');
+
+        if (textoGuardado !== null && buscador) buscador.value = textoGuardado;
+        if (estadoGuardado !== null && filtroEstado) filtroEstado.value = estadoGuardado;
+
+        filtrarTabla();
+    });
+
+    if (buscador) buscador.addEventListener('keyup', filtrarTabla);
+    if (filtroEstado) filtroEstado.addEventListener('change', filtrarTabla);
 </script>
 {% endblock %}

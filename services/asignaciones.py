@@ -51,22 +51,14 @@ def datos_vista(conn, page=1):
     cols_carreras = [column[0] for column in cursor.description]
     carreras_list = [dict(zip(cols_carreras, row)) for row in carreras]
 
-    # --- LÓGICA DE PAGINACIÓN PARA LA TABLA DE GRUPOS ---
-    per_page = 10
-    offset = (page - 1) * per_page
-
-    cursor.execute("SELECT COUNT(*) FROM Grupos WHERE estatus = 'Activo'")
-    total_grupos_db = cursor.fetchone()[0] or 0
-    total_pages = math.ceil(total_grupos_db / per_page) if total_grupos_db > 0 else 1
-
+    # --- LÓGICA DE PAGINACIÓN PARA LA TABLA DE GRUPOS (Ahora dinámica en JS) ---
     cursor.execute("""
         SELECT g.id_grupo, g.nombre_grupo, g.generacion_inicio, g.generacion_fin, c.acronimo, g.id_carrera
         FROM Grupos g
         INNER JOIN Carreras c ON g.id_carrera = c.id_carrera
         WHERE g.estatus = 'Activo'
         ORDER BY g.generacion_inicio DESC, g.nombre_grupo ASC
-        OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-    """, (offset, per_page))
+    """)
     grupos_db = cursor.fetchall()
     cols_grupos = [column[0] for column in cursor.description]
     grupos_list = [dict(zip(cols_grupos, row)) for row in grupos_db]
@@ -98,9 +90,10 @@ def datos_vista(conn, page=1):
     cursor.execute("SELECT id_edificio, nombre FROM Edificios")
     edificios = cursor.fetchall()
 
+    # Anulamos la paginación estática de Jinja enviando total_pages=1
     return dict(carreras=carreras_list, grupos=grupos_list, espacios=espacios_list, periodos=periodos_list,
                 edificios=edificios, eventos_calendario=construir_eventos(horarios_db), 
-                page=page, total_pages=total_pages)
+                page=1, total_pages=1)
 
 
 # Asignación de horarios (usa el motor de conflictos)

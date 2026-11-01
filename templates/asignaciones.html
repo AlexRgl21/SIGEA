@@ -230,28 +230,8 @@
                         </table>
                     </div>
 
-                    {% if total_pages > 1 %}
-                    <div class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
-                        {% if page > 1 %}
-                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=page-1) }}#vista-grupos" class="page-btn">&laquo; Anterior</a>
-                        {% else %}
-                            <span class="page-btn disabled">&laquo; Anterior</span>
-                        {% endif %}
-
-                        {% for p in range(1, total_pages + 1) %}
-                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=p) }}#vista-grupos" 
-                               class="page-btn {% if p == page %}active{% endif %}">
-                                {{ p }}
-                            </a>
-                        {% endfor %}
-
-                        {% if page < total_pages %}
-                            <a href="{{ url_for('asignaciones.vista_asignaciones', page=page+1) }}#vista-grupos" class="page-btn">Siguiente &raquo;</a>
-                        {% else %}
-                            <span class="page-btn disabled">Siguiente &raquo;</span>
-                        {% endif %}
-                    </div>
-                    {% endif %}
+                    <!-- Paginación dinámica de JavaScript -->
+                    <div id="paginacion-dinamica-grupos" class="pagination-container" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; display: flex; justify-content: center; gap: 5px;"></div>
 
                 </div>
             </div>
@@ -442,26 +422,95 @@
         selectCarrera.removeAttribute('data-editando');
     }
 
+    // ==========================================
+    // PAGINACIÓN Y FILTRADO DINÁMICO DE GRUPOS
+    // ==========================================
+    const ITEMS_POR_PAGINA = 10;
+    let paginaActual = 1;
+    let filasFiltradas = [];
+
+    function renderizarPaginacion() {
+        const totalPaginas = Math.ceil(filasFiltradas.length / ITEMS_POR_PAGINA);
+        const container = document.getElementById('paginacion-dinamica-grupos');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (totalPaginas <= 1) return;
+
+        let btnPrev = document.createElement('button');
+        btnPrev.className = 'page-btn ' + (paginaActual === 1 ? 'disabled' : '');
+        btnPrev.innerHTML = '&laquo; Anterior';
+        btnPrev.onclick = () => { if(paginaActual > 1) cambiarPagina(paginaActual - 1); };
+        container.appendChild(btnPrev);
+
+        for(let i = 1; i <= totalPaginas; i++) {
+            let btn = document.createElement('button');
+            btn.className = 'page-btn ' + (i === paginaActual ? 'active' : '');
+            btn.innerText = i;
+            btn.onclick = () => cambiarPagina(i);
+            container.appendChild(btn);
+        }
+
+        let btnNext = document.createElement('button');
+        btnNext.className = 'page-btn ' + (paginaActual === totalPaginas ? 'disabled' : '');
+        btnNext.innerHTML = 'Siguiente &raquo;';
+        btnNext.onclick = () => { if(paginaActual < totalPaginas) cambiarPagina(paginaActual + 1); };
+        container.appendChild(btnNext);
+    }
+
+    function cambiarPagina(pag) {
+        paginaActual = pag;
+        mostrarFilasActuales();
+        renderizarPaginacion();
+    }
+
+    function mostrarFilasActuales() {
+        const inicio = (paginaActual - 1) * ITEMS_POR_PAGINA;
+        const fin = inicio + ITEMS_POR_PAGINA;
+
+        filasFiltradas.forEach(fila => fila.style.display = 'none');
+
+        for (let i = inicio; i < fin && i < filasFiltradas.length; i++) {
+            filasFiltradas[i].style.display = '';
+        }
+    }
+
     function ejecutarBusqueda() {
         let buscador = document.getElementById("input-busqueda");
         if (!buscador) return;
-        let filtro = buscador.value.toUpperCase();
-        let pestanaActiva = document.querySelector('.tab-content.active');
         
-        if (pestanaActiva && pestanaActiva.id === "vista-grupos") {
-            let filas = document.querySelectorAll("#vista-grupos .grupos-table tbody tr");
-            filas.forEach(function(fila) {
-                if (fila.cells.length === 1) return; 
-                let textoFila = fila.textContent || fila.innerText;
-                if (textoFila.toUpperCase().indexOf(filtro) > -1) {
-                    fila.style.display = ""; 
-                } else {
-                    fila.style.display = "none"; 
-                }
-            });
-        }
-    } 
+        let filtro = buscador.value.toUpperCase().trim();
+        sessionStorage.setItem('grupos_buscador', buscador.value);
 
+        let todasLasFilas = Array.from(document.querySelectorAll("#vista-grupos .grupos-table tbody tr"));
+        filasFiltradas = [];
+
+        todasLasFilas.forEach(function(fila) {
+            if (fila.cells.length === 1) return; 
+
+            let textoFila = fila.textContent || fila.innerText;
+            if (textoFila.toUpperCase().indexOf(filtro) > -1) {
+                filasFiltradas.push(fila);
+            } else {
+                fila.style.display = "none";
+            }
+        });
+
+        paginaActual = 1;
+        mostrarFilasActuales();
+        renderizarPaginacion();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        let buscador = document.getElementById("input-busqueda");
+        let guardado = sessionStorage.getItem('grupos_buscador');
+        if (buscador && guardado !== null) {
+            buscador.value = guardado;
+        }
+        ejecutarBusqueda();
+    }); 
+
+    // Funciones del Formulario y Cálculos
     const inputGrupo = document.getElementById('input-nombre'); 
     const selectCarrera = document.getElementById('select-carrera');
 
@@ -672,7 +721,7 @@
         if (formGrupo) {
             formGrupo.addEventListener('reset', () => {
                 finManual = false;
-                setTimeout(calcularFin, 0);                     
+                setTimeout(calcularFin, 0);                    
             });
         }
         calcularFin();
