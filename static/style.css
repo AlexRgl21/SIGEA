@@ -812,3 +812,69 @@ body.menu-abierto .btn-hamburguesa span:nth-child(3) { transform: translateY(-7p
     display: inline-block;
     text-align: center;
 }
+
+/* Contenedor principal de la palabra */
+.adastra-dropdown {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    font-weight: bold;
+    color: #fff; /* Asegura que resalte en el fondo verde del footer */
+}
+
+/* El menú oculto que flota hacia arriba */
+.adastra-menu {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    bottom: 150%; /* Abre hacia arriba para que no se salga de la pantalla */
+    right: -10px; /* Alineado a la derecha */
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+    padding: 8px 0;
+    min-width: 140px;
+    z-index: 1000;
+    
+    /* Animación de entrada */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+/* Flechita del globo de diálogo apuntando hacia abajo */
+.adastra-menu::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 25px; /* Alineada sobre la palabra */
+    border-width: 6px;
+    border-style: solid;
+    border-color: #ffffff transparent transparent transparent;
+}
+
+/* Mostrar el menú al poner el cursor */
+.adastra-dropdown:hover .adastra-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Estilo de los enlaces adentro del menú */
+.adastra-menu a {
+    color: #333333;
+    text-decoration: none;
+    padding: 10px 16px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+/* Hover sobre los enlaces */
+.adastra-menu a:hover {
+    background-color: #f8f9fa;
+    color: #00AEEF; /* Color azul del sistema SIGEA */
+}

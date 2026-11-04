@@ -304,12 +304,21 @@
     </script>
     {% block scripts %}{% endblock %}
 
-    <footer class="sigea-footer">
-        <div class="footer-left">
-            <img src="{{ url_for('static', filename='img/logo_up.png') }}" alt="SIGEA">
+   <footer class="sigea-footer">
+    <div class="footer-left">
+        <img src="{{ url_for('static', filename='img/logo_up.png') }}" alt="SIGEA">
+    </div>
+    
+    <div class="footer-center">
+    <span>&copy; 2026 SIGEA - </span>
+    <div class="adastra-dropdown">
+        <span class="adastra-trigger">ADastra</span>
+        <div class="adastra-menu">
+            <a href="https://www.instagram.com/adastratechmx?mdxt=MWlsdm53bDJreG10cA==" target="_blank"><i class="fab fa-instagram"></i> Instagram</a>
+            <a href="https://www.adastratech.mx/" target="_blank"><i class="fas fa-globe"></i> Sitio Web</a>
         </div>
-        <div class="footer-center">&copy; 2026 SIGEA - SIGEA 2026 - ADastra</div>
-        <div class="footer-right">Versión 2.0 | Soporte Técnico</div>
-    </footer>
-</body>
+    </div>
+</div>
+    
+<div class="footer-right"></div>
 </html>
