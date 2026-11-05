@@ -9,6 +9,7 @@ import config
 from .errores import ErrorNegocio
 
 logger = logging.getLogger(__name__)
+auditoria = logging.getLogger('sigea.auditoria')
 
 _candado = threading.Lock()
 _ultima_revision = None          # time.monotonic() de la última revisión automática
@@ -144,7 +145,7 @@ def finalizar_periodo(conn, id_periodo):
             raise ErrorNegocio("Ese periodo ya estaba finalizado.")
         borradas = _cerrar(cursor, id_periodo)
         conn.commit()
-        logger.info("Periodo %s finalizado manualmente; %s asignaciones borradas", id_periodo, borradas)
+        auditoria.info("Periodo %s finalizado manualmente; %s asignaciones borradas", id_periodo, borradas)
         return fila[0], borradas
     except Exception:
         conn.rollback()
@@ -168,7 +169,7 @@ def cerrar_vencidos(conn, hoy=None):
         conn.rollback()
         raise
     for id_p, nombre, n in cerrados:
-        logger.info("Periodo %s '%s' vencido: inactivado y %s asignaciones borradas", id_p, nombre, n)
+        auditoria.info("Periodo %s '%s' vencido: inactivado y %s asignaciones borradas", id_p, nombre, n)
     return cerrados
 
 

@@ -24,6 +24,14 @@ from services import notificaciones, periodos
 
 logger = logging.getLogger(__name__)
 
+MENSAJES_HTTP = {
+    400: ("Solicitud no válida", 
+          "El formulario llegó incompleto o con datos incorrectos. Regresa e inténtalo de nuevo."), 
+    403: ("Acceso denegado", "No tienes permiso para ver esta página"), 
+    405: ("Acción no permitida", "Esa dirección no acepta ese tipo de solicitud."), 
+    413: ("Archivo demasiado grande", "Lo que intentaste enviar supera el tamaño permitido."), 
+    429: ("Demasiadas solicitudes", "Espera unos minutos antes de intentarlo de nuevo."),
+}
 
 def create_app():
     app = Flask(__name__)
@@ -100,7 +108,12 @@ def create_app():
     @app.errorhandler(Exception)
     def error_no_controlado(e):
         if isinstance(e, HTTPException):
-            return e                       # 405, 400, etc. conservan su comportamiento normal
+            codigo = e.code or 500
+            if codigo < 400:
+                return e
+            titulo, mensaje = MENSAJES_HTTP.get(
+                codigo, ("Algo salió mal", "No pudimos completar la solicitud. Inténta de nuevo."))
+            return render_template('error.html', titulo=titulo, mensaje=mensaje), codigo
         logger.exception("Error no controlado en %s %s", request.method, request.path)
         return render_template('error.html', titulo="Algo salió mal",
                             mensaje="Ocurrió un error inesperado y ya quedó registrado. "

@@ -29,7 +29,8 @@ def lista_usuarios():
         page = 1
 
     if not conn:
-        return render_template('usuarios.html', usuarios=[], error="Sin conexión a la base de datos", page=1, total_pages=1)
+        flash("No se pudo conectar a la base de datos. Intentalo de nuevo en unos minutos.", "danger")
+        return render_template('usuarios.html', usuarios=[], page=1, total_pages=1)
         
     return render_template('usuarios.html', **servicio.listar(conn, page=page))
 
