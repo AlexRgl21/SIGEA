@@ -163,6 +163,8 @@ def login():
             return redirect(url_for('asignaciones.vista_asignaciones'))
         elif usuario['role'] == config.ROL_ALMACEN:
             return redirect(url_for('reservas.vista_reserva'))
+        elif usuario['role'] == config.ROL_SOPORTE:
+            return redirect(url_for('tickets.vista_tickets'))
         return redirect(url_for('panel.inicio'))
 
     return render_template('login.html', error=error, success=success)
