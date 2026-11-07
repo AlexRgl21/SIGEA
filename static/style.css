@@ -878,3 +878,16 @@ body.menu-abierto .btn-hamburguesa span:nth-child(3) { transform: translateY(-7p
     background-color: #f8f9fa;
     color: #00AEEF; /* Color azul del sistema SIGEA */
 }
+
+
+/* Badge estilo pastilla para Soporte */
+.badge-soporte {
+    background-color: #6f42c1;
+    color: #ffffff;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+    text-align: center;
+}
