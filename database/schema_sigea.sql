@@ -155,3 +155,37 @@ CREATE TABLE NotificacionesLeidas (
     CONSTRAINT FK_NotifLeidas_Reservas FOREIGN KEY (id_reserva) REFERENCES Reservas(id_reserva)
         ON DELETE CASCADE
 );
+
+
+-- ROL SOPORTE (id 5)
+IF NOT EXISTS (SELECT 1 FROM Roles WHERE id_rol = 5)
+BEGIN
+    SET IDENTITY_INSERT Roles ON;
+    INSERT INTO Roles (id_rol, nombre_rol) VALUES (5, 'Soporte');
+    SET IDENTITY_INSERT Roles OFF;
+END
+GO
+
+-- 14. TICKETS DE SOPORTE TÉCNICO
+CREATE TABLE Tickets (
+    id_ticket       INT IDENTITY(1,1) PRIMARY KEY,
+    id_usuario      INT NOT NULL,
+    asunto          VARCHAR(150)  NOT NULL,
+    categoria       VARCHAR(30)   NOT NULL,
+    descripcion     VARCHAR(2000) NOT NULL,
+    prioridad       VARCHAR(10)   NOT NULL DEFAULT 'Media',
+    estado          VARCHAR(20)   NOT NULL DEFAULT 'Abierto',
+    respuesta       VARCHAR(2000) NULL,
+    id_atendido_por INT NULL,
+    creado_en       DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    actualizado_en  DATETIME2 NULL,
+    resuelto_en     DATETIME2 NULL,
+    CONSTRAINT FK_Tickets_Usuario  FOREIGN KEY (id_usuario)      REFERENCES Usuarios(id_usuario),
+    CONSTRAINT FK_Tickets_Soporte  FOREIGN KEY (id_atendido_por) REFERENCES Usuarios(id_usuario),
+    CONSTRAINT CK_Tickets_Estado    CHECK (estado    IN ('Abierto', 'En proceso', 'Resuelto')),
+    CONSTRAINT CK_Tickets_Prioridad CHECK (prioridad IN ('Baja', 'Media', 'Alta'))
+);
+
+CREATE INDEX IX_Tickets_Estado  ON Tickets (estado, creado_en DESC);
+CREATE INDEX IX_Tickets_Usuario ON Tickets (id_usuario, creado_en DESC);
+GO
