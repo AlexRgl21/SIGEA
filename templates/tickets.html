@@ -1,0 +1,139 @@
+{% extends "layout.html" %}
+
+{% block title %}SIGEA | Soporte Técnico{% endblock %}
+
+{% block header_title %}Soporte Técnico{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='gestion.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='reservas.css') }}">
+{% endblock %}
+
+{% macro prio(p) -%}
+<span class="badge-prio prio-{{ p | lower }}">{{ p }}</span>
+{%- endmacro %}
+
+{% block content %}
+<section class="workspace">
+
+{% if es_soporte %}
+    {# ============ VISTA DE SOPORTE: TABLERO DE GESTIÓN ============ #}
+    <div class="section-header">
+        <h2>Tablero de Tickets</h2>
+        <div class="header-actions">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="buscador-tickets" placeholder="Buscar folio, usuario o asunto...">
+            </div>
+        </div>
+    </div>
+
+    <div class="kanban-board">
+        {% for titulo, icono, clase, lista, tarjeta in [
+            ('Abiertos', 'fa-circle-exclamation', 'abierto', abiertos, 't-abierto'),
+            ('En proceso', 'fa-gears', 'proceso', en_proceso, 't-proceso'),
+            ('Resueltos recientes', 'fa-check-circle', 'aprobada', resueltos, 't-resuelto')] %}
+        <div class="kanban-column">
+            <div class="column-header {{ clase }}">
+                <h3><i class="fas {{ icono }}"></i> {{ titulo }}</h3>
+                <span class="count-badge">{{ lista | length }}</span>
+            </div>
+            <div class="kanban-cards">
+                {% for t in lista %}
+                <div class="card {{ tarjeta }}">
+                    <div class="card-header">
+                        <span style="font-weight: bold; color: #555;">🎫 TCK-{{ '%04d' % t.id_ticket }}</span>
+                        {{ prio(t.prioridad) }}
+                    </div>
+                    <div class="card-title" style="font-size: 14px;">{{ t.asunto }}</div>
+                    <div class="card-details">
+                        <p><i class="fas fa-user"></i> {{ t.nombre }} {{ t.apellidos }}</p>
+                        <p><i class="fas fa-envelope"></i> {{ t.correo }}</p>
+                        <p><i class="fas fa-tag"></i> {{ t.categoria }}</p>
+                        <p><i class="fas fa-calendar-alt"></i> {{ t.creado_en.strftime('%d/%m/%Y %H:%M') }}</p>
+                    </div>
+                    <div class="ticket-desc">{{ t.descripcion }}</div>
+
+                    {% if t.respuesta %}
+                    <div class="ticket-resp"><strong>Respuesta{% if t.soporte_nombre %} ({{ t.soporte_nombre }}){% endif %}:</strong><br>{{ t.respuesta }}</div>
+                    {% endif %}
+
+                    <details class="ticket-gestion">
+                        <summary><i class="fas fa-pen-to-square"></i> Gestionar</summary>
+                        <form action="{{ url_for('tickets.gestionar_ticket', id=t.id_ticket) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <select name="estado" required>
+                                {% for e in estados %}
+                                <option value="{{ e }}" {% if e == t.estado %}selected{% endif %}>{{ e }}</option>
+                                {% endfor %}
+                            </select>
+                            <select name="prioridad" required title="Prioridad">
+                                {% for p in prioridades %}
+                                <option value="{{ p }}" {% if p == t.prioridad %}selected{% endif %}>Prioridad: {{ p }}</option>
+                                {% endfor %}
+                            </select>
+                            <textarea name="respuesta" maxlength="2000" placeholder="Respuesta para el usuario (obligatoria al resolver)">{{ t.respuesta or '' }}</textarea>
+                            <button type="submit" class="btn-save"><i class="fas fa-floppy-disk"></i> Guardar</button>
+                        </form>
+                    </details>
+                </div>
+                {% else %}
+                <p style="text-align: center; color: #888; font-size: 13px;">Sin tickets.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+{% else %}
+    {# ============ VISTA DEL USUARIO: SEGUIR SUS TICKETS ============ #}
+    <div class="section-header">
+        <h2>Mis Tickets</h2>
+        <div class="header-actions">
+            <button class="btn-add" id="btn-nuevo-ticket" type="button" onclick="document.getElementById('soporte-fab').click()">
+                <i class="fas fa-plus"></i> Nuevo Ticket
+            </button>
+        </div>
+    </div>
+
+    <div class="tabla-wrap">
+        <table class="tabla-tickets">
+            <thead>
+                <tr><th>Folio</th><th>Asunto</th><th>Categoría</th><th>Estado</th><th>Fecha</th><th>Respuesta de Soporte</th></tr>
+            </thead>
+            <tbody>
+                {% for t in mis_tickets %}
+                <tr>
+                    <td>TCK-{{ '%04d' % t.id_ticket }}</td>
+                    <td><strong>{{ t.asunto }}</strong><div class="ticket-desc">{{ t.descripcion }}</div></td>
+                    <td>{{ t.categoria }}</td>
+                    <td>{{ t.estado }}</td>
+                    <td>{{ t.creado_en.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>{% if t.respuesta %}<div class="ticket-desc">{{ t.respuesta }}</div>{% else %}<span style="color:#999;">Pendiente</span>{% endif %}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align:center; color:#888;">Aún no has enviado tickets.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var buscador = document.getElementById('buscador-tickets');
+    if (buscador) {
+        buscador.addEventListener('input', function () {
+            var q = buscador.value.toLowerCase();
+            document.querySelectorAll('.kanban-cards .card').forEach(function (c) {
+                c.style.display = c.innerText.toLowerCase().includes(q) ? '' : 'none';
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}
