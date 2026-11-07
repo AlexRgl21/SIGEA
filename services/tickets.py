@@ -2,6 +2,7 @@
 import logging
 
 import config
+from . import correo
 from .errores import ErrorNegocio
 
 logger = logging.getLogger(__name__)
@@ -72,20 +73,41 @@ def crear(conn, id_usuario, asunto, categoria, descripcion):
         # La prioridad la define Soporte: el ticket nace con la prioridad por defecto de la tabla (Media).
         cursor.execute("""
             INSERT INTO Tickets (id_usuario, asunto, categoria, descripcion)
+            OUTPUT INSERTED.id_ticket
             SELECT ?, ?, ?, ?
             WHERE (SELECT COUNT(*) FROM Tickets WHERE id_usuario = ? AND estado <> 'Resuelto') < ?
         """, (id_usuario, asunto, categoria, descripcion,
               id_usuario, config.TICKET_MAX_SIN_RESOLVER))
-        if cursor.rowcount == 0:
+        fila = cursor.fetchone()
+        if not fila:
             conn.rollback()
             raise ErrorNegocio(f"Ya tienes {config.TICKET_MAX_SIN_RESOLVER} tickets sin resolver. "
                                "Espera la respuesta de Soporte antes de abrir otro.")
+        id_ticket = fila[0]
         conn.commit()
     except ErrorNegocio:
         raise
     except Exception:
         conn.rollback()
         raise
+
+    _avisar_a_soporte(conn, id_ticket, id_usuario, asunto, categoria, descripcion)
+    return id_ticket
+
+
+def _avisar_a_soporte(conn, id_ticket, id_usuario, asunto, categoria, descripcion):
+    # El ticket ya está guardado: si el aviso falla, solo se registra y no se le muestra error al usuario.
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT correo FROM Usuarios WHERE id_rol = ? AND estado = 'Activo'",
+                       (config.ID_ROL_SOPORTE,))
+        correos = [f[0] for f in cursor.fetchall()]
+        cursor.execute("SELECT nombre, apellidos FROM Usuarios WHERE id_usuario = ?", (id_usuario,))
+        u = cursor.fetchone()
+        solicitante = f"{u[0]} {u[1]}" if u else "Usuario desconocido"
+        correo.notificar_nuevo_ticket(correos, id_ticket, asunto, categoria, solicitante, descripcion)
+    except Exception:
+        logger.exception("No se pudo avisar a Soporte del ticket %s", id_ticket)
 
 
 def gestionar(conn, id_ticket, id_soporte, estado, prioridad, respuesta):
