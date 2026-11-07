@@ -17,12 +17,23 @@ ROL_ADMIN = 'ADMIN'
 ROL_COORDINADOR = 'COORDINADOR'
 ROL_MAESTRO = 'MAESTRO'
 ROL_ALMACEN = 'ALMACEN'
+ROL_SOPORTE = 'SOPORTE'
 
-ROLES_POR_ID = {1: ROL_ADMIN, 2: ROL_COORDINADOR, 3: ROL_MAESTRO, 4: ROL_ALMACEN}   # id_rol (BD) -> rol de sesión
-NOMBRES_ROL = {1: 'Administrador', 2: 'Coordinador de Carrera', 3: 'Docente', 4: 'Almacén'}  # texto que ve el usuario
+ROLES_POR_ID = {1: ROL_ADMIN, 2: ROL_COORDINADOR, 3: ROL_MAESTRO, 4: ROL_ALMACEN, 5: ROL_SOPORTE}
+NOMBRES_ROL = {1: 'Administrador', 2: 'Coordinador de Carrera', 3: 'Docente', 4: 'Almacén', 5: 'Soporte'}
 ID_ROL_MAESTRO = 3
+ID_ROL_SOPORTE = 5
 ROLES_ADMINISTRATIVOS = (ROL_ADMIN, ROL_COORDINADOR)
 TODOS_LOS_ROLES = (ROL_ADMIN, ROL_COORDINADOR, ROL_MAESTRO, ROL_ALMACEN)
+
+
+# TICKETS CATEGORIAS
+TICKET_CATEGORIAS = ('Error del sistema', 'Asignación de horarios', 'Reservas', 'Acceso o contraseña', 'Otro')
+TICKET_PRIORIDADES = ('Baja', 'Media', 'Alta')
+TICKET_ESTADOS = ('Abierto', 'En proceso', 'Resuelto')
+TICKET_MAX_SIN_RESOLVER = 5     #Tickets sin resolver del mismo usuario
+TICKET_MAX_RESUELTOS_VISTA = 50 #tickets resueltos en el tablero
+
 
 # COLORES
 COLORES_CARRERA = {
