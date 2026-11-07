@@ -21,6 +21,7 @@ from routes.asignaciones import asignaciones_bp
 from routes.reservas import reservas_bp
 from routes.notificaciones import notificaciones_bp
 from services import notificaciones, periodos
+from routes.tickets import tickets_bp
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ def create_app():
     conexion.init_app(app)          # cierra la conexión de la petición al terminar
 
     for bp in (auth_bp, panel_bp, usuarios_bp, gestion_bp,
-            asignaciones_bp, reservas_bp, notificaciones_bp):
+            asignaciones_bp, reservas_bp, notificaciones_bp, tickets_bp):
         app.register_blueprint(bp)
 
     # VENCIMIENTO DE PERIODOS: inactiva los periodos pasados de fecha y borra sus asignaciones
@@ -59,6 +60,7 @@ def create_app():
             'sesion_total_seg': config.SESION_MINUTOS * 60,
             'sesion_aviso_seg': config.SESION_AVISO_SEG,
             'sesion_ping_seg': config.SESION_PING_SEG,
+            'ticket_categorias': config.TICKET_CATEGORIAS,
         }
         if 'id_usuario' in session and 'role' in session:
             if not hasattr(g, 'notis_cache'):          # una sola consulta por petición
