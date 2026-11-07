@@ -100,6 +100,20 @@ def notificar_nueva_reserva(correos_admins, fecha):
                 "Ingresa a SIGEA para revisarla.")
 
 
+def notificar_nuevo_ticket(correos_soporte, id_ticket, asunto, categoria, solicitante, descripcion):
+    # Aviso al equipo de Soporte. El asunto del correo solo lleva el folio (nada escrito por el usuario).
+    resumen = descripcion if len(descripcion) <= 300 else descripcion[:300].rstrip() + '...'
+    enviar_correo(correos_soporte, f"SIGEA - Nuevo ticket de soporte TCK-{id_ticket:04d}",
+                f"Se ha registrado un nuevo ticket de soporte técnico.\n\n"
+                f"Folio: TCK-{id_ticket:04d}\n"
+                f"Solicitante: {solicitante}\n"
+                f"Categoría: {categoria}\n"
+                f"Asunto: {asunto}\n\n"
+                f"Descripción:\n{resumen}\n\n"
+                "Ingresa a SIGEA (Soporte Técnico) para atenderlo.\n\n"
+                "Saludos,\nEl equipo de SIGEA.")
+
+
 def notificar_reserva_aprobada(correo, nombre, espacio, fecha, hora_inicio, hora_fin):
     enviar_correo(correo, "SIGEA - Tu reserva ha sido Aprobada",
                 f"Hola {nombre},\n\nTu solicitud para el espacio '{espacio}' el día {fecha} "
