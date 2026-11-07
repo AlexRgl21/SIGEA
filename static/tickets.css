@@ -1,0 +1,84 @@
+/* Soporte Técnico */
+.ticket-form textarea {
+    width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;
+    font-size: 14px; resize: vertical; min-height: 110px;
+}
+.ticket-form textarea:focus { outline: none; border-color: #00AEEF; }
+
+.column-header.abierto h3 i { color: #dc3545; }
+.column-header.abierto { border-bottom-color: #dc3545; }
+.column-header.proceso h3 i { color: #00AEEF; }
+.column-header.proceso { border-bottom-color: #00AEEF; }
+
+.card.t-abierto { border-left-color: #dc3545; }
+.card.t-proceso { border-left-color: #00AEEF; }
+.card.t-resuelto { border-left-color: var(--verde-claro); }
+
+.badge-prio { padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+.prio-alta  { background: #f8d7da; color: #842029; }
+.prio-media { background: #fff3cd; color: #856404; }
+.prio-baja  { background: #e8f5e9; color: #2e7d32; }
+
+.ticket-desc { font-size: 13px; color: var(--texto-gris); white-space: pre-wrap; margin: 8px 0; }
+.ticket-resp {
+    font-size: 13px; background: #f0f9ff; border-left: 3px solid #00AEEF;
+    padding: 8px 10px; border-radius: 4px; margin-top: 10px; white-space: pre-wrap;
+}
+.ticket-gestion summary { cursor: pointer; font-size: 13px; font-weight: bold; color: #007A78; margin-top: 10px; }
+.ticket-gestion form { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.ticket-gestion select, .ticket-gestion textarea {
+    width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;
+}
+.ticket-gestion textarea { min-height: 80px; resize: vertical; }
+
+.tabla-tickets { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: var(--sombra-card); }
+.tabla-tickets th, .tabla-tickets td { padding: 12px 14px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--gris-bordes); vertical-align: top; }
+.tabla-tickets th { background: var(--gris-fondo); color: var(--texto-gris); }
+.tabla-wrap { overflow-x: auto; }
+
+/* Botón flotante y ventana de reporte (todas las páginas, excepto para Soporte) */
+.soporte-fab {
+    position: fixed; right: 24px; bottom: 72px; z-index: 900;
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border: none; border-radius: 999px;
+    background: #007A78; color: #fff; font-size: 13px; font-weight: bold;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+.soporte-fab:hover { background: #006866; transform: translateY(-2px); }
+
+.soporte-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1200;
+    background: rgba(0, 0, 0, 0.45); align-items: center; justify-content: center; padding: 16px;
+}
+.soporte-overlay.is-open { display: flex; }
+
+.soporte-modal {
+    width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto;
+    background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.soporte-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #007A78; }
+.soporte-head h3 { margin: 0; font-size: 16px; color: var(--texto-claro); }
+.soporte-cerrar { background: none; border: none; font-size: 24px; line-height: 1; color: #888; cursor: pointer; }
+.soporte-cerrar:hover { color: #333; }
+
+.soporte-modal label { display: block; margin: 10px 0 4px; font-size: 12px; font-weight: bold; color: #666; }
+.soporte-modal input, .soporte-modal select, .soporte-modal textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;
+}
+.soporte-modal textarea { resize: vertical; min-height: 90px; }
+.soporte-modal input:focus, .soporte-modal select:focus, .soporte-modal textarea:focus { outline: none; border-color: #00AEEF; }
+
+.soporte-acciones { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+.soporte-link { font-size: 12px; color: #007A78; text-decoration: none; }
+.soporte-link:hover { text-decoration: underline; }
+.soporte-enviar {
+    display: flex; align-items: center; gap: 8px; padding: 9px 18px; border: none; border-radius: 6px;
+    background: #00AEEF; color: #fff; font-weight: bold; cursor: pointer;
+}
+.soporte-enviar:hover { background: #0095CC; }
+
+@media (max-width: 600px) {
+    .soporte-fab span { display: none; }
+    .soporte-fab { padding: 14px; right: 16px; }
+}
