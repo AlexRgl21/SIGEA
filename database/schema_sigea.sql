@@ -16,7 +16,8 @@ CREATE TABLE Usuarios (
     CONSTRAINT FK_Usuarios_Roles
     FOREIGN KEY (id_rol) REFERENCES Roles(id_rol),
     CONSTRAINT CK_Usuarios_CorreoInstitucional 
-    CHECK (correo LIKE '%_upsrj.edu.mx' AND NOT correo LIKE '%@%@')
+    CHECK ((correo LIKE '%_upsrj.edu.mx' OR (id_rol = 5 AND correo LIKE '%_@gmail.com'))
+        AND NOT correo LIKE '%@%@')
 );
 
 -- 3. EDIFICIOS
