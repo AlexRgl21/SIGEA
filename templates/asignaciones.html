@@ -10,10 +10,15 @@
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- Scripts para exportar a Excel y PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 {% endblock %}
 
 {% block custom_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='asignaciones.css') }}">
+<!-- Forzamos la actualización de caché con ?v=3 -->
+<link rel="stylesheet" href="{{ url_for('static', filename='asignaciones.css') }}?v=3">
 {% endblock %}
 
 {% block content %}
@@ -41,6 +46,17 @@
                                 <option value="{{ esp.id_espacio }}" data-edificio="{{ esp.id_edificio }}">{{ esp.nombre }}</option>
                                 {% endfor %}
                             </select>
+                            
+                            <!-- BOTÓN DE EXPORTAR HORARIOS EN EL CALENDARIO -->
+                            <div class="adastra-dropdown" style="margin-left: 10px;">
+                                <button type="button" class="btn-toggle-form" style="background-color: #28a745;">
+                                    <i class="fas fa-file-export"></i> Reportes
+                                </button>
+                                <div class="adastra-menu">
+                                    <a href="#" onclick="exportarExcelHorarios(); return false;"><i class="fas fa-file-excel" style="color: #28a745; margin-right: 5px;"></i> Generar Excel</a>
+                                    <a href="#" style="border-top: 1px solid #eee;" onclick="exportarPDFHorarios(); return false;"><i class="fas fa-file-pdf" style="color: #dc3545; margin-right: 5px;"></i> Generar PDF</a>
+                                </div>
+                            </div>
 
                             {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                             <button class="btn-toggle-form" onclick="toggleFormularioAsignacion()">+ Nueva Asignación</button>
@@ -164,6 +180,17 @@
                         <h3 class="section-title" style="margin: 0; border: none; padding: 0;">Grupos Registrados</h3>
                         
                         <div style="display: flex; gap: 10px; align-items: center;">
+                            <!-- BOTÓN DE EXPORTAR GRUPOS (EN LA TABLA DE GRUPOS) -->
+                            <div class="adastra-dropdown">
+                                <button type="button" class="btn-submit" style="background-color: #28a745; margin: 0; padding: 8px 15px; border: none; border-radius: 5px; color: white; cursor: pointer; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 8px; height: 38px;">
+                                    <i class="fas fa-file-export"></i> Reportes
+                                </button>
+                                <div class="adastra-menu">
+                                    <a href="#" onclick="exportarExcelGrupos(); return false;"><i class="fas fa-file-excel" style="color: #28a745; margin-right: 5px;"></i> Generar Excel</a>
+                                    <a href="#" style="border-top: 1px solid #eee;" onclick="exportarPDFGrupos(); return false;"><i class="fas fa-file-pdf" style="color: #dc3545; margin-right: 5px;"></i> Generar PDF</a>
+                                </div>
+                            </div>
+
                             {% if session.get('role') in ['ADMIN', 'COORDINADOR'] %}
                             <button type="button" id="btn-toggle-grupo" class="btn-submit" style="padding: 8px 15px; margin: 0; font-size: 14px; background-color: #00AEEF; cursor: pointer; border: none; border-radius: 5px; color: white; height: 38px;">+ Nuevo Grupo</button>
                             {% endif %}
@@ -726,5 +753,432 @@
         }
         calcularFin();
     })();
+
+    // =========================================================================
+    // FUNCIONES AUXILIARES CON AGRUPACIÓN INTELIGENTE DE DÍAS
+    // =========================================================================
+    function obtenerDatosHorariosProcesados() {
+        const espaciosMap = {};
+        document.querySelectorAll('#filtro-espacio option').forEach(opt => {
+            if (opt.value !== 'todos' && opt.value !== '') {
+                const idEdificio = opt.getAttribute('data-edificio');
+                const edifOpt = document.querySelector(`#filtro-edificio option[value="${idEdificio}"]`);
+                espaciosMap[opt.value] = { 
+                    nombre: opt.textContent.trim(), 
+                    edificio: edifOpt ? edifOpt.textContent.trim() : 'N/A',
+                    id_edificio: idEdificio
+                };
+            }
+        });
+
+        const diasSemana = {1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado'};
+        const idEdificioSel = document.getElementById('filtro-edificio').value;
+        const idEspacioSel = document.getElementById('filtro-espacio').value;
+
+        let subtituloFiltro = "Todos los Edificios y Salones";
+        if (idEdificioSel !== 'todos') {
+            const nombreEd = document.querySelector(`#filtro-edificio option[value="${idEdificioSel}"]`)?.textContent.trim() || '';
+            if (idEspacioSel !== 'todos' && idEspacioSel !== '') {
+                const nombreEsp = espaciosMap[idEspacioSel]?.nombre || '';
+                subtituloFiltro = `Edificio: ${nombreEd}  |  Salón: ${nombreEsp}`;
+            } else {
+                subtituloFiltro = `Edificio: ${nombreEd} (Todos los salones)`;
+            }
+        }
+
+        let eventosFiltrados = todosLosEventos.filter(evento => {
+            const idEsp = evento.extendedProps ? evento.extendedProps.id_espacio : (evento.id_espacio || '');
+            const infoEsp = espaciosMap[idEsp];
+            if (!infoEsp) return false;
+
+            if (idEspacioSel !== 'todos' && idEspacioSel !== '') return idEsp == idEspacioSel;
+            if (idEdificioSel !== 'todos') return infoEsp.id_edificio == idEdificioSel;
+            return true;
+        });
+
+        const formatearHora = (h) => h ? h.substring(0, 5) : '';
+        const agrupadosMap = new Map();
+
+        eventosFiltrados.forEach(evento => {
+            const idEsp = evento.extendedProps ? evento.extendedProps.id_espacio : (evento.id_espacio || '');
+            const infoEsp = espaciosMap[idEsp] || { nombre: 'N/A', edificio: 'N/A' };
+            
+            let grupo = (evento.title || 'Asignación').trim();
+            let startT = formatearHora(evento.startTime || (evento.extendedProps ? evento.extendedProps.startTime : ''));
+            let endT = formatearHora(evento.endTime || (evento.extendedProps ? evento.extendedProps.endTime : ''));
+            
+            const clave = `${infoEsp.edificio}|${infoEsp.nombre}|${grupo}|${startT}|${endT}`;
+            
+            if (!agrupadosMap.has(clave)) {
+                agrupadosMap.set(clave, {
+                    grupo: grupo,
+                    edificio: infoEsp.edificio,
+                    salon: infoEsp.nombre,
+                    diasSet: new Set(),
+                    inicio: startT,
+                    fin: endT,
+                    horario: `${startT} - ${endT}`
+                });
+            }
+
+            const registro = agrupadosMap.get(clave);
+            if (Array.isArray(evento.daysOfWeek)) {
+                evento.daysOfWeek.forEach(d => registro.diasSet.add(Number(d)));
+            }
+        });
+
+        let filas = Array.from(agrupadosMap.values()).map(item => {
+            let diasOrdenados = Array.from(item.diasSet).sort((a, b) => a - b);
+            let diasTexto = diasOrdenados.length > 0 
+                ? diasOrdenados.map(d => diasSemana[d] || d).join(', ') 
+                : 'Sin asignar';
+
+            return {
+                grupo: item.grupo,
+                edificio: item.edificio,
+                salon: item.salon,
+                dias: diasTexto,
+                inicio: item.inicio,
+                fin: item.fin,
+                horario: item.horario
+            };
+        });
+
+        filas.sort((a, b) => 
+            a.edificio.localeCompare(b.edificio) || 
+            a.salon.localeCompare(b.salon) || 
+            a.inicio.localeCompare(b.inicio) || 
+            a.grupo.localeCompare(b.grupo)
+        );
+
+        return { filas, subtituloFiltro };
+    }
+
+    // =========================================================================
+    // 1. EXPORTACIÓN EXCLUSIVA DE HORARIOS (EXCEL Y PDF ESTÉTICO)
+    // =========================================================================
+    function exportarExcelHorarios() {
+        const { filas, subtituloFiltro } = obtenerDatosHorariosProcesados();
+
+        if (filas.length === 0) {
+            Swal.fire({
+                title: 'Sin horarios para exportar',
+                text: 'No hay asignaciones registradas para el filtro seleccionado.',
+                icon: 'info',
+                confirmButtonColor: '#00AEEF'
+            });
+            return;
+        }
+
+        const workbook = XLSX.utils.book_new();
+        const horariosData = [
+            ["SISTEMA INTEGRAL DE GESTIÓN DE ESPACIOS ACADÉMICOS (SIGEA)"],
+            ["REPORTE EJECUTIVO DE HORARIOS ASIGNADOS"],
+            [`Filtro aplicado: ${subtituloFiltro}   |   Fecha de emisión: ${new Date().toLocaleDateString('es-MX')}`],
+            [],
+            ["#", "EDIFICIO", "SALÓN / ESPACIO", "GRUPO ASIGNADO", "DÍAS DE CLASE", "HORA INICIO", "HORA FIN"]
+        ];
+
+        filas.forEach((f, idx) => {
+            horariosData.push([
+                idx + 1,
+                f.edificio,
+                f.salon,
+                f.grupo,
+                f.dias,
+                f.inicio,
+                f.fin
+            ]);
+        });
+
+        const wsHorarios = XLSX.utils.aoa_to_sheet(horariosData);
+        wsHorarios['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } },
+            { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } }
+        ];
+        wsHorarios['!cols'] = [
+            { wch: 6 },  // #
+            { wch: 24 }, // Edificio
+            { wch: 22 }, // Salón
+            { wch: 22 }, // Grupo
+            { wch: 36 }, // Días
+            { wch: 14 }, // Inicio
+            { wch: 14 }  // Fin
+        ];
+
+        let rango = XLSX.utils.decode_range(wsHorarios['!ref']);
+        if (rango.e.r >= 4) {
+            rango.s.r = 4;
+            wsHorarios['!autofilter'] = { ref: XLSX.utils.encode_range(rango) };
+        }
+
+        XLSX.utils.book_append_sheet(workbook, wsHorarios, "Horarios Asignados");
+        XLSX.writeFile(workbook, "Reporte_Horarios_SIGEA.xlsx");
+    }
+
+    function exportarPDFHorarios() {
+        const { filas, subtituloFiltro } = obtenerDatosHorariosProcesados();
+
+        if (filas.length === 0) {
+            Swal.fire({
+                title: 'Sin horarios para exportar',
+                text: 'No hay asignaciones registradas para el filtro seleccionado.',
+                icon: 'info',
+                confirmButtonColor: '#00AEEF'
+            });
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        doc.setFillColor(0, 122, 120); // #007A78
+        doc.rect(0, 0, pageWidth, 26, 'F');
+        doc.setFillColor(0, 174, 239); // #00AEEF
+        doc.rect(0, 26, pageWidth, 2, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(15);
+        doc.text("SISTEMA INTEGRAL DE GESTIÓN DE ESPACIOS ACADÉMICOS (SIGEA)", 14, 12);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.text("Reporte Ejecutivo de Horarios y Ocupación Semanal de Espacios", 14, 20);
+
+        const fechaActual = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+        doc.setTextColor(70, 70, 70);
+        doc.setFontSize(9.5);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Alcance: `, 14, 35);
+        doc.setFont("helvetica", "normal");
+        doc.text(subtituloFiltro, 30, 35);
+
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total de bloques: `, 140, 35);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${filas.length} registros`, 170, 35);
+
+        doc.text(`Fecha de emisión: ${fechaActual}`, pageWidth - 14, 35, { align: 'right' });
+
+        const bodyData = filas.map((f, index) => [
+            index + 1,
+            f.edificio,
+            f.salon,
+            f.grupo,
+            f.dias,
+            f.horario
+        ]);
+
+        doc.autoTable({
+            startY: 40,
+            head: [['#', 'EDIFICIO', 'SALÓN / ESPACIO', 'GRUPO', 'DÍAS DE IMPARTICIÓN', 'HORARIO']],
+            body: bodyData,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [0, 122, 120],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                halign: 'center',
+                valign: 'middle',
+                fontSize: 9.5,
+                cellPadding: 4
+            },
+            bodyStyles: {
+                textColor: [45, 45, 45],
+                fontSize: 9,
+                valign: 'middle',
+                cellPadding: 3.5,
+                lineColor: [225, 230, 235],
+                lineWidth: 0.2
+            },
+            alternateRowStyles: {
+                fillColor: [244, 249, 252]
+            },
+            columnStyles: {
+                0: { halign: 'center', cellWidth: 12, fontStyle: 'bold', textColor: [110, 110, 110] },
+                1: { cellWidth: 50 },
+                2: { cellWidth: 42, fontStyle: 'bold' },
+                3: { halign: 'center', cellWidth: 38, fontStyle: 'bold', textColor: [0, 105, 160] },
+                4: { cellWidth: 'auto' },
+                5: { halign: 'center', cellWidth: 36, fontStyle: 'bold', fillColor: [238, 246, 250] }
+            },
+            margin: { left: 14, right: 14, bottom: 18 },
+            didDrawPage: function () {
+                doc.setDrawColor(210, 210, 210);
+                doc.setLineWidth(0.3);
+                doc.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
+            }
+        });
+
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8.5);
+            doc.setTextColor(130, 130, 130);
+            doc.setFont("helvetica", "normal");
+            doc.text("Documento generado automáticamente por SIGEA - ADastra", 14, pageHeight - 7);
+            doc.text(`Página ${i} de ${totalPages}`, pageWidth - 14, pageHeight - 7, { align: 'right' });
+        }
+
+        doc.save("Reporte_Horarios_SIGEA.pdf");
+    }
+
+    // =========================================================================
+    // 2. EXPORTACIÓN EXCLUSIVA DE GRUPOS (EXCEL Y PDF ESTÉTICO)
+    // =========================================================================
+    function exportarExcelGrupos() {
+        const filasTabla = [];
+        document.querySelectorAll("#vista-grupos .grupos-table tbody tr").forEach(fila => {
+            if (fila.cells.length > 1) {
+                filasTabla.push([
+                    fila.cells[0].textContent.trim(),
+                    fila.cells[1].textContent.trim(),
+                    fila.cells[2].textContent.trim().replace(/\s+/g, ' ')
+                ]);
+            }
+        });
+
+        if (filasTabla.length === 0) {
+            Swal.fire({
+                title: 'Sin grupos',
+                text: 'No hay grupos registrados en la tabla para exportar.',
+                icon: 'info',
+                confirmButtonColor: '#00AEEF'
+            });
+            return;
+        }
+
+        const workbook = XLSX.utils.book_new();
+        const gruposData = [
+            ["SISTEMA INTEGRAL DE GESTIÓN DE ESPACIOS ACADÉMICOS (SIGEA)"],
+            ["CATÁLOGO INSTITUCIONAL DE GRUPOS REGISTRADOS"],
+            ["Fecha de generación: " + new Date().toLocaleDateString('es-MX')],
+            [],
+            ["#", "NOMBRE DEL GRUPO", "CARRERA", "GENERACIÓN"]
+        ];
+
+        filasTabla.forEach((g, idx) => {
+            gruposData.push([idx + 1, g[0], g[1], g[2]]);
+        });
+
+        const wsGrupos = XLSX.utils.aoa_to_sheet(gruposData);
+        wsGrupos['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+            { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } }
+        ];
+        wsGrupos['!cols'] = [{ wch: 6 }, { wch: 25 }, { wch: 20 }, { wch: 22 }];
+
+        let rangoGrupos = XLSX.utils.decode_range(wsGrupos['!ref']);
+        if (rangoGrupos.e.r >= 4) {
+            rangoGrupos.s.r = 4;
+            wsGrupos['!autofilter'] = { ref: XLSX.utils.encode_range(rangoGrupos) };
+        }
+
+        XLSX.utils.book_append_sheet(workbook, wsGrupos, "Catálogo de Grupos");
+        XLSX.writeFile(workbook, "Reporte_Grupos_SIGEA.xlsx");
+    }
+
+    function exportarPDFGrupos() {
+        const filasGrupos = [];
+        document.querySelectorAll("#vista-grupos .grupos-table tbody tr").forEach((fila, idx) => {
+            if (fila.cells.length > 1) {
+                filasGrupos.push([
+                    idx + 1,
+                    fila.cells[0].textContent.trim(),
+                    fila.cells[1].textContent.trim(),
+                    fila.cells[2].textContent.trim().replace(/\s+/g, ' ')
+                ]);
+            }
+        });
+
+        if (filasGrupos.length === 0) {
+            Swal.fire({
+                title: 'Sin grupos',
+                text: 'No hay grupos registrados para exportar.',
+                icon: 'info',
+                confirmButtonColor: '#00AEEF'
+            });
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        doc.setFillColor(0, 122, 120); // #007A78
+        doc.rect(0, 0, pageWidth, 26, 'F');
+        doc.setFillColor(0, 174, 239); // #00AEEF
+        doc.rect(0, 26, pageWidth, 2, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13.5);
+        doc.text("SISTEMA INTEGRAL DE GESTIÓN DE ESPACIOS ACADÉMICOS (SIGEA)", 14, 12);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10.5);
+        doc.text("Reporte Institucional: Catálogo Oficial de Grupos Académicos", 14, 20);
+
+        const fechaActual = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+        doc.setTextColor(70, 70, 70);
+        doc.setFontSize(9.5);
+        doc.text(`Total de grupos registrados: ${filasGrupos.length}`, 14, 35);
+        doc.text(`Fecha de emisión: ${fechaActual}`, pageWidth - 14, 35, { align: 'right' });
+
+        doc.autoTable({
+            startY: 40,
+            head: [['#', 'NOMBRE DEL GRUPO', 'CARRERA', 'GENERACIÓN']],
+            body: filasGrupos,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [0, 122, 120],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                halign: 'center',
+                fontSize: 9.5,
+                cellPadding: 4
+            },
+            bodyStyles: {
+                textColor: [45, 45, 45],
+                fontSize: 9,
+                valign: 'middle',
+                cellPadding: 3.5,
+                lineColor: [225, 230, 235],
+                lineWidth: 0.2
+            },
+            alternateRowStyles: {
+                fillColor: [244, 249, 252]
+            },
+            columnStyles: {
+                0: { halign: 'center', cellWidth: 14, fontStyle: 'bold', textColor: [110, 110, 110] },
+                1: { fontStyle: 'bold', textColor: [0, 105, 160] },
+                2: { halign: 'center' },
+                3: { halign: 'center' }
+            },
+            margin: { left: 14, right: 14, bottom: 18 },
+            didDrawPage: function () {
+                doc.setDrawColor(210, 210, 210);
+                doc.setLineWidth(0.3);
+                doc.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
+            }
+        });
+
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8.5);
+            doc.setTextColor(130, 130, 130);
+            doc.text("Documento generado automáticamente por SIGEA - ADastra", 14, pageHeight - 7);
+            doc.text(`Página ${i} de ${totalPages}`, pageWidth - 14, pageHeight - 7, { align: 'right' });
+        }
+
+        doc.save("Reporte_Grupos_SIGEA.pdf");
+    }
 </script>
 {% endblock %}

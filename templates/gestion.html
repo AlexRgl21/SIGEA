@@ -4,8 +4,16 @@
 
 {% block header_title %}Gestión de Infraestructura{% endblock %}
 
+{% block custom_head %}
+<!-- Scripts para exportar a Excel y PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+{% endblock %}
+
 {% block custom_css %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='gestion.css') }}">
+    <!-- Forzamos la actualización de caché con ?v=3 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='gestion.css') }}?v=3">
 {% endblock %}
 
 {% block content %}
@@ -96,6 +104,17 @@
             <div class="section-header">
                 <h2>Aulas Registradas</h2>
                 <div class="header-actions">
+                    <!-- BOTÓN DE EXPORTAR ADastra (Conectado al CSS original) -->
+                    <div class="adastra-dropdown">
+                        <button type="button" class="btn-add" style="background-color: #28a745; margin-right: 10px;">
+                            <i class="fas fa-file-export"></i> Reportes
+                        </button>
+                        <div class="adastra-menu">
+                            <a href="#" onclick="exportarExcel(); return false;"><i class="fas fa-file-excel" style="color: #28a745;"></i> Generar Excel</a>
+                            <a href="#" onclick="exportarPDF(); return false;"><i class="fas fa-file-pdf" style="color: #dc3545;"></i> Generar PDF</a>
+                        </div>
+                    </div>
+
                     <div class="search-box">
                         <i class="fas fa-search"></i>
                         <input type="text" placeholder="Buscar aula...">
@@ -359,6 +378,13 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Datos en formato JSON para poderlos exportar completos sin importar la paginación -->
+<script type="application/json" id="aulas-data">
+    {{ aulas | tojson | safe }}
+</script>
+<script type="application/json" id="edificios-data">
+    {{ edificios | tojson | safe }}
+</script>
 <script>
     const btnToggleAulas = document.getElementById('btn-toggle-form');
     const panelAulas = document.getElementById('panel-nuevo-espacio');
@@ -466,6 +492,160 @@ const inputBusqueda = document.querySelector('.search-box input');
                 filtrarAulas();
             }
         });
+    }
+
+    // ==========================================
+    // EXPORTACIÓN A EXCEL (INFRAESTRUCTURA)
+    // ==========================================
+    function exportarExcel() {
+        const dataAulasJSON = document.getElementById('aulas-data');
+        const dataEdificiosJSON = document.getElementById('edificios-data');
+        if (!dataAulasJSON || !dataEdificiosJSON) {
+            alert("No hay datos disponibles para exportar.");
+            return;
+        }
+
+        const aulasFull = JSON.parse(dataAulasJSON.textContent);
+        const edificiosFull = JSON.parse(dataEdificiosJSON.textContent);
+
+        const workbook = XLSX.utils.book_new();
+
+        // 1. Hoja de Aulas (Usando todos los datos, sin importar paginación)
+        const aulasExcelData = [
+            ["SISTEMA INTEGRAL DE GESTIÓN DE ESPACIOS ACADÉMICOS (SIGEA)"],
+            ["Reporte de Aulas y Espacios"],
+            ["Fecha de generación: " + new Date().toLocaleDateString()],
+            [],
+            ["ID", "NOMBRE/SALÓN", "CAPACIDAD", "TIPO", "ESTATUS", "EDIFICIO"]
+        ];
+
+        aulasFull.forEach(aula => {
+            aulasExcelData.push([
+                aula[0], // ID Espacio
+                aula[1], // Nombre
+                aula[2], // Capacidad
+                aula[3], // Tipo
+                aula[4], // Estatus
+                aula[5]  // Edificio
+            ]);
+        });
+
+        const wsAulas = XLSX.utils.aoa_to_sheet(aulasExcelData);
+        wsAulas['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
+            { s: { r: 2, c: 0 }, e: { r: 2, c: 5 } }
+        ];
+        wsAulas['!cols'] = [{wch: 5}, {wch: 25}, {wch: 15}, {wch: 20}, {wch: 15}, {wch: 25}];
+        
+        let rangoAulas = XLSX.utils.decode_range(wsAulas['!ref']);
+        if(rangoAulas.e.r >= 4) {
+            rangoAulas.s.r = 4; // Fila de encabezados
+            wsAulas['!autofilter'] = { ref: XLSX.utils.encode_range(rangoAulas) };
+        }
+        XLSX.utils.book_append_sheet(workbook, wsAulas, "Aulas");
+
+        // 2. Hoja de Edificios
+        const edificiosExcelData = [
+            ["SISTEMA INTEGRAL DE GESTIÓN DE ESPACIOS ACADÉMICOS (SIGEA)"],
+            ["Reporte de Edificios Registrados"],
+            ["Fecha de generación: " + new Date().toLocaleDateString()],
+            [],
+            ["ID", "NOMBRE DEL EDIFICIO", "CÓDIGO", "ESTATUS"]
+        ];
+
+        edificiosFull.forEach(ed => {
+            edificiosExcelData.push([ ed[0], ed[1], ed[2], ed[3] ]);
+        });
+
+        const wsEdificios = XLSX.utils.aoa_to_sheet(edificiosExcelData);
+        wsEdificios['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+            { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } }
+        ];
+        wsEdificios['!cols'] = [{wch: 5}, {wch: 35}, {wch: 15}, {wch: 15}];
+        
+        let rangoEdificios = XLSX.utils.decode_range(wsEdificios['!ref']);
+        if(rangoEdificios.e.r >= 4) {
+            rangoEdificios.s.r = 4;
+            wsEdificios['!autofilter'] = { ref: XLSX.utils.encode_range(rangoEdificios) };
+        }
+        XLSX.utils.book_append_sheet(workbook, wsEdificios, "Edificios");
+
+        XLSX.writeFile(workbook, "Reporte_Infraestructura_SIGEA.xlsx");
+    }
+
+    // ==========================================
+    // EXPORTACIÓN A PDF (INFRAESTRUCTURA)
+    // ==========================================
+    function exportarPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        const dataAulasJSON = document.getElementById('aulas-data');
+        const dataEdificiosJSON = document.getElementById('edificios-data');
+        
+        if (!dataAulasJSON || !dataEdificiosJSON) return;
+
+        const aulasFull = JSON.parse(dataAulasJSON.textContent);
+        const edificiosFull = JSON.parse(dataEdificiosJSON.textContent);
+
+        // Encabezado institucional
+        doc.setFontSize(16);
+        doc.setTextColor(40, 40, 40);
+        doc.text("SISTEMA INTEGRAL DE GESTIÓN DE ESPACIOS ACADÉMICOS (SIGEA)", 14, 20);
+        
+        doc.setFontSize(12);
+        doc.setTextColor(100, 100, 100);
+        doc.text("Reporte Institucional: Infraestructura (Aulas y Edificios)", 14, 28);
+        doc.text("Fecha: " + new Date().toLocaleDateString(), 14, 34);
+
+        let finalY = 45;
+
+        // Tabla 1: Edificios (Menos datos, la ponemos primero)
+        if (edificiosFull.length > 0) {
+            doc.setFontSize(14);
+            doc.setTextColor(40, 167, 69); // Verde
+            doc.text("Catálogo de Edificios", 14, finalY);
+            
+            const filasEdificios = edificiosFull.map(ed => [ed[1], ed[2], ed[3]]);
+            
+            doc.autoTable({
+                startY: finalY + 4,
+                head: [['NOMBRE DEL EDIFICIO', 'CÓDIGO', 'ESTATUS']],
+                body: filasEdificios,
+                theme: 'striped',
+                headStyles: { fillColor: [40, 167, 69] },
+                styles: { fontSize: 10 }
+            });
+            finalY = doc.lastAutoTable.finalY + 15;
+        }
+
+        // Tabla 2: Aulas
+        if (aulasFull.length > 0) {
+            if (finalY > 230) {
+                doc.addPage();
+                finalY = 20;
+            }
+            
+            doc.setFontSize(14);
+            doc.setTextColor(0, 174, 239); // Azul SIGEA
+            doc.text("Catálogo de Aulas y Espacios", 14, finalY);
+
+            const filasAulas = aulasFull.map(aula => [aula[1], aula[5], aula[2], aula[3], aula[4]]);
+
+            doc.autoTable({
+                startY: finalY + 4,
+                head: [['SALÓN', 'EDIFICIO', 'CAP.', 'TIPO', 'ESTATUS']],
+                body: filasAulas,
+                theme: 'striped',
+                headStyles: { fillColor: [0, 174, 239] },
+                styles: { fontSize: 10 }
+            });
+        }
+
+        doc.save("Reporte_Infraestructura_SIGEA.pdf");
     }
 </script>
 {% endblock %}

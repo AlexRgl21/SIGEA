@@ -4,8 +4,16 @@
 
 {% block header_title %}Gestión de Usuarios del Sistema{% endblock %}
 
+{% block custom_head %}
+<!-- Scripts para exportar a Excel y PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+{% endblock %}
+
 {% block custom_css %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='usuarios.css') }}">
+    <!-- Añadido un parámetro v=1 para la caché, si lo necesitas -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='usuarios.css') }}?v=1">
 {% endblock %}
 
 {% block content %}
@@ -29,9 +37,20 @@
             <option value="Inactivo">Inactivos</option>
         </select>
         
+        <!-- BOTÓN DE EXPORTAR ADastra (Conectado a asignaciones.css o estilos globales) -->
+        <div class="adastra-dropdown" style="display: inline-block; margin-right: 10px;">
+            <button type="button" class="btn-primary" style="background-color: #28a745;">
+                <i class="fas fa-file-export"></i> Reportes
+            </button>
+            <div class="adastra-menu">
+                <a href="#" onclick="exportarExcelUsuarios(); return false;"><i class="fas fa-file-excel" style="color: #28a745; margin-right: 5px;"></i> Generar Excel</a>
+                <a href="#" style="border-top: 1px solid #eee;" onclick="exportarPDFUsuarios(); return false;"><i class="fas fa-file-pdf" style="color: #dc3545; margin-right: 5px;"></i> Generar PDF</a>
+            </div>
+        </div>
+
         <button class="btn-primary" onclick="toggleFormulario()">+ Nuevo Usuario</button>
         
-        <div id="formularioNuevoUsuario" class="add-user-section" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+        <div id="formularioNuevoUsuario" class="add-user-section" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; margin-top: 15px;">
             <h3 style="margin-top: 0; color: #333;">Añadir Nuevo Usuario</h3>
             
             <form action="{{ url_for('usuarios.agregar_usuario') }}" method="POST">
@@ -72,7 +91,7 @@
             <thead>
                 <tr>
                     <th>Nombre Completo</th>
-                    <th>Correo Electronico</th>
+                    <th>Correo Electrónico</th>
                     <th>Rol asignado</th>
                     <th>Estado</th>
                     <th style="text-align: center;">Acciones</th>
@@ -164,13 +183,11 @@
                                     <div style="margin-bottom: 15px;">
                                         <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">ROL DEL SISTEMA:</label>
                                         <select name="id_rol" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-
                                             {% if session.get('role') == 'ADMIN' %}
                                                 <option value="1" {% if usuario.rol_nombre == 'Administrador' %}selected{% endif %}>Administrador</option>
                                                 <option value="2" {% if usuario.rol_nombre == 'Coordinador de Carrera' %}selected{% endif %}>Coordinador de Carrera</option>
                                                 <option value="4" {% if usuario.rol_nombre == 'Almacén' %}selected{% endif %}>Almacén</option>
                                             {% endif %}
-
                                             <option value="3" {% if usuario.rol_nombre == 'Docente' %}selected{% endif %}>Docente</option>
                                         </select>
                                     </div>
@@ -205,8 +222,6 @@
                     </td>
                 </tr>
             </tbody>
-            </tbody>
-            </tbody>
         </table>
     </div>
 
@@ -217,6 +232,10 @@
 {% endblock %}
 
 {% block scripts %}
+<script type="application/json" id="usuarios-data">
+    {{ usuarios | tojson | safe }}
+</script>
+
 <script>
     function toggleFormulario(){
         var form = document.getElementById("formularioNuevoUsuario");
@@ -350,5 +369,102 @@
         // Arranca el filtrado y la paginación inicial en cuanto carga la pantalla
         filtrarTabla();
     });
+
+    // ==========================================
+    // EXPORTACIÓN A EXCEL (USUARIOS)
+    // ==========================================
+    function exportarExcelUsuarios() {
+        const dataUsuariosJSON = document.getElementById('usuarios-data');
+        if (!dataUsuariosJSON) {
+            alert("No hay datos disponibles para exportar.");
+            return;
+        }
+
+        const usuariosFull = JSON.parse(dataUsuariosJSON.textContent);
+        const workbook = XLSX.utils.book_new();
+
+        const usuariosExcelData = [
+            ["SISTEMA INTEGRAL DE GESTIÓN DE ESPACIOS ACADÉMICOS (SIGEA)"],
+            ["Reporte General de Usuarios del Sistema"],
+            ["Fecha de generación: " + new Date().toLocaleDateString()],
+            [],
+            ["NOMBRE COMPLETO", "CORREO ELECTRÓNICO", "ROL ASIGNADO", "ESTADO"]
+        ];
+
+        usuariosFull.forEach(u => {
+            usuariosExcelData.push([
+                u.nombre_completo || (u.nombre + ' ' + u.apellidos),
+                u.correo,
+                u.rol_nombre,
+                u.estado
+            ]);
+        });
+
+        const wsUsuarios = XLSX.utils.aoa_to_sheet(usuariosExcelData);
+        wsUsuarios['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+            { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } }
+        ];
+        wsUsuarios['!cols'] = [{wch: 35}, {wch: 35}, {wch: 25}, {wch: 15}];
+        
+        let rangoUsuarios = XLSX.utils.decode_range(wsUsuarios['!ref']);
+        if(rangoUsuarios.e.r >= 4) {
+            rangoUsuarios.s.r = 4; // Fila de encabezados
+            wsUsuarios['!autofilter'] = { ref: XLSX.utils.encode_range(rangoUsuarios) };
+        }
+        XLSX.utils.book_append_sheet(workbook, wsUsuarios, "Usuarios");
+
+        XLSX.writeFile(workbook, "Reporte_Usuarios_SIGEA.xlsx");
+    }
+
+    // ==========================================
+    // EXPORTACIÓN A PDF (USUARIOS)
+    // ==========================================
+    function exportarPDFUsuarios() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        const dataUsuariosJSON = document.getElementById('usuarios-data');
+        if (!dataUsuariosJSON) return;
+
+        const usuariosFull = JSON.parse(dataUsuariosJSON.textContent);
+
+        // Encabezado institucional
+        doc.setFontSize(16);
+        doc.setTextColor(40, 40, 40);
+        doc.text("SISTEMA INTEGRAL DE GESTIÓN DE ESPACIOS ACADÉMICOS (SIGEA)", 14, 20);
+        
+        doc.setFontSize(12);
+        doc.setTextColor(100, 100, 100);
+        doc.text("Reporte Institucional: Directorio de Usuarios", 14, 28);
+        doc.text("Fecha: " + new Date().toLocaleDateString(), 14, 34);
+
+        let finalY = 45;
+
+        if (usuariosFull.length > 0) {
+            doc.setFontSize(14);
+            doc.setTextColor(0, 174, 239); // Azul SIGEA
+            doc.text("Usuarios Registrados", 14, finalY);
+
+            const filasUsuarios = usuariosFull.map(u => [
+                u.nombre_completo || (u.nombre + ' ' + u.apellidos),
+                u.correo,
+                u.rol_nombre,
+                u.estado
+            ]);
+
+            doc.autoTable({
+                startY: finalY + 4,
+                head: [['NOMBRE COMPLETO', 'CORREO ELECTRÓNICO', 'ROL', 'ESTADO']],
+                body: filasUsuarios,
+                theme: 'striped',
+                headStyles: { fillColor: [0, 174, 239] },
+                styles: { fontSize: 10 }
+            });
+        }
+
+        doc.save("Reporte_Usuarios_SIGEA.pdf");
+    }
 </script>
 {% endblock %}
