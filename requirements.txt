@@ -1,4 +1,5 @@
 Flask==3.0.0
 Flask-WTF==1.2.1
-pyodbc==5.1.0
+psycopg[binary]>=3.2,<4
 python-dotenv==1.0.1
+tzdata>=2025.2
