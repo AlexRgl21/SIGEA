@@ -1,4 +1,3 @@
-
 import datetime
 import logging
 import threading
@@ -124,27 +123,17 @@ def _cerrar(cursor, id_periodo):
         WHERE id_periodo = %s
     """, (id_periodo,))
 
-    borradas = cursor.fetchone()[0] or 0
+    total_asignaciones = cursor.fetchone()[0] or 0
 
-    cursor.execute("""
-        DELETE FROM Horarios h
-        USING Asignaciones a
-        WHERE h.id_asignacion = a.id_asignacion
-          AND a.id_periodo = %s
-    """, (id_periodo,))
-
-    cursor.execute("""
-        DELETE FROM Asignaciones
-        WHERE id_periodo = %s
-    """, (id_periodo,))
-
+    # Solución AUD-005: Se elimina el borrado físico (DELETE) de Asignaciones y Horarios 
+    # para conservar de forma íntegra el historial académico y los reportes institucionales.
     cursor.execute("""
         UPDATE Periodos
         SET activo = FALSE
         WHERE id_periodo = %s
     """, (id_periodo,))
 
-    return borradas
+    return total_asignaciones
 
 
 # Consulta de periodos
@@ -355,7 +344,7 @@ def finalizar_periodo(conn, id_periodo):
                 "Ese periodo ya estaba finalizado."
             )
 
-        borradas = _cerrar(
+        total_asig = _cerrar(
             cursor,
             id_periodo
         )
@@ -364,19 +353,19 @@ def finalizar_periodo(conn, id_periodo):
 
         auditoria.info(
             "Periodo %s finalizado manualmente; "
-            "%s asignaciones borradas",
+            "%s asignaciones conservadas históricamente",
             id_periodo,
-            borradas
+            total_asig
         )
 
-        return fila[0], borradas
+        return fila[0], total_asig
 
     except Exception:
         conn.rollback()
         raise
 
 
-# Vencimiento automático
+# Vencimiento automático con candado consultivo distribuido (AUD-004)
 def cerrar_vencidos(conn, hoy=None):
     hoy = hoy or config.fecha_actual()
 
@@ -384,6 +373,11 @@ def cerrar_vencidos(conn, hoy=None):
     cerrados = []
 
     try:
+        # Candado consultivo de PostgreSQL: si otro worker ya está cerrando periodos, este saldrá inmediatamente
+        cursor.execute("SELECT pg_try_advisory_xact_lock(998888);")
+        if not cursor.fetchone()[0]:
+            return []
+
         cursor.execute("""
             SELECT
                 id_periodo,
@@ -409,8 +403,8 @@ def cerrar_vencidos(conn, hoy=None):
 
     for id_p, nombre, n in cerrados:
         auditoria.info(
-            "Periodo %s '%s' vencido: "
-            "inactivado y %s asignaciones borradas",
+            "Periodo %s '%s' vencido e inactivado; "
+            "%s asignaciones conservadas históricamente",
             id_p,
             nombre,
             n

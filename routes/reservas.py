@@ -31,7 +31,7 @@ def vista_reserva():
 
 
 @reservas_bp.route('/reservas/nueva', methods=['POST'])
-@role_required(*config.TODOS_LOS_ROLES)
+@role_required('ADMIN', 'MAESTRO')
 def crear_reserva():
     conn = get_db()
     if not conn:
