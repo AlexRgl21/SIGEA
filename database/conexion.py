@@ -1,61 +1,104 @@
-# Acceso a SQL Server: UNA conexión por petición.
+
 import logging
 import os
 
-import pyodbc
+import psycopg
 from dotenv import load_dotenv
 from flask import g
 
 load_dotenv()
+
 logger = logging.getLogger(__name__)
 
-DRIVER = '{ODBC Driver 17 for SQL Server}'
-LOGIN_TIMEOUT_SEG = 5
 
-
-def _cadena_conexion():
-    return (
-        f'DRIVER={DRIVER};'
-        f'SERVER={os.getenv("DB_SERVER")};'
-        f'DATABASE={os.getenv("DB_NAME")};'
-        f'Trusted_Connection=yes;'
-        f'Encrypt=yes;'
-        f'TrustServerCertificate=yes;'
-        f'MARS_Connection=yes'
-    )
-
-
+# Configuración de conexión
 def crear_conexion():
+    url = os.getenv("DATABASE_URL", "").strip()
+
+    opciones = {
+        "connect_timeout": int(
+            os.getenv("DB_CONNECT_TIMEOUT", "8")
+        ),
+        "sslmode": os.getenv(
+            "DB_SSLMODE", "disable"
+        ),
+        "application_name": "SIGEA",
+        "prepare_threshold": None,
+    }
+
+    if url:
+        opciones["conninfo"] = url
+    else:
+        opciones.update({
+            "host": os.getenv(
+                "DB_HOST", "127.0.0.1"
+            ),
+            "port": int(
+                os.getenv("DB_PORT", "5432")
+            ),
+            "dbname": os.getenv(
+                "DB_NAME", "sigea"
+            ),
+            "user": os.getenv(
+                "DB_USER", "postgres"
+            ),
+            "password": os.getenv(
+                "DB_PASSWORD", ""
+            ),
+        })
+
     try:
-        conn = pyodbc.connect(_cadena_conexion(), timeout=LOGIN_TIMEOUT_SEG)
-        logger.debug("Conexión abierta a SIGEA")
+        conn = psycopg.connect(**opciones)
+
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT set_config('TimeZone', %s, false)",
+                (
+                    os.getenv(
+                        "APP_TIMEZONE",
+                        "America/Mexico_City"
+                    ),
+                )
+            )
+
+        conn.commit()
         return conn
-    except pyodbc.Error:
-        logger.exception("Error al conectar con la base de datos")
+
+    except psycopg.Error:
+        logger.exception(
+            "No se pudo conectar a PostgreSQL"
+        )
         return None
 
 
+# Conexión utilizada por las rutas Flask
 def get_db():
-    if 'db' not in g:
+    if "db" not in g:
         g.db = crear_conexion()
+
     return g.db
 
 
+# Cierre de conexión
 def cerrar_db(error=None):
-    conn = g.pop('db', None)
+    conn = g.pop("db", None)
+
     if conn is None:
         return
+
     try:
-        if error is not None:
-            conn.rollback()
-    except pyodbc.Error:
-        logger.warning("No se pudo hacer rollback al cerrar la petición", exc_info=True)
-    try:
+        conn.rollback()
+
+    except psycopg.Error:
+        logger.warning(
+            "No se pudo revertir la transacción",
+            exc_info=True
+        )
+
+    finally:
         conn.close()
-        logger.debug("Conexión cerrada")
-    except pyodbc.Error:
-        logger.warning("No se pudo cerrar la conexión", exc_info=True)
 
 
+# Registro en Flask
 def init_app(app):
     app.teardown_appcontext(cerrar_db)
