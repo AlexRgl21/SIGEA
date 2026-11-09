@@ -149,6 +149,7 @@ activemq-data/
 
 # Environments
 .env
+.env.example
 __pycache__/
 .envrc
 .venv
@@ -221,5 +222,7 @@ agregar_csrf.py
 listar_rutas.py
 migrar_contraseñas.py
 aplicar_loggin.py
+crear-admin.py
+probar-conexion-postgre.py
 
 logs/
