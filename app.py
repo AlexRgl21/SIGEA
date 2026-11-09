@@ -1,9 +1,21 @@
+
 import logging
 from urllib.parse import urlparse
 
-import pyodbc
+import psycopg
 from dotenv import load_dotenv
-from flask import Flask, redirect, url_for, session, flash, render_template, request, g
+
+from flask import (
+    Flask,
+    redirect,
+    url_for,
+    session,
+    flash,
+    render_template,
+    request,
+    g
+)
+
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from werkzeug.exceptions import HTTPException
 
@@ -13,6 +25,7 @@ import config
 from database import conexion
 from database.conexion import get_db
 from logging_config import configurar_logging
+
 from routes.auth import auth_bp
 from routes.panel import panel_bp
 from routes.usuarios import usuarios_bp
@@ -20,106 +33,197 @@ from routes.gestion import gestion_bp
 from routes.asignaciones import asignaciones_bp
 from routes.reservas import reservas_bp
 from routes.notificaciones import notificaciones_bp
-from services import notificaciones, periodos
 from routes.tickets import tickets_bp
+
+from services import notificaciones, periodos
 
 logger = logging.getLogger(__name__)
 
 MENSAJES_HTTP = {
-    400: ("Solicitud no válida", 
-          "El formulario llegó incompleto o con datos incorrectos. Regresa e inténtalo de nuevo."), 
-    403: ("Acceso denegado", "No tienes permiso para ver esta página"), 
-    405: ("Acción no permitida", "Esa dirección no acepta ese tipo de solicitud."), 
-    413: ("Archivo demasiado grande", "Lo que intentaste enviar supera el tamaño permitido."), 
-    429: ("Demasiadas solicitudes", "Espera unos minutos antes de intentarlo de nuevo."),
+    400: (
+        "Solicitud no válida",
+        "El formulario llegó incompleto o con datos incorrectos. "
+        "Regresa e inténtalo de nuevo."
+    ),
+    403: (
+        "Acceso denegado",
+        "No tienes permiso para ver esta página"
+    ),
+    405: (
+        "Acción no permitida",
+        "Esa dirección no acepta ese tipo de solicitud."
+    ),
+    413: (
+        "Archivo demasiado grande",
+        "Lo que intentaste enviar supera el tamaño permitido."
+    ),
+    429: (
+        "Demasiadas solicitudes",
+        "Espera unos minutos antes de intentarlo de nuevo."
+    ),
 }
+
 
 def create_app():
     app = Flask(__name__)
+
     configurar_logging()
     config.aplicar_config(app)
-    CSRFProtect(app)
-    conexion.init_app(app)          # cierra la conexión de la petición al terminar
 
-    for bp in (auth_bp, panel_bp, usuarios_bp, gestion_bp,
-            asignaciones_bp, reservas_bp, notificaciones_bp, tickets_bp):
+    CSRFProtect(app)
+    conexion.init_app(app)
+
+    blueprints = (
+        auth_bp,
+        panel_bp,
+        usuarios_bp,
+        gestion_bp,
+        asignaciones_bp,
+        reservas_bp,
+        notificaciones_bp,
+        tickets_bp
+    )
+
+    for bp in blueprints:
         app.register_blueprint(bp)
 
-    # VENCIMIENTO DE PERIODOS: inactiva los periodos pasados de fecha y borra sus asignaciones
     @app.before_request
     def revisar_periodos_vencidos():
         if request.endpoint in (None, 'static'):
             return
+
         periodos.revisar_si_toca(get_db)
-    
-    # CAMPANA DE NOTIFICACIONES + DATOS GLOBALES PARA LAS PLANTILLAS
+
     @app.context_processor
     def inyectar_globales():
         contexto = {
-            'notis': [], 'cant_notis': 0,
+            'notis': [],
+            'cant_notis': 0,
             'sesion_total_seg': config.SESION_MINUTOS * 60,
             'sesion_aviso_seg': config.SESION_AVISO_SEG,
             'sesion_ping_seg': config.SESION_PING_SEG,
             'ticket_categorias': config.TICKET_CATEGORIAS,
         }
+
         if 'id_usuario' in session and 'role' in session:
-            if not hasattr(g, 'notis_cache'):          # una sola consulta por petición
+            if not hasattr(g, 'notis_cache'):
                 g.notis_cache = _cargar_notificaciones()
+
             contexto['notis'] = g.notis_cache['lista']
             contexto['cant_notis'] = g.notis_cache['sin_leer']
+
         return contexto
 
     def _cargar_notificaciones():
-        vacio = {'lista': [], 'sin_leer': 0}
-        conn = get_db()                                # misma conexión que usa la ruta
+        vacio = {
+            'lista': [],
+            'sin_leer': 0
+        }
+
+        conn = get_db()
+
         if not conn:
             return vacio
+
         try:
-            return notificaciones.obtener(conn, session['role'], session['id_usuario'],
-                                        url_for('reservas.vista_reserva'))
+            return notificaciones.obtener(
+                conn,
+                session['role'],
+                session['id_usuario'],
+                url_for('reservas.vista_reserva')
+            )
         except Exception:
-            logger.exception("Error en motor de notificaciones")
+            logger.exception(
+                "Error en motor de notificaciones"
+            )
             return vacio
 
     @app.route('/')
     def index():
-        return redirect(url_for('auth.login'))
+        return redirect(
+            url_for('auth.login')
+        )
 
-    # MANEJO DE ERRORES
     @app.errorhandler(CSRFError)
     def csrf_error(e):
-        flash("Tu sesión o el formulario no es válido. Intenta de nuevo.", "danger")
-        return redirect(url_for('auth.login'))
+        flash(
+            "Tu sesión o el formulario no es válido. "
+            "Intenta de nuevo.",
+            "danger"
+        )
+
+        return redirect(
+            url_for('auth.login')
+        )
 
     @app.errorhandler(404)
     def pagina_no_encontrada(e):
-        return render_template('error.html', titulo="Página no encontrada",
-                            mensaje="La dirección que buscas no existe."), 404
+        return render_template(
+            'error.html',
+            titulo="Página no encontrada",
+            mensaje="La dirección que buscas no existe."
+        ), 404
 
-    @app.errorhandler(pyodbc.IntegrityError)
+    @app.errorhandler(psycopg.IntegrityError)
     def error_de_integridad(e):
-        """Dato repetido o referencia inválida (por ejemplo, un correo que ya existe)."""
-        logger.warning("Violación de integridad en %s %s: %s", request.method, request.path, e)
-        flash("No se pudo guardar: ya existe un registro con esos datos (por ejemplo, un correo repetido).",
-            "danger")
+        logger.warning(
+            "Violación de integridad en %s %s: %s",
+            request.method,
+            request.path,
+            e
+        )
+
+        flash(
+            "No se pudo guardar: ya existe un registro "
+            "con esos datos o una referencia inválida.",
+            "danger"
+        )
+
         destino = request.referrer
-        if not destino or urlparse(destino).netloc != request.host:   # solo volvemos a páginas propias
+
+        if not destino or urlparse(destino).netloc != request.host:
             destino = url_for('auth.login')
+
         return redirect(destino)
 
     @app.errorhandler(Exception)
     def error_no_controlado(e):
         if isinstance(e, HTTPException):
             codigo = e.code or 500
+
             if codigo < 400:
                 return e
+
             titulo, mensaje = MENSAJES_HTTP.get(
-                codigo, ("Algo salió mal", "No pudimos completar la solicitud. Inténta de nuevo."))
-            return render_template('error.html', titulo=titulo, mensaje=mensaje), codigo
-        logger.exception("Error no controlado en %s %s", request.method, request.path)
-        return render_template('error.html', titulo="Algo salió mal",
-                            mensaje="Ocurrió un error inesperado y ya quedó registrado. "
-                                    "Inténtalo de nuevo en unos minutos."), 500
+                codigo,
+                (
+                    "Algo salió mal",
+                    "No pudimos completar la solicitud. "
+                    "Intenta de nuevo."
+                )
+            )
+
+            return render_template(
+                'error.html',
+                titulo=titulo,
+                mensaje=mensaje
+            ), codigo
+
+        logger.exception(
+            "Error no controlado en %s %s",
+            request.method,
+            request.path
+        )
+
+        return render_template(
+            'error.html',
+            titulo="Algo salió mal",
+            mensaje=(
+                "Ocurrió un error inesperado y ya "
+                "quedó registrado. Inténtalo de "
+                "nuevo en unos minutos."
+            )
+        ), 500
 
     return app
 
@@ -127,6 +231,8 @@ def create_app():
 app = create_app()
 
 if __name__ == '__main__':
-    # debug solo en desarrollo: FLASK_DEBUG=1 en el .env
     import os
-    app.run(debug=os.getenv('FLASK_DEBUG', '0') == '1')
+
+    app.run(
+        debug=os.getenv('FLASK_DEBUG', '0') == '1'
+    )

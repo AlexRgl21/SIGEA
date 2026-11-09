@@ -1,52 +1,106 @@
-# Configuración central de SIGEA
 
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime
+from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# SESIÓN
-SESION_MINUTOS = 5          # inactividad máxima antes de cerrar la sesión
-SESION_AVISO_SEG = 60       # el aviso aparece cuando faltan estos segundos
-SESION_PING_SEG = 30        # mientras haya actividad, se renueva la cookie como máximo cada tanto
+APP_TIMEZONE = os.getenv(
+    'APP_TIMEZONE',
+    'America/Mexico_City'
+)
 
-# ROLES
+
+def ahora_local():
+    return datetime.now(
+        ZoneInfo(APP_TIMEZONE)
+    ).replace(tzinfo=None)
+
+
+def fecha_actual():
+    return ahora_local().date()
+
+
+SESION_MINUTOS = 5
+SESION_AVISO_SEG = 60
+SESION_PING_SEG = 30
+
+# Roles
 ROL_ADMIN = 'ADMIN'
 ROL_COORDINADOR = 'COORDINADOR'
 ROL_MAESTRO = 'MAESTRO'
 ROL_ALMACEN = 'ALMACEN'
 ROL_SOPORTE = 'SOPORTE'
 
-ROLES_POR_ID = {1: ROL_ADMIN, 2: ROL_COORDINADOR, 3: ROL_MAESTRO, 4: ROL_ALMACEN, 5: ROL_SOPORTE}
-NOMBRES_ROL = {1: 'Administrador', 2: 'Coordinador de Carrera', 3: 'Docente', 4: 'Almacén', 5: 'Soporte'}
+ROLES_POR_ID = {
+    1: ROL_ADMIN,
+    2: ROL_COORDINADOR,
+    3: ROL_MAESTRO,
+    4: ROL_ALMACEN,
+    5: ROL_SOPORTE
+}
+
+NOMBRES_ROL = {
+    1: 'Administrador',
+    2: 'Coordinador de Carrera',
+    3: 'Docente',
+    4: 'Almacén',
+    5: 'Soporte'
+}
+
 ID_ROL_MAESTRO = 3
 ID_ROL_SOPORTE = 5
-ROLES_ADMINISTRATIVOS = (ROL_ADMIN, ROL_COORDINADOR)
-TODOS_LOS_ROLES = (ROL_ADMIN, ROL_COORDINADOR, ROL_MAESTRO, ROL_ALMACEN)
 
+ROLES_ADMINISTRATIVOS = (
+    ROL_ADMIN,
+    ROL_COORDINADOR
+)
 
-# TICKETS CATEGORIAS
-TICKET_CATEGORIAS = ('Error del sistema', 'Asignación de horarios', 'Reservas', 'Acceso o contraseña', 'Otro')
-TICKET_PRIORIDADES = ('Baja', 'Media', 'Alta')
-TICKET_ESTADOS = ('Abierto', 'En proceso', 'Resuelto')
-TICKET_MAX_SIN_RESOLVER = 5     #Tickets sin resolver del mismo usuario
-TICKET_MAX_RESUELTOS_VISTA = 50 #tickets resueltos en el tablero
+TODOS_LOS_ROLES = (
+    ROL_ADMIN,
+    ROL_COORDINADOR,
+    ROL_MAESTRO,
+    ROL_ALMACEN
+)
 
+TICKET_CATEGORIAS = (
+    'Error del sistema',
+    'Asignación de horarios',
+    'Reservas',
+    'Acceso o contraseña',
+    'Otro'
+)
 
-# COLORES
+TICKET_PRIORIDADES = (
+    'Baja',
+    'Media',
+    'Alta'
+)
+
+TICKET_ESTADOS = (
+    'Abierto',
+    'En proceso',
+    'Resuelto'
+)
+
+TICKET_MAX_SIN_RESOLVER = 5
+TICKET_MAX_RESUELTOS_VISTA = 50
+
+# Colores
 COLORES_CARRERA = {
-    'ITIID': '#67A15F',   # verde olivo
-    'IRC': '#C8C7C5',     # gris
-    'LTF': '#436DA8',     # azul
-    'IMI': '#D67A38',     # naranja
-    'ISA': '#CF4444',     # rojo
-    'IAEV': '#9854C4',    # morado
+    'ITIID': '#67A15F',
+    'IRC': '#C8C7C5',
+    'LTF': '#436DA8',
+    'IMI': '#D67A38',
+    'ISA': '#CF4444',
+    'IAEV': '#9854C4',
     'ISW': '#67A15F',
-    'ING': '#F7F088',     # amarillo
+    'ING': '#F7F088',
     'PREPA': '#FF7700',
 }
+
 COLOR_CARRERA_DEFAULT = '#004a98'
 
 COLORES_EDIFICIOS = {
@@ -56,50 +110,89 @@ COLORES_EDIFICIOS = {
     'Metra': '#F2E052',
     'Learning': '#6F0EB5',
 }
+
 COLOR_EDIFICIO_DEFAULT = '#004a98'
 
-# CALENDARIO Y ESPACIOS
-DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-DIA_A_NUMERO_CALENDARIO = {'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4,
-                           'Viernes': 5, 'Sábado': 6}
+# Calendario y espacios
+DIAS_SEMANA = [
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+    'Domingo'
+]
+
+DIA_A_NUMERO_CALENDARIO = {
+    'Lunes': 1,
+    'Martes': 2,
+    'Miércoles': 3,
+    'Jueves': 4,
+    'Viernes': 5,
+    'Sábado': 6
+}
 
 TIPO_ESPACIO_AULA = 'Aula Clásica'
-TIPOS_ESPACIO_RESERVABLES = ('laboratorio', 'sala de conferencia')
+
+TIPOS_ESPACIO_RESERVABLES = (
+    'laboratorio',
+    'sala de conferencia'
+)
+
 VALIDAR_CHOQUE_DE_GRUPO = True
 
-# PERIODOS (CUATRIMESTRES)
+# Periodos
 PERIODOS_REVISION_SEG = 60
 
-# NOTIFICACIONES (CAMPANA)
-NOTIS_LIMITE = 15           # máximo de avisos que se muestran en la campana
+NOTIS_LIMITE = 15
 
-# SEGURIDAD: RECUPERACIÓN DE CONTRASEÑA Y LOGIN
 CODIGO_LONGITUD = 6
-CODIGO_VIGENCIA_MIN = 10        # minutos de vida del código
-MAX_INTENTOS = 5                # intentos fallidos permitidos por código
-ESPERA_REENVIO_SEG = 60         # segundos mínimos entre un código y el siguiente
-MAX_ENVIOS_POR_HORA = 5         # códigos por usuario en una hora
-CAMBIO_VIGENCIA_MIN = 10        # minutos para elegir la contraseña una vez verificado el código
+CODIGO_VIGENCIA_MIN = 10
+MAX_INTENTOS = 5
+ESPERA_REENVIO_SEG = 60
+MAX_ENVIOS_POR_HORA = 5
+CAMBIO_VIGENCIA_MIN = 10
 LONGITUD_MINIMA_PASSWORD = 8
 
-LOGIN_MAX_INTENTOS = 5          # fallos por correo dentro de la ventana
-LOGIN_MAX_INTENTOS_IP = 20      # fallos por IP dentro de la ventana
-LOGIN_VENTANA_MIN = 15          # ventana de conteo y duración del bloqueo
+LOGIN_MAX_INTENTOS = 5
+LOGIN_MAX_INTENTOS_IP = 20
+LOGIN_VENTANA_MIN = 15
 
-# CORREO
-DOMINIO_CORREO = os.getenv('DOMINIO_CORREO', 'upsrj.edu.mx')
-SMTP_HOST = os.getenv('SMTP_HOST', 'smtp.gmail.com')
-SMTP_PUERTO = int(os.getenv('SMTP_PUERTO', '587'))     # 465 = SSL directo; otro = STARTTLS
+DOMINIO_CORREO = os.getenv(
+    'DOMINIO_CORREO',
+    'upsrj.edu.mx'
+)
+
+SMTP_HOST = os.getenv(
+    'SMTP_HOST',
+    'smtp.gmail.com'
+)
+
+SMTP_PUERTO = int(
+    os.getenv('SMTP_PUERTO', '587')
+)
+
 SMTP_TIMEOUT_SEG = 15
 
 
 def aplicar_config(app):
     app.secret_key = os.getenv('SECRET_KEY')
-    if not app.secret_key:
-        raise RuntimeError("Falta SECRET_KEY en el .env")
 
-    app.permanent_session_lifetime = timedelta(minutes=SESION_MINUTOS)
+    if not app.secret_key:
+        raise RuntimeError(
+            "Falta SECRET_KEY en el .env"
+        )
+
+    app.permanent_session_lifetime = timedelta(
+        minutes=SESION_MINUTOS
+    )
+
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-    app.config['SESSION_COOKIE_SECURE'] = os.getenv('COOKIE_SECURE', '0') == '1'
+
+    app.config['SESSION_COOKIE_SECURE'] = (
+        os.getenv('COOKIE_SECURE', '0') == '1'
+    )
+
     app.config['WTF_CSRF_TIME_LIMIT'] = None
