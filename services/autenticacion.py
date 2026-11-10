@@ -1,4 +1,3 @@
-
 import hashlib
 import hmac
 import logging
@@ -104,11 +103,12 @@ def _emitir_codigo(
     if cursor.fetchone()[0] >= config.MAX_ENVIOS_POR_HORA:
         return False
 
+    # Corrección: Se cambia de usado = 0 a usado = FALSE por ser tipo booleano en PostgreSQL
     cursor.execute("""
         UPDATE CodigosRecuperacion
-        SET usado = 1
+        SET usado = TRUE
         WHERE id_usuario = %s
-          AND usado = 0
+          AND usado = FALSE
     """, (id_usuario,))
 
     codigo = generar_codigo()
@@ -193,7 +193,7 @@ def verificar_codigo(conn, correo_usuario, codigo):
                 expira_en
             FROM CodigosRecuperacion
             WHERE id_usuario = %s
-              AND usado = 0
+              AND usado = FALSE
             ORDER BY creado_en DESC
             LIMIT 1
         """, (id_usuario,))
@@ -209,7 +209,7 @@ def verificar_codigo(conn, correo_usuario, codigo):
             UPDATE CodigosRecuperacion
             SET intentos = intentos + 1
             WHERE id_codigo = %s
-              AND usado = 0
+              AND usado = FALSE
               AND intentos < %s
         """, (
             id_codigo,
@@ -228,7 +228,7 @@ def verificar_codigo(conn, correo_usuario, codigo):
         ):
             cursor.execute("""
                 UPDATE CodigosRecuperacion
-                SET usado = 1
+                SET usado = TRUE
                 WHERE id_codigo = %s
                   AND intentos >= %s
             """, (
@@ -274,7 +274,7 @@ def usuario_verificado(
         JOIN Usuarios u
             ON u.id_usuario = c.id_usuario
         WHERE c.id_codigo = %s
-          AND c.usado = 0
+          AND c.usado = FALSE
           AND c.expira_en > %s
           AND u.correo = %s
           AND u.estado = 'Activo'
@@ -319,7 +319,7 @@ def cambiar_contrasena(
 
         cursor.execute("""
             UPDATE CodigosRecuperacion
-            SET usado = 1
+            SET usado = TRUE
             WHERE id_usuario = %s
         """, (id_usuario,))
 

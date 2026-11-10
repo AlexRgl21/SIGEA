@@ -1,4 +1,3 @@
-
 import logging
 import config
 
@@ -231,6 +230,44 @@ def _horarios_existentes(
     ]
 
 
+def _verificar_reservas_aprobadas(cursor, id_espacio, periodo_inicio, periodo_fin, inicio, fin, dias):
+    """(AUD-007) Verifica si un nuevo horario de clases choca con una reserva que ya había sido aprobada."""
+    marcas = ','.join(['%s'] * len(dias))
+    
+    cursor.execute(f"""
+        SELECT r.fecha, r.hora_inicio, r.hora_fin
+        FROM Reservas r
+        WHERE r.id_espacio = %s
+          AND r.estado = 'Aprobada'
+          AND r.fecha >= %s
+          AND r.fecha <= %s
+          -- En PostgreSQL, extract(isodow) retorna 1=Lunes, 7=Domingo
+          AND (
+            CASE extract(isodow from r.fecha)
+                WHEN 1 THEN 'Lunes'
+                WHEN 2 THEN 'Martes'
+                WHEN 3 THEN 'Miércoles'
+                WHEN 4 THEN 'Jueves'
+                WHEN 5 THEN 'Viernes'
+                WHEN 6 THEN 'Sábado'
+                WHEN 7 THEN 'Domingo'
+            END
+          ) IN ({marcas})
+    """, (id_espacio, periodo_inicio, periodo_fin, *dias))
+
+    reservas_existentes = [
+        dict(hora_inicio=f[1], hora_fin=f[2], fecha=f[0])
+        for f in cursor.fetchall()
+    ]
+
+    for reserva in reservas_existentes:
+        if conflictos.hay_traslape(inicio, fin, reserva['hora_inicio'], reserva['hora_fin']):
+            raise ErrorNegocio(
+                f"Choque cruzado detectado: El espacio ya tiene una reserva aprobada el {reserva['fecha']} "
+                f"de {reserva['hora_inicio']} a {reserva['hora_fin']}."
+            )
+
+
 def validar_solicitud_asignacion(
     id_grupo,
     id_espacio,
@@ -308,7 +345,7 @@ def crear_asignacion(
 
     try:
         cursor.execute("""
-            SELECT 1
+            SELECT fecha_inicio, fecha_fin
             FROM Periodos
             WHERE id_periodo = %s
               AND activo = TRUE
@@ -316,10 +353,14 @@ def crear_asignacion(
             FOR UPDATE
         """, (id_periodo,))
 
-        if not cursor.fetchone():
+        fila_periodo = cursor.fetchone()
+
+        if not fila_periodo:
             raise ErrorNegocio(
                 "El periodo no está activo o ya terminó."
             )
+        
+        p_inicio, p_fin = fila_periodo[0], fila_periodo[1]
 
         cursor.execute("""
             SELECT 1
@@ -351,6 +392,7 @@ def crear_asignacion(
                 "El espacio no está activo o no es un aula."
             )
 
+        # 1. Verificamos choques entre las clases normales
         existentes = _horarios_existentes(
             cursor,
             id_periodo,
@@ -373,6 +415,11 @@ def crear_asignacion(
             raise ErrorNegocio(
                 choque.mensaje()
             )
+        
+        # 2. Verificamos choques cruzados contra reservas ya aprobadas (AUD-007)
+        _verificar_reservas_aprobadas(
+            cursor, id_espacio, p_inicio, p_fin, inicio, fin, dias
+        )
 
         cursor.execute("""
             INSERT INTO Asignaciones (
@@ -535,6 +582,12 @@ def desactivar_grupo(conn, id_grupo):
             SET estatus = 'Inactivo'
             WHERE id_grupo = %s
         """, (id_grupo,))
+
+        # Solución AUD-014: Validar si realmente se afectó algún registro (evitar falsos positivos)
+        if cursor.rowcount == 0:
+            raise ErrorNegocio(
+                "No se pudo desactivar: El grupo no existe."
+            )
 
         conn.commit()
 

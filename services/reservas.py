@@ -1,4 +1,3 @@
-
 import datetime
 import logging
 
@@ -7,6 +6,16 @@ from . import conflictos, correo
 from .errores import ErrorNegocio
 
 logger = logging.getLogger(__name__)
+
+DIAS_SEMANA = (
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+    'Domingo'
+)
 
 
 def _estado(valor):
@@ -19,6 +28,59 @@ def _filas_a_dicts(cursor):
         dict(zip(columnas, fila))
         for fila in cursor.fetchall()
     ]
+
+
+def _dia_semana_nombre(fecha_obj):
+    return DIAS_SEMANA[fecha_obj.weekday()]
+
+
+def _verificar_disponibilidad(cursor, id_espacio, fecha_obj, inicio, fin):
+    """Verifica que el espacio no tenga reservas aprobadas ni clases regulares en ese horario."""
+    # 1. Revisar contra otras reservas ya aprobadas en esa fecha
+    cursor.execute("""
+        SELECT hora_inicio, hora_fin
+        FROM Reservas
+        WHERE id_espacio = %s
+          AND fecha = %s
+          AND estado = 'Aprobada'
+    """, (id_espacio, fecha_obj))
+
+    aprobadas = [
+        dict(hora_inicio=f[0], hora_fin=f[1])
+        for f in cursor.fetchall()
+    ]
+
+    if conflictos.buscar_traslapes(inicio, fin, aprobadas):
+        raise ErrorNegocio(
+            "El espacio ya cuenta con una reserva aprobada en ese horario."
+        )
+
+    # 2. Revisar contra horarios de clases regulares de periodos activos en esa fecha (AUD-007)
+    dia_nombre = _dia_semana_nombre(fecha_obj)
+    # Soportar comparación con y sin acento en Miércoles/Sábado por seguridad
+    variantes_dia = {dia_nombre, dia_nombre.replace('é', 'e').replace('á', 'a')}
+
+    cursor.execute("""
+        SELECT h.hora_inicio, h.hora_fin
+        FROM Horarios h
+        JOIN Asignaciones a ON h.id_asignacion = a.id_asignacion
+        JOIN Periodos p ON a.id_periodo = p.id_periodo
+        WHERE a.id_espacio = %s
+          AND p.activo = TRUE
+          AND p.fecha_inicio <= %s
+          AND p.fecha_fin >= %s
+          AND TRIM(h.dia_semana) = ANY(%s)
+    """, (id_espacio, fecha_obj, fecha_obj, list(variantes_dia)))
+
+    clases = [
+        dict(hora_inicio=f[0], hora_fin=f[1])
+        for f in cursor.fetchall()
+    ]
+
+    if conflictos.buscar_traslapes(inicio, fin, clases):
+        raise ErrorNegocio(
+            f"El espacio ya está ocupado por una clase regular el {dia_nombre} en ese horario."
+        )
 
 
 def datos_vista(conn, rol, id_usuario, hoy=None):
@@ -189,6 +251,9 @@ def crear_reserva(
                 "para reservas."
             )
 
+        # Validamos choques contra reservas aprobadas y horarios de clase (AUD-007)
+        _verificar_disponibilidad(cursor, id_espacio, fecha_obj, inicio, fin)
+
         cursor.execute("""
             INSERT INTO Reservas (
                 id_usuario,
@@ -303,34 +368,14 @@ def aprobar_reserva(conn, id_reserva):
             FOR UPDATE
         """, (reserva['id_espacio'],))
 
-        cursor.execute("""
-            SELECT hora_inicio, hora_fin
-            FROM Reservas
-            WHERE id_espacio = %s
-              AND fecha = %s
-              AND estado = 'Aprobada'
-        """, (
+        # Revalidamos disponibilidad al momento de aprobar (AUD-007)
+        _verificar_disponibilidad(
+            cursor,
             reserva['id_espacio'],
-            reserva['fecha']
-        ))
-
-        aprobadas = [
-            dict(
-                hora_inicio=f[0],
-                hora_fin=f[1]
-            )
-            for f in cursor.fetchall()
-        ]
-
-        if conflictos.buscar_traslapes(
+            reserva['fecha'],
             reserva['hora_inicio'],
-            reserva['hora_fin'],
-            aprobadas
-        ):
-            raise ErrorNegocio(
-                "No se puede aprobar: El espacio ya cuenta "
-                "con una reserva en ese horario."
-            )
+            reserva['hora_fin']
+        )
 
         cursor.execute("""
             UPDATE Reservas

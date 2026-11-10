@@ -1,4 +1,3 @@
-
 from datetime import datetime
 
 import config
@@ -76,14 +75,18 @@ def calcular_panel(conn, page=1, ahora=None):
     total_espacios = fila[0] or 0
     bloqueados = fila[1] or 0
 
+    # SOLUCIÓN AUD-008: JOIN con Periodos p para contar ocupación SOLO de periodos activos
     cursor.execute("""
         SELECT COUNT(DISTINCT a.id_espacio)
         FROM Asignaciones a
         JOIN Horarios h
             ON a.id_asignacion = h.id_asignacion
+        JOIN Periodos p 
+            ON a.id_periodo = p.id_periodo
         WHERE h.dia_semana = %s
           AND h.hora_inicio <= CAST(%s AS TIME)
           AND h.hora_fin > CAST(%s AS TIME)
+          AND p.activo = TRUE
     """, (
         dia_hoy,
         hora_actual,
@@ -135,6 +138,7 @@ def calcular_panel(conn, page=1, ahora=None):
 
     reservas_hoy = cursor.fetchall()
 
+    # SOLUCIÓN AUD-008: JOIN con Periodos p en datos_grafica para graficar SOLO periodos activos
     cursor.execute("""
         SELECT
             ed.nombre AS nombre_edificio,
@@ -142,7 +146,7 @@ def calcular_panel(conn, page=1, ahora=None):
                 AS total_espacios,
             COUNT(
                 DISTINCT CASE
-                    WHEN h.dia_semana = %s
+                    WHEN h.dia_semana = %s AND p.activo = TRUE
                     THEN a.id_espacio
                 END
             ) AS espacios_ocupados_hoy
@@ -154,10 +158,12 @@ def calcular_panel(conn, page=1, ahora=None):
             ON es.id_espacio = a.id_espacio
         LEFT JOIN Horarios h
             ON a.id_asignacion = h.id_asignacion
+        LEFT JOIN Periodos p 
+            ON a.id_periodo = p.id_periodo
         GROUP BY ed.nombre
         HAVING COUNT(
             DISTINCT CASE
-                WHEN h.dia_semana = %s
+                WHEN h.dia_semana = %s AND p.activo = TRUE
                 THEN a.id_espacio
             END
         ) > 0
@@ -207,6 +213,7 @@ def calcular_panel(conn, page=1, ahora=None):
         for f in cursor.fetchall()
     ]
 
+    # SOLUCIÓN AUD-008: JOIN con Periodos p para tablas de disponibilidad actual
     cursor.execute("""
         SELECT
             a.id_espacio,
@@ -218,9 +225,12 @@ def calcular_panel(conn, page=1, ahora=None):
             ON a.id_asignacion = h.id_asignacion
         JOIN Grupos g
             ON a.id_grupo = g.id_grupo
+        JOIN Periodos p 
+            ON a.id_periodo = p.id_periodo
         WHERE h.dia_semana = %s
           AND h.hora_inicio <= CAST(%s AS TIME)
           AND h.hora_fin > CAST(%s AS TIME)
+          AND p.activo = TRUE
     """, (
         dia_hoy,
         hora_actual,
@@ -230,13 +240,12 @@ def calcular_panel(conn, page=1, ahora=None):
     clases_ahora = {
         f[0]: {
             'grupo': f[1],
-            'horario': (
-                f"{_hhmm(f[2])} - {_hhmm(f[3])}"
-            )
+            'horario': f"{_hhmm(f[2])} - {_hhmm(f[3])}"
         }
         for f in cursor.fetchall()
     }
 
+    # SOLUCIÓN AUD-008: JOIN con Periodos p para tablas de próximas clases
     cursor.execute("""
         SELECT
             a.id_espacio,
@@ -248,8 +257,11 @@ def calcular_panel(conn, page=1, ahora=None):
             ON a.id_asignacion = h.id_asignacion
         JOIN Grupos g
             ON a.id_grupo = g.id_grupo
+        JOIN Periodos p 
+            ON a.id_periodo = p.id_periodo
         WHERE h.dia_semana = %s
           AND h.hora_inicio > CAST(%s AS TIME)
+          AND p.activo = TRUE
         ORDER BY h.hora_inicio ASC
     """, (
         dia_hoy,
@@ -263,9 +275,7 @@ def calcular_panel(conn, page=1, ahora=None):
             f[0],
             {
                 'grupo': f[1],
-                'horario': (
-                    f"{_hhmm(f[2])} - {_hhmm(f[3])}"
-                )
+                'horario': f"{_hhmm(f[2])} - {_hhmm(f[3])}"
             }
         )
 

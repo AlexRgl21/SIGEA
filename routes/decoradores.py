@@ -4,7 +4,10 @@ import config
 from database.conexion import get_db
 
 def role_required(*roles):
-    # Permite el acceso solo si el usuario existe, está activo y su rol coincide en tiempo real contra la BD.
+    
+    if len(roles) == 1 and isinstance(roles[0], (list, tuple)):
+        roles = roles[0]
+
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -32,14 +35,14 @@ def role_required(*roles):
                     session.clear()
                     return redirect(url_for('auth.login', error="Tu cuenta ha sido desactivada o ya no existe."))
 
-                # Mapeamos el id_rol al nombre del rol usando la misma configuración del sistema
+                # Mapeamos el id_rol al nombre del rol usando la configuración del sistema
                 rol_actual = config.ROLES_POR_ID.get(usuario[1])
                 
                 if not rol_actual or rol_actual not in roles:
                     session.clear()
                     return redirect(url_for('auth.login', error="Acceso denegado: tus permisos fueron modificados."))
 
-                # Actualizamos el rol en la sesión por si cambió en caliente
+                # Actualizamos el rol en la sesión por si cambió 
                 session['role'] = rol_actual
 
             except Exception:
